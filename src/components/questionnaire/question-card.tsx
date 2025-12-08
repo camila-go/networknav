@@ -19,21 +19,21 @@ export function QuestionCard({ question, value, onChange }: QuestionCardProps) {
     <div className="space-y-6">
       {/* Question text */}
       <div className="space-y-2">
-        <h3 className="text-xl md:text-2xl font-semibold text-navy-900">
+        <h3 className="text-xl md:text-2xl font-bold text-navy-800 font-display">
           {question.text}
         </h3>
         {!question.required && (
-          <Badge variant="secondary" className="text-xs">
+          <Badge variant="secondary" className="text-xs font-medium">
             Optional
           </Badge>
         )}
         {question.type === "multi-select" && question.maxSelections && (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-navy-600 font-medium">
             Select {question.minSelections}-{question.maxSelections} options
           </p>
         )}
         {question.type === "rank" && (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-navy-600 font-medium">
             Drag to rank your top {question.maxSelections || 3}
           </p>
         )}

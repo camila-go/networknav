@@ -12,7 +12,7 @@ interface SingleSelectProps {
 
 export function SingleSelect({ options, value, onChange }: SingleSelectProps) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" role="radiogroup">
       {options.map((option) => {
         const isSelected = value === option.value;
 
@@ -20,13 +20,15 @@ export function SingleSelect({ options, value, onChange }: SingleSelectProps) {
           <button
             key={option.value}
             type="button"
+            role="radio"
+            aria-checked={isSelected}
             onClick={() => onChange(option.value)}
             className={cn(
               "relative flex items-center gap-3 p-4 rounded-xl border-2 text-left transition-all duration-200",
-              "hover:border-primary/50 hover:bg-primary/5",
+              "hover:border-teal-400 hover:bg-teal-50 focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2",
               isSelected
-                ? "border-primary bg-primary/10 shadow-sm"
-                : "border-navy-100 bg-white"
+                ? "border-teal-500 bg-teal-50 shadow-sm"
+                : "border-navy-200 bg-white"
             )}
           >
             {/* Selection indicator */}
@@ -34,9 +36,10 @@ export function SingleSelect({ options, value, onChange }: SingleSelectProps) {
               className={cn(
                 "flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors",
                 isSelected
-                  ? "border-primary bg-primary"
-                  : "border-navy-200 bg-white"
+                  ? "border-teal-600 bg-teal-600"
+                  : "border-navy-300 bg-white"
               )}
+              aria-hidden="true"
             >
               {isSelected && <Check className="h-3 w-3 text-white" />}
             </div>
@@ -45,7 +48,7 @@ export function SingleSelect({ options, value, onChange }: SingleSelectProps) {
             <div className="flex-1 min-w-0">
               <span className="font-medium text-navy-800">{option.label}</span>
               {option.description && (
-                <p className="text-sm text-muted-foreground mt-0.5">
+                <p className="text-sm text-navy-600 mt-0.5">
                   {option.description}
                 </p>
               )}

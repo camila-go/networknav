@@ -54,26 +54,27 @@ export function RankInput({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" role="listbox" aria-label="Rank your selections">
       {/* Selected items (ranked) */}
       {selectedOptions.length > 0 && (
         <div className="space-y-3">
-          <h4 className="text-sm font-medium text-navy-700">
-            Your ranking (drag to reorder):
+          <h4 className="text-sm font-semibold text-navy-700">
+            Your ranking (use arrows to reorder):
           </h4>
-          <div className="space-y-2">
+          <div className="space-y-2" role="list">
             {selectedOptions.map((option, index) => (
               <div
                 key={option.value}
-                className="flex items-center gap-3 p-4 bg-primary/10 border-2 border-primary rounded-xl"
+                role="listitem"
+                className="flex items-center gap-3 p-4 bg-teal-50 border-2 border-teal-500 rounded-xl"
               >
                 {/* Rank number */}
-                <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold">
+                <div className="w-8 h-8 rounded-full bg-teal-600 text-white flex items-center justify-center font-bold" aria-label={`Rank ${index + 1}`}>
                   {index + 1}
                 </div>
 
                 {/* Icon and label */}
-                {option.icon && <span className="text-xl">{option.icon}</span>}
+                {option.icon && <span className="text-xl" aria-hidden="true">{option.icon}</span>}
                 <span className="flex-1 font-medium text-navy-800">
                   {option.label}
                 </span>
@@ -85,16 +86,17 @@ export function RankInput({
                     onClick={() => handleMoveUp(index)}
                     disabled={index === 0}
                     className={cn(
-                      "p-1 rounded hover:bg-primary/20 transition-colors",
+                      "p-2 rounded hover:bg-teal-100 transition-colors focus-visible:ring-2 focus-visible:ring-teal-500",
                       index === 0 && "opacity-30 cursor-not-allowed"
                     )}
-                    title="Move up"
+                    aria-label="Move up"
                   >
                     <svg
                       className="w-4 h-4"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
+                      aria-hidden="true"
                     >
                       <path
                         strokeLinecap="round"
@@ -109,17 +111,18 @@ export function RankInput({
                     onClick={() => handleMoveDown(index)}
                     disabled={index === selectedOptions.length - 1}
                     className={cn(
-                      "p-1 rounded hover:bg-primary/20 transition-colors",
+                      "p-2 rounded hover:bg-teal-100 transition-colors focus-visible:ring-2 focus-visible:ring-teal-500",
                       index === selectedOptions.length - 1 &&
                         "opacity-30 cursor-not-allowed"
                     )}
-                    title="Move down"
+                    aria-label="Move down"
                   >
                     <svg
                       className="w-4 h-4"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
+                      aria-hidden="true"
                     >
                       <path
                         strokeLinecap="round"
@@ -135,8 +138,8 @@ export function RankInput({
                 <button
                   type="button"
                   onClick={() => handleRemove(option.value)}
-                  className="p-1 text-navy-400 hover:text-destructive transition-colors"
-                  title="Remove"
+                  className="p-2 text-navy-500 hover:text-coral-600 transition-colors focus-visible:ring-2 focus-visible:ring-coral-500"
+                  aria-label={`Remove ${option.label}`}
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -149,7 +152,7 @@ export function RankInput({
       {/* Available options */}
       {availableOptions.length > 0 && value.length < maxSelections && (
         <div className="space-y-3">
-          <h4 className="text-sm font-medium text-muted-foreground">
+          <h4 className="text-sm font-semibold text-navy-600">
             Select {maxSelections - value.length} more:
           </h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -160,10 +163,10 @@ export function RankInput({
                 onClick={() => handleSelect(option.value)}
                 className={cn(
                   "flex items-center gap-3 p-4 rounded-xl border-2 text-left transition-all duration-200",
-                  "border-navy-100 bg-white hover:border-primary/50 hover:bg-primary/5"
+                  "border-navy-200 bg-white hover:border-teal-400 hover:bg-teal-50 focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2"
                 )}
               >
-                {option.icon && <span className="text-xl">{option.icon}</span>}
+                {option.icon && <span className="text-xl" aria-hidden="true">{option.icon}</span>}
                 <span className="font-medium text-navy-700">{option.label}</span>
               </button>
             ))}
@@ -173,7 +176,7 @@ export function RankInput({
 
       {/* Completion status */}
       {value.length === maxSelections && (
-        <div className="text-center text-sm text-teal-600 font-medium">
+        <div className="text-center text-sm text-teal-700 font-semibold" role="status">
           ✓ Top {maxSelections} selected
         </div>
       )}

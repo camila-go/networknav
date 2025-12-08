@@ -122,11 +122,13 @@ export function QuestionnaireWizard() {
         <div className="w-full max-w-2xl mx-auto">
           {/* Section header */}
           <div className="mb-8 text-center animate-fade-in">
-            <span className="text-4xl mb-4 block">{currentSection.icon}</span>
-            <h2 className="text-sm font-medium text-primary uppercase tracking-wider mb-2">
+            <span className="text-4xl mb-4 block" role="img" aria-label={currentSection.title}>
+              {currentSection.icon}
+            </span>
+            <h2 className="text-sm font-semibold text-teal-700 uppercase tracking-wider mb-2">
               {currentSection.title}
             </h2>
-            <p className="text-muted-foreground text-sm">
+            <p className="text-navy-600 text-sm">
               {currentSection.subtitle}
             </p>
           </div>
