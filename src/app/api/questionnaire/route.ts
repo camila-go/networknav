@@ -6,13 +6,11 @@ import { users, questionnaireResponses } from "@/lib/stores";
 export async function POST(request: NextRequest) {
   try {
     const session = await getSession();
-
-    if (!session) {
-      return NextResponse.json(
-        { success: false, error: "Not authenticated" },
-        { status: 401 }
-      );
-    }
+    
+    // For demo: allow anonymous submissions with a device ID
+    const deviceId = request.cookies.get("device_id")?.value || crypto.randomUUID();
+    const userId = session?.userId || `demo_${deviceId}`;
+    const userEmail = session?.email || `demo_${deviceId}@jynx.demo`;
 
     const body = await request.json();
     const { responses } = body;
@@ -63,22 +61,25 @@ export async function POST(request: NextRequest) {
 
     // Store questionnaire response
     const now = new Date();
-    questionnaireResponses.set(session.userId, {
-      userId: session.userId,
+    questionnaireResponses.set(userId, {
+      userId: userId,
       responses: result.data,
       completionPercentage,
       completedAt: completionPercentage >= 100 ? now : undefined,
       lastUpdated: now,
     });
 
-    // Update user's questionnaire status
-    const user = users.get(session.email);
-    if (user && completionPercentage >= 80) {
-      user.questionnaireCompleted = true;
-      user.updatedAt = now;
+    // Update user's questionnaire status if authenticated
+    if (session) {
+      const user = users.get(session.email);
+      if (user && completionPercentage >= 80) {
+        user.questionnaireCompleted = true;
+        user.updatedAt = now;
+      }
     }
 
-    return NextResponse.json({
+    // Set device ID cookie for demo users
+    const response = NextResponse.json({
       success: true,
       data: {
         completionPercentage,
@@ -88,6 +89,18 @@ export async function POST(request: NextRequest) {
             : "Progress saved successfully",
       },
     });
+
+    // Set device ID cookie if not authenticated
+    if (!session) {
+      response.cookies.set("device_id", deviceId, {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        maxAge: 30 * 24 * 60 * 60, // 30 days
+      });
+    }
+
+    return response;
   } catch (error) {
     console.error("Questionnaire save error:", error);
     return NextResponse.json(
@@ -97,20 +110,26 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const session = await getSession();
+    const deviceId = request.cookies.get("device_id")?.value;
+    const userId = session?.userId || (deviceId ? `demo_${deviceId}` : null);
 
-    if (!session) {
-      return NextResponse.json(
-        { success: false, error: "Not authenticated" },
-        { status: 401 }
-      );
+    if (!userId) {
+      return NextResponse.json({
+        success: true,
+        data: {
+          responses: {},
+          completionPercentage: 0,
+          completedAt: null,
+        },
+      });
     }
 
-    const response = questionnaireResponses.get(session.userId);
+    const storedResponse = questionnaireResponses.get(userId);
 
-    if (!response) {
+    if (!storedResponse) {
       return NextResponse.json({
         success: true,
         data: {
@@ -124,9 +143,9 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       data: {
-        responses: response.responses,
-        completionPercentage: response.completionPercentage,
-        completedAt: response.completedAt,
+        responses: storedResponse.responses,
+        completionPercentage: storedResponse.completionPercentage,
+        completedAt: storedResponse.completedAt,
       },
     });
   } catch (error) {

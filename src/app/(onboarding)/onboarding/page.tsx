@@ -1,6 +1,4 @@
 import { Suspense } from "react";
-import { redirect } from "next/navigation";
-import { getSession } from "@/lib/auth";
 import { QuestionnaireWizard } from "@/components/questionnaire/wizard";
 
 export const metadata = {
@@ -9,12 +7,7 @@ export const metadata = {
 };
 
 export default async function OnboardingPage() {
-  const session = await getSession();
-
-  if (!session) {
-    redirect("/login");
-  }
-
+  // Allow both authenticated and demo users to access the questionnaire
   return (
     <div className="min-h-screen gradient-mesh">
       <Suspense
