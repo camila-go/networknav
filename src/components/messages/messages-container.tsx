@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { ConversationList } from "./conversation-list";
 import { ChatWindow } from "./chat-window";
 import { EmptyState } from "./empty-state";
@@ -21,11 +22,20 @@ interface Conversation {
 }
 
 export function MessagesContainer() {
+  const searchParams = useSearchParams();
+  const newUserId = searchParams.get("userId");
+  const newUserName = searchParams.get("name");
+
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] =
     useState<Conversation | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isMobileView, setIsMobileView] = useState(false);
+  const [showNewConversation, setShowNewConversation] = useState(false);
+  const [newConversationUser, setNewConversationUser] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
 
   useEffect(() => {
     fetchConversations();
@@ -35,6 +45,17 @@ export function MessagesContainer() {
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
+
+  // Handle incoming new conversation from URL params
+  useEffect(() => {
+    if (newUserId && newUserName) {
+      setNewConversationUser({
+        id: newUserId,
+        name: decodeURIComponent(newUserName),
+      });
+      setShowNewConversation(true);
+    }
+  }, [newUserId, newUserName]);
 
   async function fetchConversations() {
     try {
@@ -111,26 +132,42 @@ export function MessagesContainer() {
     <div className="h-full flex rounded-2xl overflow-hidden border bg-white">
       {/* Conversation list */}
       <div className="w-80 border-r flex-shrink-0">
-        {conversations.length === 0 ? (
+        {conversations.length === 0 && !showNewConversation ? (
           <EmptyState compact />
         ) : (
           <ConversationList
             conversations={conversations}
             selectedId={selectedConversation?.connectionId || null}
             onSelect={handleSelectConversation}
+            newConversationUser={showNewConversation ? newConversationUser : null}
+            onSelectNewConversation={() => {
+              setSelectedConversation(null);
+              setShowNewConversation(true);
+            }}
           />
         )}
       </div>
 
       {/* Chat window */}
       <div className="flex-1">
-        {selectedConversation ? (
+        {showNewConversation && newConversationUser ? (
+          <ChatWindow
+            newConversation={{
+              userId: newConversationUser.id,
+              userName: newConversationUser.name,
+            }}
+            onMessageSent={() => {
+              fetchConversations();
+              setShowNewConversation(false);
+            }}
+          />
+        ) : selectedConversation ? (
           <ChatWindow
             conversation={selectedConversation}
             onMessageSent={handleMessageSent}
           />
         ) : (
-          <div className="h-full flex items-center justify-center text-muted-foreground">
+          <div className="h-full flex items-center justify-center text-navy-500">
             <p>Select a conversation to start messaging</p>
           </div>
         )}

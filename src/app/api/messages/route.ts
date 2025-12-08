@@ -7,12 +7,16 @@ import type { Message } from "@/types";
 export async function GET(request: NextRequest) {
   try {
     const session = await getSession();
+    
+    // For demo: allow anonymous users with device ID
+    const deviceId = request.cookies.get("device_id")?.value;
+    const userId = session?.userId || (deviceId ? `demo_${deviceId}` : null);
 
-    if (!session) {
-      return NextResponse.json(
-        { success: false, error: "Not authenticated" },
-        { status: 401 }
-      );
+    if (!userId) {
+      return NextResponse.json({
+        success: true,
+        data: { conversations: [] },
+      });
     }
 
     const { searchParams } = new URL(request.url);
@@ -20,7 +24,7 @@ export async function GET(request: NextRequest) {
 
     if (!connectionId) {
       // Return all conversations
-      const conversations = await getConversations(session.userId);
+      const conversations = await getConversations(userId);
       return NextResponse.json({
         success: true,
         data: { conversations },
@@ -37,8 +41,8 @@ export async function GET(request: NextRequest) {
     }
 
     if (
-      connection.requesterId !== session.userId &&
-      connection.recipientId !== session.userId
+      connection.requesterId !== userId &&
+      connection.recipientId !== userId
     ) {
       return NextResponse.json(
         { success: false, error: "Not authorized" },
@@ -58,7 +62,7 @@ export async function GET(request: NextRequest) {
 
     // Mark messages as read
     const updatedMessages = connectionMessages.map((msg) => {
-      if (msg.senderId !== session.userId && !msg.read) {
+      if (msg.senderId !== userId && !msg.read) {
         return { ...msg, read: true };
       }
       return msg;
@@ -81,16 +85,13 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await getSession();
-
-    if (!session) {
-      return NextResponse.json(
-        { success: false, error: "Not authenticated" },
-        { status: 401 }
-      );
-    }
+    
+    // For demo: allow anonymous users with device ID
+    const deviceId = request.cookies.get("device_id")?.value;
+    const userId = session?.userId || (deviceId ? `demo_${deviceId}` : "demo_anonymous");
 
     const body = await request.json();
-    const { connectionId, content } = body;
+    const { connectionId, targetUserId, content } = body;
 
     // Validate content
     const result = messageSchema.safeParse({ content });
@@ -105,8 +106,48 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify connection exists and is accepted
-    const connection = connections.get(connectionId);
+    let actualConnectionId = connectionId;
+
+    // For new conversations with targetUserId, create or find a connection
+    if (!connectionId && targetUserId) {
+      // Look for existing connection
+      let existingConnection = null;
+      for (const conn of connections.values()) {
+        if (
+          (conn.requesterId === userId && conn.recipientId === targetUserId) ||
+          (conn.requesterId === targetUserId && conn.recipientId === userId)
+        ) {
+          existingConnection = conn;
+          break;
+        }
+      }
+
+      if (existingConnection) {
+        actualConnectionId = existingConnection.id;
+        // Auto-accept for demo
+        if (existingConnection.status === "pending") {
+          existingConnection.status = "accepted";
+          existingConnection.updatedAt = new Date();
+        }
+      } else {
+        // Create new connection (auto-accepted for demo)
+        const newConnectionId = `conn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const newConnection = {
+          id: newConnectionId,
+          requesterId: userId,
+          recipientId: targetUserId,
+          status: "accepted" as const,
+          message: "Connected via Jynx",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+        connections.set(newConnectionId, newConnection);
+        actualConnectionId = newConnectionId;
+      }
+    }
+
+    // Verify connection exists
+    const connection = connections.get(actualConnectionId);
     if (!connection) {
       return NextResponse.json(
         { success: false, error: "Connection not found" },
@@ -115,8 +156,8 @@ export async function POST(request: NextRequest) {
     }
 
     if (
-      connection.requesterId !== session.userId &&
-      connection.recipientId !== session.userId
+      connection.requesterId !== userId &&
+      connection.recipientId !== userId
     ) {
       return NextResponse.json(
         { success: false, error: "Not authorized" },
@@ -124,32 +165,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (connection.status !== "accepted") {
-      return NextResponse.json(
-        { success: false, error: "Cannot message - connection not accepted" },
-        { status: 403 }
-      );
-    }
-
     // Create message
     const message: Message = {
       id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      connectionId,
-      senderId: session.userId,
+      connectionId: actualConnectionId,
+      senderId: userId,
       content: result.data.content,
       read: false,
       createdAt: new Date(),
     };
 
     // Add to messages store
-    const connectionMessages = messages.get(connectionId) || [];
+    const connectionMessages = messages.get(actualConnectionId) || [];
     connectionMessages.push(message);
-    messages.set(connectionId, connectionMessages);
+    messages.set(actualConnectionId, connectionMessages);
 
     return NextResponse.json(
       {
         success: true,
-        data: { message },
+        data: { message, connectionId: actualConnectionId },
       },
       { status: 201 }
     );

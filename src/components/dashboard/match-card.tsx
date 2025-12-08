@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { MatchWithUser } from "@/types";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,6 +26,7 @@ interface MatchCardProps {
 
 export function MatchCard({ match, onPass, onConnect }: MatchCardProps) {
   const [showAllCommonalities, setShowAllCommonalities] = useState(false);
+  const router = useRouter();
   const { matchedUser, type, commonalities, conversationStarters, score } = match;
 
   const displayedCommonalities = showAllCommonalities
@@ -36,6 +39,14 @@ export function MatchCard({ match, onPass, onConnect }: MatchCardProps) {
     .join("")
     .toUpperCase();
 
+  const profileUrl = `/user/${match.matchedUserId}`;
+
+  function handleConnectAndMessage() {
+    // First trigger the connect action, then navigate to messages
+    onConnect(match.id);
+    router.push(`/messages?userId=${match.matchedUserId}&name=${encodeURIComponent(matchedUser.profile.name)}`);
+  }
+
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
       {/* Header with match type badge */}
@@ -46,8 +57,8 @@ export function MatchCard({ match, onPass, onConnect }: MatchCardProps) {
             className={cn(
               "gap-1",
               type === "high-affinity"
-                ? "bg-primary/90"
-                : "bg-coral-100 text-coral-700"
+                ? "bg-teal-600 text-white"
+                : "bg-amber-100 text-amber-700"
             )}
           >
             {type === "high-affinity" ? (
@@ -64,24 +75,28 @@ export function MatchCard({ match, onPass, onConnect }: MatchCardProps) {
           </Badge>
         </div>
 
-        {/* Profile section */}
+        {/* Profile section - clickable */}
         <div className="p-6 pb-4">
           <div className="flex items-start gap-4">
-            <Avatar className="h-16 w-16 border-2 border-white shadow-md">
-              <AvatarImage src={matchedUser.profile.photoUrl} />
-              <AvatarFallback className="bg-gradient-to-br from-primary to-teal-500 text-white text-lg">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
+            <Link href={profileUrl} className="flex-shrink-0">
+              <Avatar className="h-16 w-16 border-2 border-white shadow-md cursor-pointer hover:ring-2 hover:ring-teal-500 hover:ring-offset-2 transition-all">
+                <AvatarImage src={matchedUser.profile.photoUrl} />
+                <AvatarFallback className="bg-gradient-to-br from-teal-500 to-teal-600 text-white text-lg">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+            </Link>
             <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-lg text-navy-900 truncate">
-                {matchedUser.profile.name}
-              </h3>
-              <p className="text-sm text-muted-foreground truncate">
+              <Link href={profileUrl} className="hover:text-teal-600 transition-colors">
+                <h3 className="font-semibold text-lg text-navy-900 truncate hover:text-teal-600">
+                  {matchedUser.profile.name}
+                </h3>
+              </Link>
+              <p className="text-sm text-navy-600 truncate">
                 {matchedUser.profile.position}
               </p>
               {matchedUser.profile.company && (
-                <p className="text-sm text-primary truncate">
+                <p className="text-sm text-teal-600 truncate">
                   {matchedUser.profile.company}
                 </p>
               )}
@@ -161,15 +176,15 @@ export function MatchCard({ match, onPass, onConnect }: MatchCardProps) {
           variant="ghost"
           size="sm"
           onClick={() => onPass(match.id)}
-          className="flex-1 text-muted-foreground hover:text-destructive"
+          className="flex-1 text-navy-500 hover:text-coral-600"
         >
           <X className="h-4 w-4 mr-1" />
           Pass
         </Button>
         <Button
           size="sm"
-          onClick={() => onConnect(match.id)}
-          className="flex-1 gap-1"
+          onClick={handleConnectAndMessage}
+          className="flex-1 gap-1 bg-teal-600 hover:bg-teal-700"
         >
           <MessageCircle className="h-4 w-4" />
           Connect

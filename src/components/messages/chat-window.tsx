@@ -24,7 +24,11 @@ interface Conversation {
 }
 
 interface ChatWindowProps {
-  conversation: Conversation;
+  conversation?: Conversation;
+  newConversation?: {
+    userId: string;
+    userName: string;
+  };
   onBack?: () => void;
   onMessageSent?: () => void;
   isMobile?: boolean;
@@ -32,6 +36,7 @@ interface ChatWindowProps {
 
 export function ChatWindow({
   conversation,
+  newConversation,
   onBack,
   onMessageSent,
   isMobile,
@@ -42,16 +47,31 @@ export function ChatWindow({
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const { otherUser, connectionId } = conversation;
+  // Handle both existing conversation and new conversation
+  const isNewConversation = !conversation && newConversation;
+  const otherUser = conversation?.otherUser || (newConversation ? {
+    id: newConversation.userId,
+    name: newConversation.userName,
+    position: "",
+    company: undefined,
+  } : undefined);
+  const connectionId = conversation?.connectionId;
+  
   const initials =
     otherUser?.name
       .split(" ")
       .map((n) => n[0])
       .join("")
-      .toUpperCase() || "?";
+      .toUpperCase()
+      .slice(0, 2) || "?";
 
   useEffect(() => {
-    fetchMessages();
+    if (connectionId) {
+      fetchMessages();
+    } else {
+      setIsLoading(false);
+      setMessages([]);
+    }
   }, [connectionId]);
 
   useEffect(() => {
@@ -80,13 +100,21 @@ export function ChatWindow({
 
     setIsSending(true);
     try {
+      const body: Record<string, string> = {
+        content: newMessage.trim(),
+      };
+
+      // For new conversations, send targetUserId instead of connectionId
+      if (isNewConversation && newConversation) {
+        body.targetUserId = newConversation.userId;
+      } else if (connectionId) {
+        body.connectionId = connectionId;
+      }
+
       const response = await fetch("/api/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          connectionId,
-          content: newMessage.trim(),
-        }),
+        body: JSON.stringify(body),
       });
 
       const result = await response.json();

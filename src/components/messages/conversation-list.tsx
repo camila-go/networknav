@@ -27,12 +27,16 @@ interface ConversationListProps {
   conversations: Conversation[];
   selectedId: string | null;
   onSelect: (conversation: Conversation) => void;
+  newConversationUser?: { id: string; name: string } | null;
+  onSelectNewConversation?: () => void;
 }
 
 export function ConversationList({
   conversations,
   selectedId,
   onSelect,
+  newConversationUser,
+  onSelectNewConversation,
 }: ConversationListProps) {
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -50,7 +54,7 @@ export function ConversationList({
       <div className="p-4 border-b">
         <h2 className="font-semibold text-lg text-navy-900 mb-3">Messages</h2>
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-navy-400" />
           <Input
             placeholder="Search conversations..."
             value={searchQuery}
@@ -62,8 +66,36 @@ export function ConversationList({
 
       {/* Conversation list */}
       <div className="flex-1 overflow-y-auto">
-        {filteredConversations.length === 0 ? (
-          <div className="p-4 text-center text-muted-foreground text-sm">
+        {/* New conversation at top if present */}
+        {newConversationUser && (
+          <button
+            onClick={onSelectNewConversation}
+            className={cn(
+              "w-full p-4 flex items-start gap-3 text-left transition-colors",
+              "bg-teal-50 border-b border-teal-200 border-l-2 border-l-teal-500"
+            )}
+          >
+            <Avatar className="h-12 w-12 flex-shrink-0">
+              <AvatarFallback className="bg-gradient-to-br from-teal-500 to-teal-600 text-white">
+                {newConversationUser.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between mb-1">
+                <span className="font-medium text-navy-900 truncate">
+                  {newConversationUser.name}
+                </span>
+                <Badge className="bg-teal-600 text-white text-xs">New</Badge>
+              </div>
+              <p className="text-sm text-teal-700">
+                Start a conversation...
+              </p>
+            </div>
+          </button>
+        )}
+
+        {filteredConversations.length === 0 && !newConversationUser ? (
+          <div className="p-4 text-center text-navy-500 text-sm">
             No conversations found
           </div>
         ) : (
