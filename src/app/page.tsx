@@ -45,9 +45,14 @@ export default function HomePage() {
           </div>
           
           <h1 className="font-display text-4xl md:text-6xl lg:text-7xl font-bold text-navy-900 mb-6 leading-tight animate-fade-in [animation-delay:100ms]">
-            Find Your Perfect
             <span className="block text-transparent bg-clip-text bg-gradient-to-r from-teal-600 via-teal-500 to-coral-600">
-              Leadership Connections
+              Jynx
+            </span>
+            <span className="block text-2xl md:text-3xl lg:text-4xl font-medium text-navy-600 mt-2 mb-4">
+              Because Great Minds Connect Alike
+            </span>
+            <span className="block text-navy-900">
+              Find Your Perfect Leadership Connections
             </span>
           </h1>
           
