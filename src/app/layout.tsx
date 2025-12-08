@@ -18,7 +18,7 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
-  title: "NetworkNav - Leadership Conference Networking",
+  title: "Jynx - Leadership Conference Networking",
   description:
     "Intelligent networking for leadership conferences. Find your perfect professional connections through data-driven matching.",
   keywords: [

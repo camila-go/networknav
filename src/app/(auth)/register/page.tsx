@@ -10,8 +10,8 @@ import {
 import Link from "next/link";
 
 export const metadata = {
-  title: "Create Account | NetworkNav",
-  description: "Create your NetworkNav account and start networking with leaders",
+  title: "Create Account | Jynx",
+  description: "Create your Jynx account and start networking with leaders",
 };
 
 export default function RegisterPage() {

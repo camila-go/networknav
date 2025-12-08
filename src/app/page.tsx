@@ -18,7 +18,7 @@ export default function HomePage() {
               <Users className="h-5 w-5 text-white" aria-hidden="true" />
             </div>
             <span className="font-display text-xl font-bold text-navy-800">
-              NetworkNav
+              Jynx
             </span>
           </div>
           <div className="flex items-center gap-4">
@@ -52,7 +52,7 @@ export default function HomePage() {
           </h1>
           
           <p className="text-lg md:text-xl text-navy-600 mb-10 max-w-2xl mx-auto animate-fade-in [animation-delay:200ms]">
-            NetworkNav uses market basket analysis to intelligently match you with 
+            Jynx uses market basket analysis to intelligently match you with 
             fellow leaders who share your challenges, complement your expertise, 
             and align with your goals.
           </p>
@@ -75,7 +75,7 @@ export default function HomePage() {
 
       {/* Features Section */}
       <section id="how-it-works" className="container mx-auto px-4 py-20" aria-labelledby="features-heading">
-        <h2 id="features-heading" className="sr-only">How NetworkNav Works</h2>
+        <h2 id="features-heading" className="sr-only">How Jynx Works</h2>
         <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
           <FeatureCard
             icon={<Users className="h-8 w-8" />}
@@ -124,9 +124,9 @@ export default function HomePage() {
             <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-teal-600 to-teal-700 flex items-center justify-center">
               <Users className="h-3 w-3 text-white" aria-hidden="true" />
             </div>
-            <span className="font-medium text-navy-700">NetworkNav</span>
+            <span className="font-medium text-navy-700">Jynx</span>
           </div>
-          <p>© {new Date().getFullYear()} NetworkNav. Built for leaders, by leaders.</p>
+          <p>© {new Date().getFullYear()} Jynx. Built for leaders, by leaders.</p>
         </div>
       </footer>
     </main>

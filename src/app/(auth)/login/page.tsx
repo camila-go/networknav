@@ -10,8 +10,8 @@ import {
 import Link from "next/link";
 
 export const metadata = {
-  title: "Log In | NetworkNav",
-  description: "Log in to your NetworkNav account",
+  title: "Log In | Jynx",
+  description: "Log in to your Jynx account",
 };
 
 export default function LoginPage() {

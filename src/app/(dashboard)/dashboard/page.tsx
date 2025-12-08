@@ -3,7 +3,7 @@ import { MatchesGrid } from "@/components/dashboard/matches-grid";
 import { StatsCards } from "@/components/dashboard/stats-cards";
 
 export const metadata = {
-  title: "Dashboard | NetworkNav",
+  title: "Dashboard | Jynx",
   description: "View your leadership matches and connections",
 };
 

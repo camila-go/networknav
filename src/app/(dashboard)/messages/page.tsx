@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { MessagesContainer } from "@/components/messages/messages-container";
 
 export const metadata = {
-  title: "Messages | NetworkNav",
+  title: "Messages | Jynx",
   description: "Chat with your leadership connections",
 };
 

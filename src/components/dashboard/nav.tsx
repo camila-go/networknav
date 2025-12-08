@@ -29,7 +29,7 @@ export function DashboardNav() {
             <Users className="h-4 w-4 text-white" />
           </div>
           <span className="font-display text-lg font-bold text-navy-900 hidden sm:inline">
-            NetworkNav
+            Jynx
           </span>
         </Link>
 

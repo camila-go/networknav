@@ -3,8 +3,8 @@ import { ProfileForm } from "@/components/profile/profile-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const metadata = {
-  title: "Profile | NetworkNav",
-  description: "Manage your NetworkNav profile",
+  title: "Profile | Jynx",
+  description: "Manage your Jynx profile",
 };
 
 export default function ProfilePage() {

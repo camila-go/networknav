@@ -4,7 +4,7 @@ import { getSession } from "@/lib/auth";
 import { QuestionnaireWizard } from "@/components/questionnaire/wizard";
 
 export const metadata = {
-  title: "Complete Your Profile | NetworkNav",
+  title: "Complete Your Profile | Jynx",
   description: "Answer a few questions to help us find your perfect leadership matches",
 };
 

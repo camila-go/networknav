@@ -15,7 +15,7 @@ export default function AuthLayout({
             <Users className="h-5 w-5 text-white" />
           </div>
           <span className="font-display text-xl font-bold text-navy-900">
-            NetworkNav
+            Jynx
           </span>
         </Link>
       </header>
@@ -27,7 +27,7 @@ export default function AuthLayout({
 
       {/* Footer */}
       <footer className="p-6 text-center text-sm text-navy-500">
-        © {new Date().getFullYear()} NetworkNav. Built for leaders, by leaders.
+        © {new Date().getFullYear()} Jynx. Built for leaders, by leaders.
       </footer>
     </div>
   );
