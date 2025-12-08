@@ -1,27 +1,25 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { generateMatches, calculateMatchQualityMetrics } from "@/lib/matching";
 import { users, questionnaireResponses, userMatches } from "@/lib/stores";
 import type { Match } from "@/types";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const session = await getSession();
-
-    if (!session) {
-      return NextResponse.json(
-        { success: false, error: "Not authenticated" },
-        { status: 401 }
-      );
-    }
+    
+    // For demo: allow anonymous users with device ID
+    const deviceId = request.cookies.get("device_id")?.value;
+    const userId = session?.userId || (deviceId ? `demo_${deviceId}` : "demo_anonymous");
+    const userEmail = session?.email || `demo_${deviceId || "anonymous"}@jynx.demo`;
 
     // Check if user has existing matches
-    let matches = userMatches.get(session.userId);
+    let matches = userMatches.get(userId);
 
     // If no matches or matches are stale, generate new ones
     if (!matches || matches.length === 0) {
-      matches = await generateMatchesForUser(session.userId, session.email);
-      userMatches.set(session.userId, matches);
+      matches = await generateMatchesForUser(userId, userEmail);
+      userMatches.set(userId, matches);
     }
 
     const metrics = calculateMatchQualityMetrics(matches);

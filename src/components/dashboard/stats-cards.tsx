@@ -42,10 +42,11 @@ export function StatsCards() {
         const matchesRes = await fetch("/api/matches");
         const matchesData = await matchesRes.json();
         
-        if (matchesData.success && matchesData.data?.length > 0) {
+        if (matchesData.success && matchesData.data?.matches?.length > 0) {
+          const matches = matchesData.data.matches;
           const avgScore = Math.round(
-            matchesData.data.reduce((sum: number, m: { matchScore: number }) => sum + (m.matchScore * 100), 0) / 
-            matchesData.data.length
+            matches.reduce((sum: number, m: { score: number }) => sum + (m.score * 100), 0) / 
+            matches.length
           );
           setStats(prev => ({
             ...prev,
