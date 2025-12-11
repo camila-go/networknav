@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Users, Sparkles, User, LogOut, Search, Calendar } from "lucide-react";
+import { Users, Sparkles, User, LogOut, Search, Calendar, Network } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/notifications/notification-bell";
@@ -10,6 +10,7 @@ import { NotificationBell } from "@/components/notifications/notification-bell";
 const navItems = [
   { href: "/dashboard", label: "Matches", icon: Sparkles },
   { href: "/explore", label: "Explore", icon: Search },
+  { href: "/network", label: "Network", icon: Network },
   { href: "/meetings", label: "Meetings", icon: Calendar },
   { href: "/profile", label: "Profile", icon: User },
 ];
