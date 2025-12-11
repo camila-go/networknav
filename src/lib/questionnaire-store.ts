@@ -150,6 +150,17 @@ export const useQuestionnaireStore = create<QuestionnaireState>()(
         // Check if there's a response for this question
         const response = responses[currentQuestion.id];
 
+        // For multi-select-custom, count both predefined and custom values
+        if (currentQuestion.type === "multi-select-custom") {
+          const predefinedCount = Array.isArray(response) ? response.length : 0;
+          const customFieldId = currentQuestion.customFieldId;
+          const customValues = customFieldId ? responses[customFieldId] : [];
+          const customCount = Array.isArray(customValues) ? customValues.length : 0;
+          const totalCount = predefinedCount + customCount;
+          const minSelections = currentQuestion.minSelections || 1;
+          return totalCount >= minSelections;
+        }
+
         // For multi-select questions, check minimum selections
         if (
           currentQuestion.type === "multi-select" ||

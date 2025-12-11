@@ -186,10 +186,12 @@ export const QUESTIONNAIRE_SECTIONS: QuestionSection[] = [
       {
         id: "rechargeActivities",
         text: "How do you recharge outside of work?",
-        type: "multi-select",
+        type: "multi-select-custom",
         required: true,
-        minSelections: 4,
-        maxSelections: 8,
+        minSelections: 3,
+        maxSelections: 10,
+        customFieldId: "customInterests",
+        customFieldPlaceholder: "Add your own interest (e.g., Pottery, Hiking, Board games)",
         options: [
           { value: "reading", label: "Reading (business or pleasure)", icon: "📚" },
           { value: "fitness", label: "Fitness & Sports", icon: "🏃" },

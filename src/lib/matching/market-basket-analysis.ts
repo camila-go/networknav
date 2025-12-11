@@ -52,6 +52,7 @@ const ATTRIBUTE_WEIGHTS: Record<keyof QuestionnaireData, { weight: number; categ
 
   // Section 3: Beyond the Boardroom (hobby/lifestyle)
   rechargeActivities: { weight: 0.7, category: "hobby" },
+  customInterests: { weight: 0.85, category: "hobby" }, // User-typed interests (high weight - specific)
   contentPreferences: { weight: 0.65, category: "hobby" },
   fitnessActivities: { weight: 0.6, category: "hobby" },
   idealWeekend: { weight: 0.55, category: "lifestyle" },

@@ -135,6 +135,24 @@ function calculateMatchData(
     }
   }
 
+  // Custom interests overlap (user-typed interests)
+  const currentCustom = (currentResponses.customInterests as string[]) || [];
+  const candidateCustom = (candidateResponses.customInterests as string[]) || [];
+  if (currentCustom.length > 0 && candidateCustom.length > 0) {
+    totalPoints += 10;
+    // Case-insensitive matching for custom interests
+    const currentLower = currentCustom.map(i => i.toLowerCase());
+    const sharedCustom = candidateCustom.filter((i) => currentLower.includes(i.toLowerCase()));
+    matchPoints += Math.min(sharedCustom.length * 4, 10);
+    if (sharedCustom.length > 0) {
+      commonalities.push({
+        category: "hobby",
+        description: `Both enjoy ${sharedCustom.slice(0, 2).join(" and ")}`,
+        weight: 0.85, // Higher weight for custom interests (more specific)
+      });
+    }
+  }
+
   // Leadership philosophy overlap
   const currentPhilosophy = (currentResponses.leadershipPhilosophy as string[]) || [];
   const candidatePhilosophy = (candidateResponses.leadershipPhilosophy as string[]) || [];
@@ -220,12 +238,13 @@ function matchesFilters(
     if (!hasMatch) return false;
   }
 
-  // Interests filter (checks recharge activities, content preferences, fitness)
+  // Interests filter (checks recharge activities, content preferences, fitness, and custom interests)
   if (filters.interests && filters.interests.length > 0) {
     const userInterests = [
       ...((responses.rechargeActivities as string[]) || []),
       ...((responses.contentPreferences as string[]) || []),
       ...((responses.fitnessActivities as string[]) || []),
+      ...((responses.customInterests as string[]) || []).map(i => i.toLowerCase()),
     ];
     const hasMatch = filters.interests.some((i) => userInterests.includes(i));
     if (!hasMatch) return false;
@@ -251,7 +270,7 @@ function matchesKeywords(
   const searchTerms = keywords.toLowerCase().split(/\s+/).filter(Boolean);
   if (searchTerms.length === 0) return true;
 
-  // Build searchable text from profile
+  // Build searchable text from profile including custom interests
   const searchableText = [
     userProfile.name,
     userProfile.position,
@@ -263,6 +282,7 @@ function matchesKeywords(
     ...((responses.leadershipChallenges as string[]) || []),
     ...((responses.rechargeActivities as string[]) || []),
     ...((responses.leadershipPhilosophy as string[]) || []),
+    ...((responses.customInterests as string[]) || []), // Include custom interests in search
   ].join(" ").toLowerCase();
 
   // Check if all search terms are found
@@ -439,7 +459,8 @@ function getDemoAttendees(
         yearsExperience: "11-15",
         leadershipPriorities: ["scaling", "innovation", "mentoring"],
         leadershipChallenges: ["talent", "change", "disruption"],
-        rechargeActivities: ["hiking", "reading", "travel"],
+        rechargeActivities: ["outdoors", "reading", "travel"],
+        customInterests: ["Trail Running", "Sourdough Baking", "Board Games"],
         leadershipPhilosophy: ["servant", "people-first", "collaborative"],
         communicationStyle: "warm",
       },
@@ -459,6 +480,7 @@ function getDemoAttendees(
         leadershipPriorities: ["culture", "mentoring", "transformation"],
         leadershipChallenges: ["talent", "communication", "burnout"],
         rechargeActivities: ["fitness", "reading", "volunteering"],
+        customInterests: ["Jazz Piano", "Mentoring Startups"],
         leadershipPhilosophy: ["people-first", "coach", "authentic"],
         communicationStyle: "warm",
       },
@@ -478,6 +500,7 @@ function getDemoAttendees(
         leadershipPriorities: ["scaling", "financial", "strategy"],
         leadershipChallenges: ["priorities", "budget", "buy-in"],
         rechargeActivities: ["travel", "outdoors", "creative"],
+        customInterests: ["Pottery", "Rock Climbing", "Wine Tasting"],
         leadershipPhilosophy: ["entrepreneurial", "visionary", "decisive"],
         communicationStyle: "direct",
       },
@@ -497,6 +520,7 @@ function getDemoAttendees(
         leadershipPriorities: ["innovation", "strategy", "excellence"],
         leadershipChallenges: ["priorities", "change", "decisions"],
         rechargeActivities: ["gaming", "music", "learning"],
+        customInterests: ["Board Games", "Mechanical Keyboards", "Coffee Roasting"],
         leadershipPhilosophy: ["data-informed", "results", "collaborative"],
         communicationStyle: "data-driven",
       },
@@ -515,7 +539,8 @@ function getDemoAttendees(
         yearsExperience: "11-15",
         leadershipPriorities: ["transformation", "innovation", "scaling"],
         leadershipChallenges: ["disruption", "change", "pipeline"],
-        rechargeActivities: ["reading", "yoga", "travel"],
+        rechargeActivities: ["reading", "meditation", "travel"],
+        customInterests: ["Blockchain", "Hot Yoga", "Sustainable Investing"],
         leadershipPhilosophy: ["data-informed", "visionary", "coach"],
         communicationStyle: "facts-first",
       },
@@ -535,6 +560,7 @@ function getDemoAttendees(
         leadershipPriorities: ["excellence", "culture", "financial"],
         leadershipChallenges: ["budget", "communication", "priorities"],
         rechargeActivities: ["outdoors", "diy", "fitness"],
+        customInterests: ["Woodworking", "Mountain Biking", "Homebrewing"],
         leadershipPhilosophy: ["results", "servant", "collaborative"],
         communicationStyle: "direct",
       },
@@ -554,6 +580,7 @@ function getDemoAttendees(
         leadershipPriorities: ["culture", "mentoring", "innovation"],
         leadershipChallenges: ["buy-in", "politics", "priorities"],
         rechargeActivities: ["creative", "photography", "travel"],
+        customInterests: ["Film Photography", "Improv Comedy", "Vinyl Collecting"],
         leadershipPhilosophy: ["authentic", "people-first", "visionary"],
         communicationStyle: "storytelling",
       },

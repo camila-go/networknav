@@ -3,6 +3,7 @@
 import type { Question, QuestionnaireData } from "@/types";
 import { SingleSelect } from "./inputs/single-select";
 import { MultiSelect } from "./inputs/multi-select";
+import { MultiSelectCustom } from "./inputs/multi-select-custom";
 import { IconSelect } from "./inputs/icon-select";
 import { SliderInput } from "./inputs/slider-input";
 import { RankInput } from "./inputs/rank-input";
@@ -11,10 +12,12 @@ import { Badge } from "@/components/ui/badge";
 interface QuestionCardProps {
   question: Question;
   value: QuestionnaireData[keyof QuestionnaireData];
+  customValue?: string[];
   onChange: (value: QuestionnaireData[keyof QuestionnaireData]) => void;
+  onCustomChange?: (customValues: string[]) => void;
 }
 
-export function QuestionCard({ question, value, onChange }: QuestionCardProps) {
+export function QuestionCard({ question, value, customValue, onChange, onCustomChange }: QuestionCardProps) {
   return (
     <div className="space-y-6">
       {/* Question text */}
@@ -27,9 +30,10 @@ export function QuestionCard({ question, value, onChange }: QuestionCardProps) {
             Optional
           </Badge>
         )}
-        {question.type === "multi-select" && question.maxSelections && (
+        {(question.type === "multi-select" || question.type === "multi-select-custom") && question.maxSelections && (
           <p className="text-sm text-navy-600 font-medium">
             Select {question.minSelections}-{question.maxSelections} options
+            {question.type === "multi-select-custom" && " (or add your own!)"}
           </p>
         )}
         {question.type === "rank" && (
@@ -56,6 +60,19 @@ export function QuestionCard({ question, value, onChange }: QuestionCardProps) {
             onChange={onChange}
             minSelections={question.minSelections}
             maxSelections={question.maxSelections}
+          />
+        )}
+
+        {question.type === "multi-select-custom" && (
+          <MultiSelectCustom
+            options={question.options || []}
+            value={(value as string[]) || []}
+            customValues={customValue || []}
+            onChange={onChange}
+            onCustomChange={onCustomChange || (() => {})}
+            minSelections={question.minSelections}
+            maxSelections={question.maxSelections}
+            placeholder={question.customFieldPlaceholder}
           />
         )}
 

@@ -138,7 +138,9 @@ export function QuestionnaireWizard() {
             <QuestionCard
               question={currentQuestion}
               value={responses[currentQuestion.id]}
+              customValue={currentQuestion.customFieldId ? (responses[currentQuestion.customFieldId] as string[] | undefined) : undefined}
               onChange={(value) => setResponse(currentQuestion.id, value)}
+              onCustomChange={currentQuestion.customFieldId ? (customValues) => setResponse(currentQuestion.customFieldId!, customValues) : undefined}
             />
           </div>
 

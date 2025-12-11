@@ -54,6 +54,7 @@ export interface QuestionnaireData {
 
   // Section 3: Beyond the Boardroom (6 questions)
   rechargeActivities?: string[];
+  customInterests?: string[]; // User-typed custom interests
   contentPreferences?: string[];
   fitnessActivities?: string[];
   idealWeekend?: string;
@@ -86,11 +87,14 @@ export interface Question {
   minSelections?: number;
   maxSelections?: number;
   skipLogic?: SkipLogicRule[];
+  customFieldId?: keyof QuestionnaireData; // For multi-select-custom: ID of field to store custom values
+  customFieldPlaceholder?: string; // Placeholder text for custom input
 }
 
 export type QuestionType =
   | "single-select"
   | "multi-select"
+  | "multi-select-custom" // Multi-select with ability to add custom typed values
   | "slider"
   | "rank"
   | "icon-select"
