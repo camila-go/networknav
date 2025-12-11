@@ -216,6 +216,118 @@ export interface NotificationPreferences {
 }
 
 // ============================================
+// Meeting Types (replacing in-app messaging)
+// ============================================
+
+export type MeetingStatus =
+  | "pending"
+  | "accepted"
+  | "declined"
+  | "scheduled"
+  | "completed"
+  | "cancelled"
+  | "rescheduled";
+
+export type MeetingType = "video" | "coffee" | "conference" | "phone";
+
+export type CalendarPlatform = "teams" | "google";
+
+export interface Meeting {
+  id: string;
+  requesterId: string;
+  recipientId: string;
+  status: MeetingStatus;
+  duration: number; // minutes
+  meetingType: MeetingType;
+  contextMessage?: string;
+  proposedTimes: Date[];
+  acceptedTime?: Date;
+  calendarPlatform?: CalendarPlatform;
+  meetingLink?: string;
+  calendarEventId?: string;
+  remindersSent: {
+    day_before: boolean;
+    hour_before: boolean;
+  };
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface MeetingWithUsers extends Meeting {
+  requester: PublicUser;
+  recipient: PublicUser;
+}
+
+// ============================================
+// Search & Filter Types
+// ============================================
+
+export interface SearchFilters {
+  industries?: string[];
+  leadershipLevels?: string[];
+  organizationSizes?: string[];
+  yearsExperience?: string[];
+  leadershipChallenges?: string[];
+  leadershipPriorities?: string[];
+  interests?: string[];
+  location?: string;
+  keywords?: string;
+}
+
+export interface SavedSearch {
+  id: string;
+  userId: string;
+  name: string;
+  filters: SearchFilters;
+  notificationsEnabled: boolean;
+  lastChecked: Date;
+  createdAt: Date;
+}
+
+export interface AttendeeSearchResult {
+  user: PublicUser;
+  matchPercentage: number;
+  topCommonalities: Commonality[];
+  questionnaire?: Partial<QuestionnaireData>;
+}
+
+// ============================================
+// Network Graph Types
+// ============================================
+
+export interface NetworkNode {
+  id: string;
+  name: string;
+  title: string;
+  company?: string;
+  matchType: MatchType | "neutral";
+  commonalityCount: number;
+  commonalities: string[];
+}
+
+export interface NetworkEdge {
+  source: string;
+  target: string;
+  strength: number;
+  commonalities: string[];
+}
+
+export interface NetworkCluster {
+  id: string;
+  name: string;
+  nodeIds: string[];
+  theme: string;
+}
+
+export interface NetworkGraphData {
+  userId: string;
+  nodes: NetworkNode[];
+  edges: NetworkEdge[];
+  clusters: NetworkCluster[];
+  generatedAt: Date;
+}
+
+// ============================================
 // API Response Types
 // ============================================
 
