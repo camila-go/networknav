@@ -5,7 +5,6 @@ import type { QuestionOption } from "@/types";
 import { cn } from "@/lib/utils";
 import { Check, X, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 
 interface MultiSelectCustomProps {
   options: QuestionOption[];
@@ -102,50 +101,52 @@ export function MultiSelectCustom({
       </div>
 
       {/* Custom input field */}
-      <div className="flex gap-2">
-        <div className="relative flex-1">
-          <Input
-            type="text"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={isMaxSelected ? "Maximum reached" : placeholder}
-            disabled={isMaxSelected}
-            className="pr-10"
-          />
-          {inputValue.trim() && !isMaxSelected && (
-            <button
-              type="button"
-              onClick={handleAddCustom}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md bg-primary text-white hover:bg-primary/90 transition-colors"
-              aria-label="Add custom interest"
-            >
-              <Plus className="h-4 w-4" />
-            </button>
+      <div className="flex gap-2 items-center">
+        <Input
+          type="text"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={isMaxSelected ? "Maximum reached" : placeholder}
+          disabled={isMaxSelected}
+          className="flex-1"
+        />
+        <button
+          type="button"
+          onClick={handleAddCustom}
+          disabled={!inputValue.trim() || isMaxSelected}
+          className={cn(
+            "flex-shrink-0 h-10 w-10 rounded-lg flex items-center justify-center transition-all",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+            inputValue.trim() && !isMaxSelected
+              ? "bg-primary text-white hover:bg-primary/90 cursor-pointer"
+              : "bg-navy-100 text-navy-400 cursor-not-allowed"
           )}
-        </div>
+          aria-label="Add custom interest"
+        >
+          <Plus className="h-5 w-5" />
+        </button>
       </div>
 
       {/* Custom values chips */}
       {customValues.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {customValues.map((cv) => (
-            <Badge
+            <span
               key={cv}
-              variant="secondary"
-              className="bg-gradient-to-r from-primary/10 to-teal-500/10 text-primary border border-primary/20 gap-1 py-1.5 px-3 text-sm"
+              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-gradient-to-r from-primary/10 to-teal-500/10 text-primary border border-primary/20 text-sm font-medium"
             >
-              <span className="text-xs mr-1">✨</span>
+              <span aria-hidden="true">✨</span>
               {cv}
               <button
                 type="button"
                 onClick={() => handleRemoveCustom(cv)}
-                className="ml-1 hover:bg-primary/20 rounded-full p-0.5"
+                className="ml-0.5 p-0.5 rounded-full hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 transition-colors"
                 aria-label={`Remove ${cv}`}
               >
-                <X className="h-3 w-3" />
+                <X className="h-3.5 w-3.5" />
               </button>
-            </Badge>
+            </span>
           ))}
         </div>
       )}
@@ -167,11 +168,11 @@ export function MultiSelectCustom({
               disabled={isDisabled}
               className={cn(
                 "relative flex items-center gap-3 p-4 rounded-xl border-2 text-left transition-all duration-200",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
                 isDisabled && "opacity-50 cursor-not-allowed",
-                !isDisabled && "hover:border-teal-400 hover:bg-teal-50 focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2",
                 isSelected
-                  ? "border-teal-500 bg-teal-50 shadow-sm"
-                  : "border-navy-200 bg-white"
+                  ? "border-teal-500 bg-teal-50 shadow-sm focus-visible:ring-teal-500"
+                  : "border-navy-200 bg-white hover:border-teal-400 hover:bg-teal-50/50 focus-visible:ring-primary"
               )}
             >
               {/* Icon if present */}
