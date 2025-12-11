@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import type { MatchWithUser } from "@/types";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,12 +10,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Sparkles,
   Zap,
-  MessageCircle,
+  Calendar,
   X,
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { MeetingRequestModal } from "@/components/meetings/meeting-request-modal";
 
 interface MatchCardProps {
   match: MatchWithUser;
@@ -26,7 +26,7 @@ interface MatchCardProps {
 
 export function MatchCard({ match, onPass, onConnect }: MatchCardProps) {
   const [showAllCommonalities, setShowAllCommonalities] = useState(false);
-  const router = useRouter();
+  const [showMeetingModal, setShowMeetingModal] = useState(false);
   const { matchedUser, type, commonalities, conversationStarters, score } = match;
 
   const displayedCommonalities = showAllCommonalities
@@ -41,10 +41,12 @@ export function MatchCard({ match, onPass, onConnect }: MatchCardProps) {
 
   const profileUrl = `/user/${match.matchedUserId}`;
 
-  function handleConnectAndMessage() {
-    // First trigger the connect action, then navigate to messages
+  function handleRequestMeeting() {
+    setShowMeetingModal(true);
+  }
+
+  function handleMeetingSuccess() {
     onConnect(match.id);
-    router.push(`/messages?userId=${match.matchedUserId}&name=${encodeURIComponent(matchedUser.profile.name)}`);
   }
 
   return (
@@ -183,13 +185,23 @@ export function MatchCard({ match, onPass, onConnect }: MatchCardProps) {
         </Button>
         <Button
           size="sm"
-          onClick={handleConnectAndMessage}
+          onClick={handleRequestMeeting}
           className="flex-1 gap-1 bg-teal-600 hover:bg-teal-700"
         >
-          <MessageCircle className="h-4 w-4" />
-          Connect
+          <Calendar className="h-4 w-4" />
+          Request Meeting
         </Button>
       </CardFooter>
+
+      {/* Meeting Request Modal */}
+      <MeetingRequestModal
+        open={showMeetingModal}
+        onOpenChange={setShowMeetingModal}
+        recipient={matchedUser}
+        commonalities={commonalities}
+        conversationStarters={conversationStarters}
+        onSuccess={handleMeetingSuccess}
+      />
     </Card>
   );
 }

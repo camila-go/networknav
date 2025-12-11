@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Calendar, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { AttendeeSearchResult } from "@/types";
+import { MeetingRequestModal } from "@/components/meetings/meeting-request-modal";
 
 interface AttendeeCardProps {
   attendee: AttendeeSearchResult;
@@ -15,6 +17,7 @@ interface AttendeeCardProps {
 }
 
 export function AttendeeCard({ attendee, onRequestMeeting }: AttendeeCardProps) {
+  const [showMeetingModal, setShowMeetingModal] = useState(false);
   const { user, matchPercentage, topCommonalities, questionnaire } = attendee;
 
   const initials = user.profile.name
@@ -146,7 +149,7 @@ export function AttendeeCard({ attendee, onRequestMeeting }: AttendeeCardProps) 
         {/* Action button */}
         <div className="px-4 py-3 border-t bg-navy-50/30">
           <Button
-            onClick={() => onRequestMeeting?.(user.id)}
+            onClick={() => setShowMeetingModal(true)}
             size="sm"
             className="w-full gap-2"
           >
@@ -155,6 +158,15 @@ export function AttendeeCard({ attendee, onRequestMeeting }: AttendeeCardProps) 
           </Button>
         </div>
       </CardContent>
+
+      {/* Meeting Request Modal */}
+      <MeetingRequestModal
+        open={showMeetingModal}
+        onOpenChange={setShowMeetingModal}
+        recipient={user}
+        commonalities={topCommonalities}
+        onSuccess={() => onRequestMeeting?.(user.id)}
+      />
     </Card>
   );
 }
