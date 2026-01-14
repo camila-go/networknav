@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { generateMatches, calculateMatchQualityMetrics } from "@/lib/matching";
 import { users, questionnaireResponses, userMatches } from "@/lib/stores";
+import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
 import type { Match } from "@/types";
 
 export async function GET(request: NextRequest) {
@@ -11,15 +12,37 @@ export async function GET(request: NextRequest) {
     // For demo: allow anonymous users with device ID
     const deviceId = request.cookies.get("device_id")?.value;
     const userId = session?.userId || (deviceId ? `demo_${deviceId}` : "demo_anonymous");
-    const userEmail = session?.email || `demo_${deviceId || "anonymous"}@jynx.demo`;
+    let userEmail = session?.email || `demo_${deviceId || "anonymous"}@jynx.demo`;
+    
+    // Try to get the actual email from the users store if we have a session
+    if (session?.email) {
+      const user = users.get(session.email);
+      if (user) {
+        userEmail = user.email;
+      }
+    }
 
+    // Check for refresh parameter to force new matches
+    const refresh = request.nextUrl.searchParams.get("refresh") === "true";
+    
     // Check if user has existing matches
-    let matches = userMatches.get(userId);
+    let matches = refresh ? undefined : userMatches.get(userId);
 
     // If no matches or matches are stale, generate new ones
     if (!matches || matches.length === 0) {
-      matches = await generateMatchesForUser(userId, userEmail);
-      userMatches.set(userId, matches);
+      // First try to get from Supabase if configured
+      if (isSupabaseConfigured && supabaseAdmin) {
+        matches = await generateMatchesFromSupabase(userId, userEmail);
+        if (matches.length > 0) {
+          userMatches.set(userId, matches);
+        }
+      }
+      
+      // Fall back to in-memory matching if no Supabase matches
+      if (!matches || matches.length === 0) {
+        matches = await generateMatchesForUser(userId, userEmail);
+        userMatches.set(userId, matches);
+      }
     }
 
     const metrics = calculateMatchQualityMetrics(matches);
@@ -132,6 +155,157 @@ async function generateMatchesForUser(
   );
 
   return matches;
+}
+
+async function generateMatchesFromSupabase(currentUserId: string, currentUserEmail?: string): Promise<Match[]> {
+  if (!supabaseAdmin) return [];
+  
+  try {
+    // First, try to find the current user's Supabase profile by either ID or email
+    let currentUserSupabaseId: string | null = null;
+    
+    // Try to find by ID first (if it's a UUID)
+    if (currentUserId && currentUserId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+      const { data: idMatch } = await supabaseAdmin
+        .from('user_profiles')
+        .select('id')
+        .eq('id', currentUserId)
+        .single();
+      if (idMatch) currentUserSupabaseId = idMatch.id;
+    }
+    
+    // If not found by ID and we have an email, try to find by email
+    if (!currentUserSupabaseId && currentUserEmail && !currentUserEmail.includes('@jynx.demo')) {
+      const { data: emailMatch } = await supabaseAdmin
+        .from('user_profiles')
+        .select('id, email')
+        .eq('email', currentUserEmail.toLowerCase())
+        .single();
+      if (emailMatch) currentUserSupabaseId = emailMatch.id;
+    }
+    
+    // Fetch all users from Supabase
+    const { data: profiles, error } = await supabaseAdmin
+      .from('user_profiles')
+      .select('id, name, email, position, title, company, photo_url, questionnaire_data, interests')
+      .eq('is_active', true)
+      .limit(30);
+
+    if (error) {
+      console.error('Supabase query error:', error);
+      return [];
+    }
+    
+    if (!profiles || profiles.length === 0) {
+      return [];
+    }
+    
+    // Filter out the current user by ID or email
+    const filteredProfiles = profiles.filter(profile => {
+      // Don't show if Supabase ID matches
+      if (currentUserSupabaseId && profile.id === currentUserSupabaseId) return false;
+      // Don't show if local ID matches
+      if (profile.id === currentUserId) return false;
+      // Don't show if email matches (case-insensitive)
+      if (currentUserEmail && profile.email?.toLowerCase() === currentUserEmail.toLowerCase()) return false;
+      // Don't show users without names
+      if (!profile.name || profile.name.trim() === '') return false;
+      return true;
+    });
+    
+    if (filteredProfiles.length === 0) {
+      return [];
+    }
+
+    const now = new Date();
+    const matches: Match[] = filteredProfiles.map((profile, index) => {
+      // Calculate a simulated score based on questionnaire completion
+      const hasQuestionnaire = !!profile.questionnaire_data;
+      const baseScore = hasQuestionnaire ? 0.75 : 0.6;
+      const score = Math.min(0.95, baseScore + (Math.random() * 0.2));
+      
+      // Determine match type based on score
+      const type = score > 0.8 ? 'high-affinity' : 'strategic';
+      
+      // Generate commonalities based on available data
+      const commonalities = [];
+      const qData = profile.questionnaire_data as Record<string, unknown> | null;
+      
+      if (qData?.industry) {
+        commonalities.push({
+          category: 'professional' as const,
+          description: `Works in ${qData.industry}`,
+          weight: 0.85,
+        });
+      }
+      
+      if (profile.position) {
+        commonalities.push({
+          category: 'professional' as const,
+          description: `${profile.position} at ${profile.company || 'their organization'}`,
+          weight: 0.8,
+        });
+      }
+      
+      if (profile.interests && Array.isArray(profile.interests) && profile.interests.length > 0) {
+        commonalities.push({
+          category: 'hobby' as const,
+          description: `Interested in ${profile.interests.slice(0, 2).join(' and ')}`,
+          weight: 0.7,
+        });
+      }
+
+      if (qData?.leadershipPhilosophy && Array.isArray(qData.leadershipPhilosophy)) {
+        commonalities.push({
+          category: 'values' as const,
+          description: `Shares leadership values`,
+          weight: 0.75,
+        });
+      }
+
+      // Ensure at least some commonalities
+      if (commonalities.length === 0) {
+        commonalities.push({
+          category: 'professional' as const,
+          description: 'Fellow conference attendee',
+          weight: 0.6,
+        });
+      }
+
+      return {
+        id: `supabase-match-${profile.id}`,
+        userId: currentUserId,
+        matchedUserId: profile.id,
+        matchedUser: {
+          id: profile.id,
+          profile: {
+            name: profile.name || 'Anonymous',
+            position: profile.position || undefined,
+            title: profile.title || undefined,
+            company: profile.company || undefined,
+            photoUrl: profile.photo_url || undefined,
+          },
+          questionnaireCompleted: hasQuestionnaire,
+        },
+        type,
+        commonalities,
+        conversationStarters: [
+          `Ask ${profile.name?.split(' ')[0] || 'them'} about their role at ${profile.company || 'their organization'}`,
+          `Share your leadership experiences and learn from theirs`,
+        ],
+        score,
+        generatedAt: now,
+        viewed: false,
+        passed: false,
+      };
+    });
+
+    // Sort by score descending
+    return matches.sort((a, b) => b.score - a.score);
+  } catch (error) {
+    console.error('Error fetching matches from Supabase:', error);
+    return [];
+  }
 }
 
 function generateDemoMatches(userId: string): Match[] {

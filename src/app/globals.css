@@ -4,71 +4,58 @@
 
 @layer base {
   :root {
-    /* WCAG AA Compliant Color System */
-    /* Background: Pure white for maximum contrast */
-    --background: 0 0% 99%;
-    /* Foreground: Deep navy for 12.6:1 contrast ratio */
-    --foreground: 220 26% 14%;
+    /* Global Summit 2026 Inspired Dark Theme */
+    /* Background: Deep black */
+    --background: 0 0% 2%;
+    /* Foreground: Pure white for maximum contrast */
+    --foreground: 0 0% 100%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 220 26% 14%;
+    --card: 0 0% 6%;
+    --card-foreground: 0 0% 100%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 220 26% 14%;
+    --popover: 0 0% 8%;
+    --popover-foreground: 0 0% 100%;
 
-    /* Primary: Deep teal - 4.6:1 on white (AA compliant) */
-    --primary: 199 76% 33%;
-    --primary-foreground: 0 0% 100%;
+    /* Primary: Vibrant cyan/teal glow */
+    --primary: 180 100% 50%;
+    --primary-foreground: 0 0% 0%;
 
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 220 26% 14%;
+    --secondary: 0 0% 12%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 210 40% 96%;
-    /* Muted foreground: 5.7:1 contrast ratio */
-    --muted-foreground: 220 13% 40%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 65%;
 
-    /* Accent: Rich coral - 4.5:1 on white (AA compliant) */
-    --accent: 12 76% 42%;
+    /* Accent: Electric coral/magenta */
+    --accent: 340 100% 60%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 72% 45%;
+    --destructive: 0 72% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 214 32% 85%;
-    --input: 214 32% 85%;
-    --ring: 199 76% 33%;
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 180 100% 50%;
 
     --radius: 0.75rem;
   }
 
-  .dark {
-    --background: 220 26% 10%;
-    --foreground: 210 40% 98%;
-
-    --card: 220 26% 12%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 220 26% 12%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 199 76% 50%;
-    --primary-foreground: 220 26% 10%;
-
-    --secondary: 220 20% 18%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 220 20% 18%;
-    --muted-foreground: 215 20% 70%;
-
-    --accent: 12 76% 55%;
-    --accent-foreground: 0 0% 100%;
-
-    --destructive: 0 62% 55%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 220 20% 22%;
-    --input: 220 20% 22%;
-    --ring: 199 76% 50%;
+  /* Light mode override for dashboard areas */
+  .light-mode {
+    --background: 0 0% 99%;
+    --foreground: 220 26% 14%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 26% 14%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 26% 14%;
+    --primary: 180 70% 35%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 220 26% 14%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 220 13% 40%;
+    --border: 214 32% 85%;
+    --input: 214 32% 85%;
   }
 }
 
@@ -94,17 +81,43 @@
     @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
   }
 
-  /* Ensure minimum touch target size for accessibility */
-  button, 
-  [role="button"],
-  a {
-    min-height: 44px;
-    min-width: 44px;
-  }
+  /* Ensure minimum touch target size for accessibility - only for standalone buttons */
+  /* Exclude icon buttons (min-h-0), buttons inside relative containers, etc. */
 
   /* Skip link for keyboard navigation */
   .skip-link {
     @apply sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-lg;
+  }
+
+  /* Override browser autofill styles for dark theme */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active,
+  textarea:-webkit-autofill,
+  textarea:-webkit-autofill:hover,
+  textarea:-webkit-autofill:focus,
+  select:-webkit-autofill,
+  select:-webkit-autofill:hover,
+  select:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.95) inset !important;
+    -webkit-text-fill-color: white !important;
+    background-color: rgba(0, 0, 0, 0.95) !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
+    caret-color: white !important;
+    transition: background-color 5000s ease-in-out 0s;
+  }
+
+  /* Light mode autofill override */
+  .light-mode input:-webkit-autofill,
+  .light-mode input:-webkit-autofill:hover,
+  .light-mode input:-webkit-autofill:focus,
+  .light-mode input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px white inset !important;
+    -webkit-text-fill-color: #1a1a1a !important;
+    background-color: white !important;
+    border-color: rgba(0, 0, 0, 0.1) !important;
+    caret-color: #1a1a1a !important;
   }
 }
 
@@ -113,29 +126,95 @@
     text-wrap: balance;
   }
 
+  /* Global Summit 2026 inspired dark gradient background */
   .gradient-mesh {
-    background-color: hsl(210 40% 98%);
+    background-color: #000000;
     background-image: 
-      radial-gradient(at 40% 20%, hsla(199, 76%, 33%, 0.08) 0px, transparent 50%),
-      radial-gradient(at 80% 0%, hsla(12, 76%, 42%, 0.06) 0px, transparent 50%),
-      radial-gradient(at 0% 50%, hsla(199, 76%, 33%, 0.05) 0px, transparent 50%),
-      radial-gradient(at 80% 50%, hsla(173, 58%, 35%, 0.06) 0px, transparent 50%),
-      radial-gradient(at 0% 100%, hsla(12, 76%, 42%, 0.05) 0px, transparent 50%);
+      radial-gradient(ellipse at 50% 50%, rgba(0, 255, 255, 0.15) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 50%, rgba(0, 0, 0, 0.8) 0%, transparent 70%);
+  }
+
+  /* Radial dot matrix background - Global Summit style */
+  .radial-dots {
+    position: relative;
+    background: #000000;
+    overflow: hidden;
+  }
+
+  .radial-dots::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: 
+      radial-gradient(circle at 50% 50%, 
+        rgba(0, 255, 255, 0.4) 0%, 
+        rgba(0, 255, 200, 0.2) 20%,
+        transparent 50%
+      );
+    pointer-events: none;
+  }
+
+  /* Glowing center orb effect */
+  .glow-center {
+    position: relative;
+  }
+
+  .glow-center::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(
+      circle,
+      rgba(0, 255, 255, 0.6) 0%,
+      rgba(0, 255, 255, 0.3) 30%,
+      rgba(0, 200, 255, 0.1) 50%,
+      transparent 70%
+    );
+    border-radius: 50%;
+    filter: blur(40px);
+    pointer-events: none;
+    z-index: 0;
   }
 
   .glass {
-    @apply backdrop-blur-md bg-white/90 dark:bg-slate-900/90;
+    @apply backdrop-blur-md;
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .glass-light {
+    @apply backdrop-blur-md;
+    background: rgba(255, 255, 255, 0.95);
   }
 
   .shimmer {
     background: linear-gradient(
       90deg,
       transparent 0%,
-      rgba(255, 255, 255, 0.4) 50%,
+      rgba(255, 255, 255, 0.2) 50%,
       transparent 100%
     );
     background-size: 200% 100%;
     animation: shimmer 2s linear infinite;
+  }
+
+  /* Gradient text for headings */
+  .text-gradient {
+    background: linear-gradient(135deg, #00ffff 0%, #00ff88 50%, #ffaa00 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .text-gradient-warm {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ffa500 50%, #ffdd00 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 
   /* High contrast text utilities */
@@ -145,6 +224,18 @@
 
   .text-medium-contrast {
     @apply text-muted-foreground;
+  }
+
+  /* Summit card style */
+  .summit-card {
+    background: linear-gradient(135deg, rgba(20, 20, 25, 0.9) 0%, rgba(10, 10, 15, 0.95) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+  }
+
+  .summit-card:hover {
+    border-color: rgba(0, 255, 255, 0.3);
+    box-shadow: 0 0 30px rgba(0, 255, 255, 0.1);
   }
 }
 

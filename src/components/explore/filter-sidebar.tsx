@@ -110,10 +110,10 @@ export function FilterSidebar({
   if (!filterOptions) {
     return (
       <div className="w-full p-4 animate-pulse">
-        <div className="h-8 bg-navy-100 rounded mb-4" />
+        <div className="h-8 bg-white/10 rounded mb-4" />
         <div className="space-y-3">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-12 bg-navy-100 rounded" />
+            <div key={i} className="h-12 bg-white/10 rounded" />
           ))}
         </div>
       </div>
@@ -123,13 +123,13 @@ export function FilterSidebar({
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="p-4 border-b">
+      <div className="p-4 border-b border-white/10">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-primary" />
-            <h2 className="font-semibold text-navy-900">Filters</h2>
+            <Filter className="h-4 w-4 text-cyan-400" />
+            <h2 className="font-semibold text-white">Filters</h2>
             {activeFilterCount > 0 && (
-              <Badge variant="secondary" className="bg-primary/10 text-primary">
+              <Badge variant="secondary" className="bg-cyan-500/20 text-cyan-400">
                 {activeFilterCount}
               </Badge>
             )}
@@ -139,14 +139,14 @@ export function FilterSidebar({
               variant="ghost"
               size="sm"
               onClick={clearAllFilters}
-              className="text-xs text-muted-foreground hover:text-destructive"
+              className="text-xs text-white/50 hover:text-red-400 hover:bg-red-500/10"
             >
               Clear all
             </Button>
           )}
         </div>
         {resultCount !== undefined && (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-white/50">
             {resultCount} attendee{resultCount !== 1 ? "s" : ""} found
           </p>
         )}
@@ -284,12 +284,12 @@ export function FilterSidebar({
 
       {/* Save search button */}
       {onSaveSearch && activeFilterCount > 0 && (
-        <div className="p-4 border-t">
+        <div className="p-4 border-t border-white/10">
           <Button
             variant="outline"
             size="sm"
             onClick={onSaveSearch}
-            className="w-full gap-2"
+            className="w-full gap-2 border-white/20 text-white hover:bg-white/10"
           >
             <Save className="h-4 w-4" />
             Save this search
@@ -318,17 +318,17 @@ function FilterSection({
   children,
 }: FilterSectionProps) {
   return (
-    <div className="border rounded-lg overflow-hidden">
+    <div className="border border-white/10 rounded-lg overflow-hidden">
       <button
         onClick={onToggle}
-        className="w-full flex items-center justify-between p-3 bg-navy-50/50 hover:bg-navy-50 transition-colors"
+        className="w-full flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 transition-colors"
       >
         <div className="flex items-center gap-2">
-          <span className="font-medium text-sm text-navy-800">{title}</span>
+          <span className="font-medium text-sm text-white">{title}</span>
           {activeCount > 0 && (
             <Badge
               variant="secondary"
-              className="bg-primary text-white text-xs h-5 min-w-[20px]"
+              className="bg-cyan-500 text-black text-xs h-5 min-w-[20px]"
             >
               {activeCount}
             </Badge>
@@ -341,20 +341,20 @@ function FilterSection({
                 e.stopPropagation();
                 onClear();
               }}
-              className="p-1 hover:bg-navy-100 rounded"
+              className="p-1 hover:bg-white/10 rounded"
               aria-label={`Clear ${title} filters`}
             >
-              <X className="h-3 w-3 text-muted-foreground" />
+              <X className="h-3 w-3 text-white/50" />
             </button>
           )}
           {expanded ? (
-            <ChevronUp className="h-4 w-4 text-muted-foreground" />
+            <ChevronUp className="h-4 w-4 text-white/50" />
           ) : (
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            <ChevronDown className="h-4 w-4 text-white/50" />
           )}
         </div>
       </button>
-      {expanded && <div className="p-3 pt-2 bg-white">{children}</div>}
+      {expanded && <div className="p-3 pt-2 bg-black/30">{children}</div>}
     </div>
   );
 }
@@ -384,13 +384,13 @@ function FilterOptionList({
     <div className="space-y-2">
       {showSearch && options.length > 6 && (
         <div className="relative">
-          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-white/50" />
           <Input
             type="text"
             placeholder="Search..."
             value={searchQuery}
             onChange={(e) => onSearchChange?.(e.target.value)}
-            className="h-8 pl-7 text-sm"
+            className="h-8 pl-7 text-sm bg-white/5 border-white/20 text-white placeholder:text-white/50"
           />
         </div>
       )}
@@ -404,21 +404,21 @@ function FilterOptionList({
               className={cn(
                 "w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm text-left transition-colors",
                 isSelected
-                  ? "bg-primary/10 text-primary"
-                  : "hover:bg-navy-50 text-navy-700"
+                  ? "bg-cyan-500/20 text-cyan-400"
+                  : "hover:bg-white/10 text-white/70"
               )}
             >
               <div
                 className={cn(
                   "w-4 h-4 rounded border flex items-center justify-center flex-shrink-0",
                   isSelected
-                    ? "bg-primary border-primary"
-                    : "border-navy-200"
+                    ? "bg-cyan-500 border-cyan-500"
+                    : "border-white/30"
                 )}
               >
                 {isSelected && (
                   <svg
-                    className="w-3 h-3 text-white"
+                    className="w-3 h-3 text-black"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -438,7 +438,7 @@ function FilterOptionList({
           );
         })}
         {filteredOptions.length === 0 && (
-          <p className="text-sm text-muted-foreground text-center py-2">
+          <p className="text-sm text-white/50 text-center py-2">
             No options found
           </p>
         )}
@@ -446,4 +446,3 @@ function FilterOptionList({
     </div>
   );
 }
-

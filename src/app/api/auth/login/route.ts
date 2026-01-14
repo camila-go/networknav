@@ -4,7 +4,6 @@ import {
   verifyPassword,
   createAccessToken,
   createRefreshToken,
-  setAuthCookies,
 } from "@/lib/auth";
 import { users } from "@/lib/stores";
 
@@ -58,11 +57,8 @@ export async function POST(request: NextRequest) {
     });
     const refreshToken = await createRefreshToken({ userId: user.id });
 
-    // Set cookies
-    await setAuthCookies(accessToken, refreshToken);
-
-    // Return user data
-    return NextResponse.json({
+    // Create response with user data
+    const response = NextResponse.json({
       success: true,
       data: {
         user: {
@@ -78,6 +74,25 @@ export async function POST(request: NextRequest) {
         },
       },
     });
+
+    // Set cookies on the response (must match auth.ts cookie names)
+    response.cookies.set("auth_token", accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 15 * 60, // 15 minutes
+    });
+
+    response.cookies.set("refresh_token", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 7 * 24 * 60 * 60, // 7 days
+    });
+
+    return response;
   } catch (error) {
     console.error("Login error:", error);
     return NextResponse.json(

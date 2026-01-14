@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { questionnaireResponseSchema } from "@/lib/validations";
 import { users, questionnaireResponses } from "@/lib/stores";
+import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
+import { generateEmbedding, createProfileText, isOpenAIConfigured } from "@/lib/ai/embeddings";
 
 export async function POST(request: NextRequest) {
   try {
@@ -59,7 +61,7 @@ export async function POST(request: NextRequest) {
       (answeredRequired.length / requiredFields.length) * 100
     );
 
-    // Store questionnaire response
+    // Store questionnaire response in memory
     const now = new Date();
     questionnaireResponses.set(userId, {
       userId: userId,
@@ -75,6 +77,78 @@ export async function POST(request: NextRequest) {
       if (user && completionPercentage >= 80) {
         user.questionnaireCompleted = true;
         user.updatedAt = now;
+      }
+    }
+
+    // Sync to Supabase if configured
+    if (isSupabaseConfigured && supabaseAdmin) {
+      try {
+        // Get user profile from memory for additional data
+        const memoryUser = session ? users.get(session.email) : null;
+        
+        // Build interests array from questionnaire
+        const interests = [
+          ...(result.data.rechargeActivities || []),
+          ...(result.data.customInterests || []),
+        ];
+
+        // Generate AI embedding if OpenAI is configured
+        let embedding: number[] | null = null;
+        if (isOpenAIConfigured) {
+          try {
+            const profileText = createProfileText({
+              name: memoryUser?.name,
+              position: memoryUser?.position,
+              title: memoryUser?.title,
+              company: memoryUser?.company,
+              interests,
+              questionnaireData: result.data as Record<string, unknown>,
+            });
+            embedding = await generateEmbedding(profileText);
+          } catch (embeddingError) {
+            console.warn('Embedding generation failed:', embeddingError);
+          }
+        }
+
+        // Prepare update data
+        const updateData: Record<string, unknown> = {
+          questionnaire_data: result.data,
+          questionnaire_completed: completionPercentage >= 80,
+          interests,
+          updated_at: now.toISOString(),
+        };
+
+        if (embedding) {
+          updateData.profile_embedding = embedding;
+        }
+
+        // Try to update existing profile, or insert if not exists
+        const { error: updateError } = await supabaseAdmin
+          .from('user_profiles')
+          .update(updateData as never)
+          .eq('id', userId);
+
+        if (updateError) {
+          // Profile might not exist yet, try to insert
+          const insertData = {
+            id: userId,
+            user_id: userId,
+            email: userEmail,
+            name: memoryUser?.name || 'User',
+            position: memoryUser?.position,
+            title: memoryUser?.title,
+            company: memoryUser?.company,
+            ...updateData,
+          };
+          
+          await supabaseAdmin
+            .from('user_profiles')
+            .upsert(insertData as never);
+        }
+
+        console.log('✅ Questionnaire synced to Supabase:', userId);
+      } catch (supabaseError) {
+        console.error('Supabase sync error (non-blocking):', supabaseError);
       }
     }
 

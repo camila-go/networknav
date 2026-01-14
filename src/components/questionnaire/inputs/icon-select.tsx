@@ -24,10 +24,10 @@ export function IconSelect({ options, value, onChange }: IconSelectProps) {
             onClick={() => onChange(option.value)}
             className={cn(
               "relative flex flex-col items-center gap-3 p-5 rounded-2xl border-2 text-center transition-all duration-200",
-              "hover:border-teal-400 hover:bg-teal-50 hover:scale-105 focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2",
+              "hover:border-cyan-400/50 hover:bg-white/10 hover:scale-105 focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2 focus-visible:ring-offset-black",
               isSelected
-                ? "border-teal-500 bg-teal-50 shadow-md scale-105"
-                : "border-navy-200 bg-white"
+                ? "border-cyan-500 bg-cyan-500/10 shadow-lg shadow-cyan-500/20 scale-105"
+                : "border-white/20 bg-white/5"
             )}
           >
             {/* Icon */}
@@ -37,7 +37,7 @@ export function IconSelect({ options, value, onChange }: IconSelectProps) {
             <span
               className={cn(
                 "font-semibold text-sm",
-                isSelected ? "text-teal-700" : "text-navy-700"
+                isSelected ? "text-cyan-400" : "text-white"
               )}
             >
               {option.label}
@@ -45,16 +45,16 @@ export function IconSelect({ options, value, onChange }: IconSelectProps) {
 
             {/* Description if present */}
             {option.description && (
-              <span className="text-xs text-navy-600">
+              <span className="text-xs text-white/60">
                 {option.description}
               </span>
             )}
 
             {/* Selection indicator */}
             {isSelected && (
-              <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-teal-600 flex items-center justify-center" aria-hidden="true">
+              <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-cyan-500 flex items-center justify-center" aria-hidden="true">
                 <svg
-                  className="w-3 h-3 text-white"
+                  className="w-3 h-3 text-black"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"

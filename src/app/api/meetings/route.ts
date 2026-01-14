@@ -174,6 +174,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check if trying to schedule with yourself
+    if (recipientId === currentUserId) {
+      return NextResponse.json(
+        { success: false, error: "Cannot schedule a meeting with yourself" },
+        { status: 400 }
+      );
+    }
+
     // Check for existing pending meeting request
     const existingMeeting = Array.from(meetings.values()).find(
       m => m.requesterId === currentUserId && m.recipientId === recipientId && m.status === "pending"

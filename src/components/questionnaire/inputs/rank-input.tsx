@@ -58,7 +58,7 @@ export function RankInput({
       {/* Selected items (ranked) */}
       {selectedOptions.length > 0 && (
         <div className="space-y-3">
-          <h4 className="text-sm font-semibold text-navy-700">
+          <h4 className="text-sm font-semibold text-white/80">
             Your ranking (use arrows to reorder):
           </h4>
           <div className="space-y-2" role="list">
@@ -66,16 +66,16 @@ export function RankInput({
               <div
                 key={option.value}
                 role="listitem"
-                className="flex items-center gap-3 p-4 bg-teal-50 border-2 border-teal-500 rounded-xl"
+                className="flex items-center gap-3 p-4 bg-cyan-500/10 border-2 border-cyan-500 rounded-xl"
               >
                 {/* Rank number */}
-                <div className="w-8 h-8 rounded-full bg-teal-600 text-white flex items-center justify-center font-bold" aria-label={`Rank ${index + 1}`}>
+                <div className="w-8 h-8 rounded-full bg-cyan-500 text-black flex items-center justify-center font-bold" aria-label={`Rank ${index + 1}`}>
                   {index + 1}
                 </div>
 
                 {/* Icon and label */}
                 {option.icon && <span className="text-xl" aria-hidden="true">{option.icon}</span>}
-                <span className="flex-1 font-medium text-navy-800">
+                <span className="flex-1 font-medium text-white">
                   {option.label}
                 </span>
 
@@ -86,7 +86,7 @@ export function RankInput({
                     onClick={() => handleMoveUp(index)}
                     disabled={index === 0}
                     className={cn(
-                      "p-2 rounded hover:bg-teal-100 transition-colors focus-visible:ring-2 focus-visible:ring-teal-500",
+                      "p-2 rounded text-white/60 hover:bg-white/10 hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-cyan-500",
                       index === 0 && "opacity-30 cursor-not-allowed"
                     )}
                     aria-label="Move up"
@@ -111,7 +111,7 @@ export function RankInput({
                     onClick={() => handleMoveDown(index)}
                     disabled={index === selectedOptions.length - 1}
                     className={cn(
-                      "p-2 rounded hover:bg-teal-100 transition-colors focus-visible:ring-2 focus-visible:ring-teal-500",
+                      "p-2 rounded text-white/60 hover:bg-white/10 hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-cyan-500",
                       index === selectedOptions.length - 1 &&
                         "opacity-30 cursor-not-allowed"
                     )}
@@ -138,7 +138,7 @@ export function RankInput({
                 <button
                   type="button"
                   onClick={() => handleRemove(option.value)}
-                  className="p-2 text-navy-500 hover:text-coral-600 transition-colors focus-visible:ring-2 focus-visible:ring-coral-500"
+                  className="p-2 text-white/60 hover:text-coral-400 transition-colors focus-visible:ring-2 focus-visible:ring-coral-500"
                   aria-label={`Remove ${option.label}`}
                 >
                   <X className="h-4 w-4" />
@@ -152,7 +152,7 @@ export function RankInput({
       {/* Available options */}
       {availableOptions.length > 0 && value.length < maxSelections && (
         <div className="space-y-3">
-          <h4 className="text-sm font-semibold text-navy-600">
+          <h4 className="text-sm font-semibold text-white/60">
             Select {maxSelections - value.length} more:
           </h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -163,11 +163,11 @@ export function RankInput({
                 onClick={() => handleSelect(option.value)}
                 className={cn(
                   "flex items-center gap-3 p-4 rounded-xl border-2 text-left transition-all duration-200",
-                  "border-navy-200 bg-white hover:border-teal-400 hover:bg-teal-50 focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2"
+                  "border-white/20 bg-white/5 hover:border-cyan-400/50 hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
                 )}
               >
                 {option.icon && <span className="text-xl" aria-hidden="true">{option.icon}</span>}
-                <span className="font-medium text-navy-700">{option.label}</span>
+                <span className="font-medium text-white">{option.label}</span>
               </button>
             ))}
           </div>
@@ -176,7 +176,7 @@ export function RankInput({
 
       {/* Completion status */}
       {value.length === maxSelections && (
-        <div className="text-center text-sm text-teal-700 font-semibold" role="status">
+        <div className="text-center text-sm text-cyan-400 font-semibold" role="status">
           ✓ Top {maxSelections} selected
         </div>
       )}

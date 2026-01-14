@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Users, Sparkles, User, LogOut, Search, Calendar, Network } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 
 const navItems = [
@@ -24,14 +23,14 @@ export function DashboardNav() {
   }
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-black/80 backdrop-blur supports-[backdrop-filter]:bg-black/60">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link href="/dashboard" className="flex items-center gap-2">
-          <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-primary to-teal-500 flex items-center justify-center">
-            <Users className="h-4 w-4 text-white" />
+          <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+            <span className="font-bold text-black text-sm">J</span>
           </div>
-          <span className="font-display text-lg font-bold text-navy-900 hidden sm:inline">
-            Jynx
+          <span className="font-display text-lg font-bold text-white hidden sm:inline tracking-wide">
+            JYNX
           </span>
         </Link>
 
@@ -43,17 +42,17 @@ export function DashboardNav() {
 
             return (
               <Link key={item.href} href={item.href}>
-                <Button
-                  variant={isActive ? "secondary" : "ghost"}
-                  size="sm"
+                <button
                   className={cn(
-                    "gap-2",
-                    isActive && "bg-primary/10 text-primary"
+                    "inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all",
+                    isActive 
+                      ? "bg-cyan-500/20 text-cyan-400" 
+                      : "text-white/70 hover:bg-white/10 hover:text-white"
                   )}
                 >
                   <item.icon className="h-4 w-4" />
                   <span className="hidden sm:inline">{item.label}</span>
-                </Button>
+                </button>
               </Link>
             );
           })}
@@ -62,15 +61,13 @@ export function DashboardNav() {
             <NotificationBell />
           </div>
 
-          <Button
-            variant="ghost"
-            size="sm"
+          <button
             onClick={handleLogout}
-            className="gap-2 text-muted-foreground hover:text-foreground ml-1"
+            className="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-white/60 hover:bg-white/10 hover:text-white transition-all ml-1"
           >
             <LogOut className="h-4 w-4" />
             <span className="hidden sm:inline">Log out</span>
-          </Button>
+          </button>
         </nav>
       </div>
     </header>

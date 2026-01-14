@@ -245,17 +245,17 @@ export default function UserProfilePage() {
             {/* Action buttons */}
             <div className="flex flex-col gap-2 w-full md:w-auto">
               {connectionStatus.status === "accepted" ? (
-                <Button onClick={handleMessage} className="gap-2 bg-teal-600 hover:bg-teal-700">
+                <Button onClick={handleMessage} className="gap-2">
                   <MessageCircle className="h-4 w-4" />
                   Message
                 </Button>
               ) : connectionStatus.status === "sent" ? (
-                <Button disabled className="gap-2" variant="outline">
+                <Button disabled className="gap-2" variant="secondary">
                   <Clock className="h-4 w-4" />
                   Request Sent
                 </Button>
               ) : connectionStatus.status === "pending" ? (
-                <Button className="gap-2 bg-teal-600 hover:bg-teal-700">
+                <Button className="gap-2">
                   <Check className="h-4 w-4" />
                   Accept Request
                 </Button>
@@ -263,7 +263,7 @@ export default function UserProfilePage() {
                 <Button
                   onClick={handleConnect}
                   disabled={actionLoading}
-                  className="gap-2 bg-teal-600 hover:bg-teal-700"
+                  className="gap-2"
                 >
                   <UserPlus className="h-4 w-4" />
                   {actionLoading ? "Sending..." : "Connect"}

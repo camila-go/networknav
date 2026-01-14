@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -37,127 +36,125 @@ export function AttendeeCard({ attendee, onRequestMeeting }: AttendeeCardProps) 
       : "exploring";
 
   const matchColors = {
-    excellent: "bg-teal-500 text-white",
-    good: "bg-primary text-white",
-    moderate: "bg-amber-500 text-white",
-    exploring: "bg-navy-200 text-navy-700",
+    excellent: "bg-gradient-to-r from-cyan-500 to-teal-500 text-black",
+    good: "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30",
+    moderate: "bg-amber-500/20 text-amber-400 border border-amber-500/30",
+    exploring: "bg-white/10 text-white/70 border border-white/20",
   };
 
   return (
-    <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 group">
-      <CardContent className="p-0">
-        {/* Top section with profile */}
-        <div className="p-4 pb-3">
-          <div className="flex items-start gap-3">
-            {/* Avatar */}
-            <Link href={`/user/${user.id}`}>
-              <Avatar className="h-14 w-14 border-2 border-white shadow-md cursor-pointer group-hover:ring-2 group-hover:ring-primary/20 transition-all">
-                <AvatarImage src={user.profile.photoUrl} />
-                <AvatarFallback className="bg-gradient-to-br from-primary to-teal-500 text-white text-lg">
-                  {initials}
-                </AvatarFallback>
-              </Avatar>
-            </Link>
+    <div className="overflow-hidden rounded-xl bg-white/5 border border-white/10 hover:border-white/20 transition-all duration-300 group">
+      {/* Top section with profile */}
+      <div className="p-4 pb-3">
+        <div className="flex items-start gap-3">
+          {/* Avatar */}
+          <Link href={`/user/${user.id}`}>
+            <Avatar className="h-14 w-14 border-2 border-white/20 shadow-md cursor-pointer group-hover:ring-2 group-hover:ring-cyan-500/50 transition-all">
+              <AvatarImage src={user.profile.photoUrl} />
+              <AvatarFallback className="bg-gradient-to-br from-cyan-500 to-teal-500 text-black text-lg font-semibold">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+          </Link>
 
-            {/* Name and info */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <Link href={`/user/${user.id}`}>
-                    <h3 className="font-semibold text-navy-900 truncate hover:text-primary transition-colors cursor-pointer">
-                      {user.profile.name}
-                    </h3>
-                  </Link>
-                  <p className="text-sm text-muted-foreground truncate">
-                    {user.profile.position}
+          {/* Name and info */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <Link href={`/user/${user.id}`}>
+                  <h3 className="font-semibold text-white truncate hover:text-cyan-400 transition-colors cursor-pointer">
+                    {user.profile.name}
+                  </h3>
+                </Link>
+                <p className="text-sm text-white/60 truncate">
+                  {user.profile.position}
+                </p>
+                {user.profile.company && (
+                  <p className="text-sm text-cyan-400 truncate">
+                    {user.profile.company}
                   </p>
-                  {user.profile.company && (
-                    <p className="text-sm text-primary truncate">
-                      {user.profile.company}
-                    </p>
-                  )}
-                </div>
-
-                {/* Match percentage badge */}
-                <Badge
-                  className={cn(
-                    "flex-shrink-0 text-xs font-bold",
-                    matchColors[matchQuality]
-                  )}
-                >
-                  {matchPercentage}%
-                </Badge>
+                )}
               </div>
 
-              {/* Location */}
-              {user.profile.location && (
-                <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
-                  <MapPin className="h-3 w-3" />
-                  <span className="truncate">{user.profile.location}</span>
-                </div>
-              )}
+              {/* Match percentage badge */}
+              <Badge
+                className={cn(
+                  "flex-shrink-0 text-xs font-bold",
+                  matchColors[matchQuality]
+                )}
+              >
+                {matchPercentage}%
+              </Badge>
             </div>
+
+            {/* Location */}
+            {user.profile.location && (
+              <div className="flex items-center gap-1 mt-1 text-xs text-white/50">
+                <MapPin className="h-3 w-3" />
+                <span className="truncate">{user.profile.location}</span>
+              </div>
+            )}
           </div>
         </div>
+      </div>
 
-        {/* Quick info tags */}
-        {questionnaire && (
-          <div className="px-4 pb-3 flex flex-wrap gap-1.5">
-            {questionnaire.leadershipLevel && (
-              <Badge variant="outline" className="text-xs bg-navy-50">
-                {formatLevel(questionnaire.leadershipLevel)}
-              </Badge>
-            )}
-            {questionnaire.industry && (
-              <Badge variant="outline" className="text-xs bg-navy-50">
-                {formatIndustry(questionnaire.industry)}
-              </Badge>
-            )}
-            {questionnaire.organizationSize && (
-              <Badge variant="outline" className="text-xs bg-navy-50">
-                {formatOrgSize(questionnaire.organizationSize)}
-              </Badge>
-            )}
-          </div>
-        )}
-
-        {/* Commonalities */}
-        {topCommonalities.length > 0 && (
-          <div className="px-4 pb-3 border-t pt-3">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
-              What you have in common
-            </p>
-            <ul className="space-y-1">
-              {topCommonalities.slice(0, 3).map((commonality, index) => (
-                <li
-                  key={index}
-                  className="flex items-start gap-2 text-sm text-navy-700"
-                >
-                  <span className="text-primary mt-0.5 flex-shrink-0">
-                    {commonality.category === "professional" && "💼"}
-                    {commonality.category === "hobby" && "🎯"}
-                    {commonality.category === "lifestyle" && "🌟"}
-                    {commonality.category === "values" && "💡"}
-                  </span>
-                  <span className="line-clamp-1">{commonality.description}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {/* Action button */}
-        <div className="px-4 py-3 border-t bg-navy-50/30">
-          <Button
-            onClick={() => setShowMeetingModal(true)}
-            size="sm"
-            className="w-full gap-2"
-          >
-            <Calendar className="h-4 w-4" />
-            Request Meeting
-          </Button>
+      {/* Quick info tags */}
+      {questionnaire && (
+        <div className="px-4 pb-3 flex flex-wrap gap-1.5">
+          {questionnaire.leadershipLevel && (
+            <Badge variant="outline" className="text-xs bg-white/5 border-white/20 text-white/70">
+              {formatLevel(questionnaire.leadershipLevel)}
+            </Badge>
+          )}
+          {questionnaire.industry && (
+            <Badge variant="outline" className="text-xs bg-white/5 border-white/20 text-white/70">
+              {formatIndustry(questionnaire.industry)}
+            </Badge>
+          )}
+          {questionnaire.organizationSize && (
+            <Badge variant="outline" className="text-xs bg-white/5 border-white/20 text-white/70">
+              {formatOrgSize(questionnaire.organizationSize)}
+            </Badge>
+          )}
         </div>
-      </CardContent>
+      )}
+
+      {/* Commonalities */}
+      {topCommonalities.length > 0 && (
+        <div className="px-4 pb-3 border-t border-white/10 pt-3">
+          <p className="text-xs font-medium text-white/50 uppercase tracking-wider mb-2">
+            What you have in common
+          </p>
+          <ul className="space-y-1">
+            {topCommonalities.slice(0, 3).map((commonality, index) => (
+              <li
+                key={index}
+                className="flex items-start gap-2 text-sm text-white/70"
+              >
+                <span className="mt-0.5 flex-shrink-0">
+                  {commonality.category === "professional" && "💼"}
+                  {commonality.category === "hobby" && "🎯"}
+                  {commonality.category === "lifestyle" && "🌟"}
+                  {commonality.category === "values" && "💡"}
+                </span>
+                <span className="line-clamp-1">{commonality.description}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Action button */}
+      <div className="px-4 py-3 border-t border-white/10 bg-white/5">
+        <Button
+          onClick={() => setShowMeetingModal(true)}
+          size="sm"
+          className="w-full gap-2 bg-gradient-to-r from-cyan-500 to-teal-500 text-black hover:from-cyan-400 hover:to-teal-400"
+        >
+          <Calendar className="h-4 w-4" />
+          Request Meeting
+        </Button>
+      </div>
 
       {/* Meeting Request Modal */}
       <MeetingRequestModal
@@ -167,7 +164,7 @@ export function AttendeeCard({ attendee, onRequestMeeting }: AttendeeCardProps) 
         commonalities={topCommonalities}
         onSuccess={() => onRequestMeeting?.(user.id)}
       />
-    </Card>
+    </div>
   );
 }
 
@@ -218,4 +215,3 @@ function formatOrgSize(size: string): string {
   };
   return sizes[size] || size;
 }
-

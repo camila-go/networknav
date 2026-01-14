@@ -35,11 +35,11 @@ export function MultiSelect({
     <div className="space-y-4">
       {/* Selection counter */}
       <div className="flex items-center justify-between text-sm">
-        <span className="text-navy-600 font-medium">
+        <span className="text-white/60 font-medium">
           Selected: {value.length} / {maxSelections}
         </span>
         {value.length >= minSelections && (
-          <span className="text-teal-700 font-semibold">✓ Minimum met</span>
+          <span className="text-cyan-400 font-semibold">✓ Minimum met</span>
         )}
       </div>
 
@@ -61,10 +61,10 @@ export function MultiSelect({
               className={cn(
                 "relative flex items-center gap-3 p-4 rounded-xl border-2 text-left transition-all duration-200",
                 isDisabled && "opacity-50 cursor-not-allowed",
-                !isDisabled && "hover:border-teal-400 hover:bg-teal-50 focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2",
+                !isDisabled && "hover:border-cyan-400/50 hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2 focus-visible:ring-offset-black",
                 isSelected
-                  ? "border-teal-500 bg-teal-50 shadow-sm"
-                  : "border-navy-200 bg-white"
+                  ? "border-cyan-500 bg-cyan-500/10 shadow-lg shadow-cyan-500/10"
+                  : "border-white/20 bg-white/5"
               )}
             >
               {/* Icon if present */}
@@ -77,16 +77,16 @@ export function MultiSelect({
                 className={cn(
                   "flex-shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors",
                   isSelected
-                    ? "border-teal-600 bg-teal-600"
-                    : "border-navy-300 bg-white"
+                    ? "border-cyan-500 bg-cyan-500"
+                    : "border-white/40 bg-transparent"
                 )}
                 aria-hidden="true"
               >
-                {isSelected && <Check className="h-3 w-3 text-white" />}
+                {isSelected && <Check className="h-3 w-3 text-black" />}
               </div>
 
               {/* Option content */}
-              <span className="font-medium text-navy-800 flex-1">
+              <span className="font-medium text-white flex-1">
                 {option.label}
               </span>
             </button>

@@ -1,34 +1,110 @@
 import Link from "next/link";
-import { ArrowRight, Users, Sparkles, MessageCircle } from "lucide-react";
+import { ArrowRight, Users, Sparkles, MessageCircle, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
+
+// Radial dot matrix component inspired by Global Summit 2026
+function RadialDotMatrix() {
+  // Generate dots in concentric circles
+  const rings = 12;
+  const dots: { x: number; y: number; color: string; size: number; delay: number }[] = [];
+  
+  for (let ring = 1; ring <= rings; ring++) {
+    const dotsInRing = ring * 8;
+    const radius = ring * 35;
+    
+    for (let i = 0; i < dotsInRing; i++) {
+      const angle = (i / dotsInRing) * Math.PI * 2;
+      const x = 50 + Math.cos(angle) * radius / 4;
+      const y = 50 + Math.sin(angle) * radius / 4;
+      
+      // Color spectrum based on angle (rainbow effect)
+      const hue = (angle * 180 / Math.PI + ring * 15) % 360;
+      const saturation = 100 - ring * 3;
+      const lightness = 60 - ring * 2;
+      const opacity = Math.max(0.3, 1 - ring * 0.06);
+      
+      dots.push({
+        x,
+        y,
+        color: `hsla(${hue}, ${saturation}%, ${lightness}%, ${opacity})`,
+        size: Math.max(2, 6 - ring * 0.3),
+        delay: ring * 0.1,
+      });
+    }
+  }
+
+  return (
+    <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
+      <svg 
+        className="absolute inset-0 w-full h-full"
+        viewBox="0 0 100 100"
+        preserveAspectRatio="xMidYMid slice"
+      >
+        <defs>
+          <radialGradient id="centerGlow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="rgba(0, 255, 255, 0.8)" />
+            <stop offset="30%" stopColor="rgba(0, 255, 200, 0.4)" />
+            <stop offset="60%" stopColor="rgba(0, 200, 255, 0.1)" />
+            <stop offset="100%" stopColor="transparent" />
+          </radialGradient>
+        </defs>
+        
+        {/* Center glow */}
+        <circle cx="50" cy="50" r="15" fill="url(#centerGlow)" />
+        
+        {/* Animated dots */}
+        {dots.map((dot, index) => (
+          <circle
+            key={index}
+            cx={dot.x}
+            cy={dot.y}
+            r={dot.size / 10}
+            fill={dot.color}
+            className="animate-pulse-soft"
+            style={{ 
+              animationDelay: `${dot.delay}s`,
+              animationDuration: '3s'
+            }}
+          />
+        ))}
+      </svg>
+      
+      {/* Bright center circle */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 md:w-48 md:h-48">
+        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-cyan-400 via-teal-300 to-cyan-500 opacity-60 blur-2xl animate-pulse-soft" />
+        <div className="absolute inset-4 rounded-full bg-gradient-to-br from-white via-cyan-100 to-teal-200 opacity-80 blur-xl" />
+      </div>
+    </div>
+  );
+}
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen gradient-mesh">
+    <main className="min-h-screen bg-black text-white">
       {/* Skip link for accessibility */}
       <a href="#main-content" className="skip-link">
         Skip to main content
       </a>
 
       {/* Header */}
-      <header className="container mx-auto px-4 py-6" role="banner">
-        <nav className="flex items-center justify-between" aria-label="Main navigation">
-          <div className="flex items-center gap-2">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-teal-600 to-teal-700 flex items-center justify-center">
-              <Users className="h-5 w-5 text-white" aria-hidden="true" />
+      <header className="fixed top-0 left-0 right-0 z-50 glass" role="banner">
+        <nav className="container mx-auto px-4 py-4 flex items-center justify-between" aria-label="Main navigation">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-cyan-400 to-teal-500 flex items-center justify-center shadow-lg shadow-cyan-500/30">
+              <span className="font-bold text-black text-lg">J</span>
             </div>
-            <span className="font-display text-xl font-bold text-navy-800">
-              Jynx
+            <span className="font-display text-xl font-bold tracking-wide">
+              JYNX
             </span>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <Link href="/login">
-              <Button variant="ghost" className="text-navy-700 hover:text-navy-900">
+              <Button variant="ghost" className="text-white/80 hover:text-white hover:bg-white/10">
                 Log In
               </Button>
             </Link>
             <Link href="/register">
-              <Button className="bg-teal-600 hover:bg-teal-700 text-white">
+              <Button className="bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-black font-semibold shadow-lg shadow-cyan-500/30">
                 Get Started
               </Button>
             </Link>
@@ -36,102 +112,152 @@ export default function HomePage() {
         </nav>
       </header>
 
-      {/* Hero Section */}
-      <section id="main-content" className="container mx-auto px-4 py-20 md:py-32" role="main">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-teal-100 text-teal-700 text-sm font-semibold mb-6 animate-fade-in">
-            <Sparkles className="h-4 w-4" aria-hidden="true" />
-            <span>AI-Powered Leadership Matching</span>
-          </div>
-          
-          <h1 className="font-display text-4xl md:text-6xl lg:text-7xl font-bold text-navy-900 mb-6 leading-tight animate-fade-in [animation-delay:100ms]">
-            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-teal-600 via-teal-500 to-coral-600">
-              Jynx
-            </span>
-            <span className="block text-2xl md:text-3xl lg:text-4xl font-medium text-navy-600 mt-2 mb-4">
-              Because Great Minds Connect Alike
-            </span>
-            <span className="block text-navy-900">
+      {/* Hero Section with Radial Dots */}
+      <section id="main-content" className="relative min-h-screen flex items-center justify-center overflow-hidden" role="main">
+        <RadialDotMatrix />
+        
+        {/* Content overlay with backdrop for legibility */}
+        <div className="relative z-10 container mx-auto px-4 py-32 text-center">
+          {/* Content card with dark backdrop for legibility */}
+          <div className="relative mx-auto max-w-3xl rounded-3xl bg-black/60 backdrop-blur-md p-8 md:p-12 border border-white/10">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-cyan-400/50 bg-cyan-500/20 text-cyan-300 text-sm font-medium mb-8 animate-fade-in">
+              <Sparkles className="h-4 w-4" aria-hidden="true" />
+              <span>GLOBAL LEADERSHIP SUMMIT 2026</span>
+            </div>
+            
+            <h1 className="font-display text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight tracking-tight animate-fade-in [animation-delay:100ms]">
+              <span className="block text-white drop-shadow-lg">
+                Jynx: Because Great Minds Connect Alike
+              </span>
+            </h1>
+            
+            <p className="text-xl md:text-2xl lg:text-3xl font-semibold text-cyan-300 mb-8 animate-fade-in [animation-delay:150ms]">
               Find Your Perfect Leadership Connections
-            </span>
-          </h1>
-          
-          <p className="text-lg md:text-xl text-navy-600 mb-10 max-w-2xl mx-auto animate-fade-in [animation-delay:200ms]">
-            Jynx uses market basket analysis to intelligently match you with 
-            fellow leaders who share your challenges, complement your expertise, 
-            and align with your goals.
-          </p>
+            </p>
+            
+            <p className="text-lg md:text-xl text-white/90 mb-12 max-w-2xl mx-auto animate-fade-in [animation-delay:200ms] leading-relaxed">
+              Our AI-powered matching identifies high-affinity peers who share your challenges 
+              and strategic connections who complement your expertise.
+            </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in [animation-delay:300ms]">
-            <Link href="/register">
-              <Button size="lg" className="w-full sm:w-auto bg-teal-600 hover:bg-teal-700 text-white text-lg px-8 py-6">
-                Start Networking
-                <ArrowRight className="ml-2 h-5 w-5" aria-hidden="true" />
-              </Button>
-            </Link>
-            <Link href="#how-it-works">
-              <Button size="lg" variant="outline" className="w-full sm:w-auto text-lg px-8 py-6 border-navy-300 text-navy-700 hover:bg-navy-50">
-                How It Works
-              </Button>
-            </Link>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in [animation-delay:300ms]">
+              <Link href="/register">
+                <Button size="lg" className="w-full sm:w-auto text-lg px-10 h-14 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-black font-semibold shadow-xl shadow-cyan-500/30 border-0">
+                  Start Networking
+                  <ArrowRight className="ml-2 h-5 w-5" aria-hidden="true" />
+                </Button>
+              </Link>
+              <Link href="#how-it-works">
+                <Button size="lg" variant="outline" className="w-full sm:w-auto text-lg px-10 h-14 border-white/30 text-white hover:bg-white/10 hover:border-white/50">
+                  How It Works
+                </Button>
+              </Link>
+            </div>
+
+            {/* Event details badge */}
+            <div className="mt-10 animate-fade-in [animation-delay:400ms]">
+              <div className="inline-flex flex-col sm:flex-row items-center gap-4 sm:gap-8 text-sm text-white/80">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-cyan-400" />
+                  <span>APRIL 30 – MAY 2, 2026</span>
+                </div>
+                <div className="hidden sm:block w-px h-4 bg-white/30" />
+                <span>Disney&apos;s Grand Floridian Resort</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Scroll indicator */}
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
+          <div className="w-6 h-10 rounded-full border-2 border-white/30 flex items-start justify-center p-2">
+            <div className="w-1 h-2 rounded-full bg-white/50" />
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section id="how-it-works" className="container mx-auto px-4 py-20" aria-labelledby="features-heading">
-        <h2 id="features-heading" className="sr-only">How Jynx Works</h2>
-        <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-          <FeatureCard
-            icon={<Users className="h-8 w-8" />}
-            title="High-Affinity Matches"
-            description="Connect with leaders who share your industry, challenges, and interests for peer support and mutual understanding."
-            delay={0}
-          />
-          <FeatureCard
-            icon={<Sparkles className="h-8 w-8" />}
-            title="Strategic Matches"
-            description="Discover leaders with complementary expertise to expand your perspective and create valuable partnerships."
-            delay={100}
-          />
-          <FeatureCard
-            icon={<MessageCircle className="h-8 w-8" />}
-            title="Meaningful Conversations"
-            description="Get AI-powered conversation starters based on your commonalities to break the ice and build real connections."
-            delay={200}
-          />
+      <section id="how-it-works" className="relative bg-black py-24" aria-labelledby="features-heading">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <h2 id="features-heading" className="font-display text-3xl md:text-5xl font-bold mb-4">
+              <span className="text-gradient">Energizing Leaders</span>
+            </h2>
+            <p className="text-white/80 text-lg max-w-2xl mx-auto">
+              Sparking future thinking and building resilience through meaningful connections
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            <FeatureCard
+              icon={<Users className="h-8 w-8" />}
+              title="High-Affinity Matches"
+              description="Connect with leaders who share your industry, challenges, and interests for peer support and mutual understanding."
+              color="cyan"
+              delay={0}
+            />
+            <FeatureCard
+              icon={<Sparkles className="h-8 w-8" />}
+              title="Strategic Matches"
+              description="Discover leaders with complementary expertise to expand your perspective and create valuable partnerships."
+              color="teal"
+              delay={100}
+            />
+            <FeatureCard
+              icon={<MessageCircle className="h-8 w-8" />}
+              title="AI Conversation Starters"
+              description="Get personalized talking points based on your commonalities to break the ice and build real connections."
+              color="emerald"
+              delay={200}
+            />
+          </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="container mx-auto px-4 py-20" aria-labelledby="cta-heading">
-        <div className="max-w-3xl mx-auto text-center bg-gradient-to-br from-navy-800 to-navy-900 rounded-3xl p-12">
-          <h2 id="cta-heading" className="font-display text-3xl md:text-4xl font-bold mb-4 text-white">
-            Ready to Transform Your Conference Networking?
-          </h2>
-          <p className="text-navy-200 text-lg mb-8">
-            Complete a quick 6-8 minute questionnaire and unlock personalized matches 
-            designed to maximize your conference experience.
-          </p>
-          <Link href="/register">
-            <Button size="lg" className="bg-coral-500 hover:bg-coral-600 text-white text-lg px-8">
-              Create Your Profile
-              <ArrowRight className="ml-2 h-5 w-5" aria-hidden="true" />
-            </Button>
-          </Link>
+      <section className="relative py-24 overflow-hidden" aria-labelledby="cta-heading">
+        {/* Background pattern */}
+        <div className="absolute inset-0 opacity-30">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px]">
+            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-cyan-500/20 to-transparent blur-3xl" />
+          </div>
+        </div>
+        
+        <div className="relative container mx-auto px-4">
+          <div className="max-w-3xl mx-auto text-center summit-card rounded-3xl p-12">
+            <h2 id="cta-heading" className="font-display text-3xl md:text-5xl font-bold mb-6">
+              <span className="text-white">Ready to Transform Your</span>
+              <br />
+              <span className="text-gradient">Conference Experience?</span>
+            </h2>
+            <p className="text-white/80 text-lg mb-10 max-w-xl mx-auto">
+              Complete a quick questionnaire and unlock personalized matches 
+              designed to maximize your leadership journey.
+            </p>
+            <Link href="/register">
+              <Button size="lg" className="text-lg px-12 h-14 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-black font-semibold shadow-xl shadow-cyan-500/30">
+                Confirm Attendance
+                <ArrowRight className="ml-2 h-5 w-5" aria-hidden="true" />
+              </Button>
+            </Link>
+          </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="container mx-auto px-4 py-8 border-t border-navy-200" role="contentinfo">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-navy-600">
-          <div className="flex items-center gap-2">
-            <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-teal-600 to-teal-700 flex items-center justify-center">
-              <Users className="h-3 w-3 text-white" aria-hidden="true" />
+      <footer className="border-t border-white/10 py-12" role="contentinfo">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-cyan-400 to-teal-500 flex items-center justify-center">
+                <span className="font-bold text-black text-sm">J</span>
+              </div>
+              <span className="font-display font-bold tracking-wide">JYNX</span>
             </div>
-            <span className="font-medium text-navy-700">Jynx</span>
+            <p className="text-sm text-white/40">
+              © {new Date().getFullYear()} Strategic Education. Proprietary and confidential.
+            </p>
           </div>
-          <p>© {new Date().getFullYear()} Jynx. Built for leaders, by leaders.</p>
         </div>
       </footer>
     </main>
@@ -142,23 +268,46 @@ interface FeatureCardProps {
   icon: React.ReactNode;
   title: string;
   description: string;
+  color: "cyan" | "teal" | "emerald";
   delay: number;
 }
 
-function FeatureCard({ icon, title, description, delay }: FeatureCardProps) {
+function FeatureCard({ icon, title, description, color, delay }: FeatureCardProps) {
+  const colorStyles = {
+    cyan: {
+      iconBg: "bg-cyan-500/20",
+      iconText: "text-cyan-400",
+      border: "hover:border-cyan-500/30",
+      glow: "hover:shadow-cyan-500/10",
+    },
+    teal: {
+      iconBg: "bg-teal-500/20",
+      iconText: "text-teal-400",
+      border: "hover:border-teal-500/30",
+      glow: "hover:shadow-teal-500/10",
+    },
+    emerald: {
+      iconBg: "bg-emerald-500/20",
+      iconText: "text-emerald-400",
+      border: "hover:border-emerald-500/30",
+      glow: "hover:shadow-emerald-500/10",
+    },
+  };
+
+  const styles = colorStyles[color];
+
   return (
     <article
-      className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 border border-navy-200 hover:border-teal-300 transition-all duration-300 hover:shadow-lg hover:shadow-teal-500/10 animate-fade-in"
+      className={`summit-card rounded-2xl p-8 transition-all duration-500 hover:shadow-2xl ${styles.border} ${styles.glow} animate-fade-in`}
       style={{ animationDelay: `${delay}ms` }}
     >
-      <div className="h-14 w-14 rounded-xl bg-teal-100 flex items-center justify-center text-teal-700 mb-6" aria-hidden="true">
+      <div className={`h-14 w-14 rounded-xl ${styles.iconBg} flex items-center justify-center ${styles.iconText} mb-6`} aria-hidden="true">
         {icon}
       </div>
-      <h3 className="font-display text-xl font-semibold text-navy-800 mb-3">
+      <h3 className="font-display text-xl font-semibold text-white mb-3">
         {title}
       </h3>
-      <p className="text-navy-600 leading-relaxed">{description}</p>
+      <p className="text-white/80 leading-relaxed">{description}</p>
     </article>
   );
 }
-

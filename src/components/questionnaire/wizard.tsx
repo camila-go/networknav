@@ -106,7 +106,7 @@ export function QuestionnaireWizard() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header with progress */}
-      <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-sm border-b">
+      <header className="sticky top-0 z-10 bg-black/80 backdrop-blur-sm border-b border-white/10">
         <div className="container mx-auto px-4 py-4">
           <ProgressBar
             percentage={progress.percentage}
@@ -125,10 +125,10 @@ export function QuestionnaireWizard() {
             <span className="text-4xl mb-4 block" role="img" aria-label={currentSection.title}>
               {currentSection.icon}
             </span>
-            <h2 className="text-sm font-semibold text-teal-700 uppercase tracking-wider mb-2">
+            <h2 className="text-sm font-semibold text-coral-400 uppercase tracking-wider mb-2">
               {currentSection.title}
             </h2>
-            <p className="text-navy-600 text-sm">
+            <p className="text-white/60 text-sm">
               {currentSection.subtitle}
             </p>
           </div>

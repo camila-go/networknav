@@ -197,12 +197,12 @@ export function MatchesGrid() {
 
   return (
     <Tabs defaultValue="all" className="w-full">
-      <TabsList className="mb-6">
-        <TabsTrigger value="all">All Matches ({matches.filter(m => !m.passed).length})</TabsTrigger>
-        <TabsTrigger value="high-affinity">
+      <TabsList className="mb-6 bg-white/5 border border-white/10">
+        <TabsTrigger value="all" className="data-[state=active]:bg-white/10 data-[state=active]:text-white text-white/60">All Matches ({matches.filter(m => !m.passed).length})</TabsTrigger>
+        <TabsTrigger value="high-affinity" className="data-[state=active]:bg-white/10 data-[state=active]:text-white text-white/60">
           High-Affinity ({highAffinityMatches.length})
         </TabsTrigger>
-        <TabsTrigger value="strategic">
+        <TabsTrigger value="strategic" className="data-[state=active]:bg-white/10 data-[state=active]:text-white text-white/60">
           Strategic ({strategicMatches.length})
         </TabsTrigger>
       </TabsList>

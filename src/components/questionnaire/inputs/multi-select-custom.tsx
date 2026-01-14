@@ -92,11 +92,11 @@ export function MultiSelectCustom({
     <div className="space-y-4">
       {/* Selection counter */}
       <div className="flex items-center justify-between text-sm">
-        <span className="text-navy-600 font-medium">
+        <span className="text-white/60 font-medium">
           Selected: {totalSelected} / {maxSelections}
         </span>
         {totalSelected >= minSelections && (
-          <span className="text-teal-700 font-semibold">✓ Minimum met</span>
+          <span className="text-cyan-400 font-semibold">✓ Minimum met</span>
         )}
       </div>
 
@@ -109,7 +109,7 @@ export function MultiSelectCustom({
           onKeyDown={handleKeyDown}
           placeholder={isMaxSelected ? "Maximum reached" : placeholder}
           disabled={isMaxSelected}
-          className="flex-1"
+          className="flex-1 bg-white/5 border-white/20 text-white placeholder:text-white/40 focus:border-cyan-500/50"
         />
         <button
           type="button"
@@ -117,10 +117,10 @@ export function MultiSelectCustom({
           disabled={!inputValue.trim() || isMaxSelected}
           className={cn(
             "flex-shrink-0 h-10 w-10 rounded-lg flex items-center justify-center transition-all",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2 focus-visible:ring-offset-black",
             inputValue.trim() && !isMaxSelected
-              ? "bg-primary text-white hover:bg-primary/90 cursor-pointer"
-              : "bg-navy-100 text-navy-400 cursor-not-allowed"
+              ? "bg-cyan-500 text-black hover:bg-cyan-400 cursor-pointer"
+              : "bg-white/10 text-white/40 cursor-not-allowed"
           )}
           aria-label="Add custom interest"
         >
@@ -134,14 +134,14 @@ export function MultiSelectCustom({
           {customValues.map((cv) => (
             <span
               key={cv}
-              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-gradient-to-r from-primary/10 to-teal-500/10 text-primary border border-primary/20 text-sm font-medium"
+              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 text-sm font-medium"
             >
               <span aria-hidden="true">✨</span>
               {cv}
               <button
                 type="button"
                 onClick={() => handleRemoveCustom(cv)}
-                className="ml-0.5 p-0.5 rounded-full hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 transition-colors"
+                className="ml-0.5 p-0.5 rounded-full hover:bg-cyan-500/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-1 transition-colors"
                 aria-label={`Remove ${cv}`}
               >
                 <X className="h-3.5 w-3.5" />
@@ -168,11 +168,11 @@ export function MultiSelectCustom({
               disabled={isDisabled}
               className={cn(
                 "relative flex items-center gap-3 p-4 rounded-xl border-2 text-left transition-all duration-200",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-black",
                 isDisabled && "opacity-50 cursor-not-allowed",
                 isSelected
-                  ? "border-teal-500 bg-teal-50 shadow-sm focus-visible:ring-teal-500"
-                  : "border-navy-200 bg-white hover:border-teal-400 hover:bg-teal-50/50 focus-visible:ring-primary"
+                  ? "border-cyan-500 bg-cyan-500/10 shadow-lg shadow-cyan-500/10 focus-visible:ring-cyan-500"
+                  : "border-white/20 bg-white/5 hover:border-cyan-400/50 hover:bg-white/10 focus-visible:ring-cyan-500"
               )}
             >
               {/* Icon if present */}
@@ -185,16 +185,16 @@ export function MultiSelectCustom({
                 className={cn(
                   "flex-shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors",
                   isSelected
-                    ? "border-teal-600 bg-teal-600"
-                    : "border-navy-300 bg-white"
+                    ? "border-cyan-500 bg-cyan-500"
+                    : "border-white/40 bg-transparent"
                 )}
                 aria-hidden="true"
               >
-                {isSelected && <Check className="h-3 w-3 text-white" />}
+                {isSelected && <Check className="h-3 w-3 text-black" />}
               </div>
 
               {/* Option content */}
-              <span className="font-medium text-navy-800 flex-1">
+              <span className="font-medium text-white flex-1">
                 {option.label}
               </span>
             </button>
@@ -203,8 +203,8 @@ export function MultiSelectCustom({
       </div>
 
       {/* Hint text */}
-      <p className="text-xs text-muted-foreground text-center">
-        💡 Can't find your interest? Type it above and press Enter to add it!
+      <p className="text-xs text-white/50 text-center">
+        💡 Can&apos;t find your interest? Type it above and press Enter to add it!
       </p>
     </div>
   );

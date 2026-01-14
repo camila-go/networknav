@@ -9,6 +9,7 @@ interface Stats {
   pendingRequests: number;
   unreadMessages: number;
   matchScore: number;
+  totalMatches: number;
 }
 
 export function StatsCards() {
@@ -17,13 +18,16 @@ export function StatsCards() {
     pendingRequests: 0,
     unreadMessages: 0,
     matchScore: 0,
+    totalMatches: 0,
   });
 
   useEffect(() => {
     async function fetchStats() {
       try {
         // Fetch connections
-        const connectionsRes = await fetch("/api/connections");
+        const connectionsRes = await fetch("/api/connections", {
+          credentials: "include",
+        });
         const connectionsData = await connectionsRes.json();
         
         if (connectionsData.success) {
@@ -39,18 +43,29 @@ export function StatsCards() {
         }
 
         // Fetch matches for match score
-        const matchesRes = await fetch("/api/matches");
+        const matchesRes = await fetch("/api/matches", {
+          credentials: "include",
+        });
         const matchesData = await matchesRes.json();
         
-        if (matchesData.success && matchesData.data?.matches?.length > 0) {
-          const matches = matchesData.data.matches;
-          const avgScore = Math.round(
-            matches.reduce((sum: number, m: { score: number }) => sum + (m.score * 100), 0) / 
-            matches.length
-          );
+        if (matchesData.success) {
+          const matches = matchesData.data?.matches || [];
+          const totalMatches = matches.length;
+          
+          // Calculate average score - scores are 0-1 range, convert to percentage
+          let avgScore = 0;
+          if (totalMatches > 0) {
+            const totalScore = matches.reduce((sum: number, m: { score?: number }) => {
+              const score = typeof m.score === 'number' ? m.score : 0;
+              return sum + score;
+            }, 0);
+            avgScore = Math.round((totalScore / totalMatches) * 100);
+          }
+          
           setStats(prev => ({
             ...prev,
             matchScore: avgScore,
+            totalMatches,
           }));
         }
       } catch (error) {
@@ -58,7 +73,11 @@ export function StatsCards() {
       }
     }
 
+    // Fetch stats immediately and also after a short delay to ensure data is ready
     fetchStats();
+    const timeoutId = setTimeout(fetchStats, 1000);
+    
+    return () => clearTimeout(timeoutId);
   }, []);
 
   return (
@@ -67,29 +86,30 @@ export function StatsCards() {
         icon={<Users className="h-5 w-5" />}
         label="Connections"
         value={stats.activeConnections}
-        iconColor="text-teal-600"
-        iconBg="bg-teal-100"
+        iconColor="text-cyan-400"
+        iconBg="bg-cyan-500/20"
       />
       <StatCard
         icon={<Clock className="h-5 w-5" />}
         label="Pending"
         value={stats.pendingRequests}
-        iconColor="text-coral-600"
-        iconBg="bg-coral-100"
+        iconColor="text-amber-400"
+        iconBg="bg-amber-500/20"
       />
       <StatCard
         icon={<MessageCircle className="h-5 w-5" />}
         label="Unread"
         value={stats.unreadMessages}
-        iconColor="text-teal-600"
-        iconBg="bg-teal-100"
+        iconColor="text-teal-400"
+        iconBg="bg-teal-500/20"
       />
       <StatCard
         icon={<Sparkles className="h-5 w-5" />}
-        label="Match Score"
-        value={stats.matchScore > 0 ? `${stats.matchScore}%` : "—"}
-        iconColor="text-amber-600"
-        iconBg="bg-amber-100"
+        label="Matches"
+        value={stats.totalMatches}
+        subtext={stats.matchScore > 0 ? `Avg ${stats.matchScore}%` : undefined}
+        iconColor="text-emerald-400"
+        iconBg="bg-emerald-500/20"
       />
     </div>
   );
@@ -99,21 +119,25 @@ interface StatCardProps {
   icon: React.ReactNode;
   label: string;
   value: string | number;
+  subtext?: string;
   iconColor: string;
   iconBg: string;
 }
 
-function StatCard({ icon, label, value, iconColor, iconBg }: StatCardProps) {
+function StatCard({ icon, label, value, subtext, iconColor, iconBg }: StatCardProps) {
   return (
-    <Card>
-      <CardContent className="p-4 flex items-center gap-4">
-        <div className={`p-3 rounded-xl ${iconBg} ${iconColor}`}>{icon}</div>
-        <div>
-          <p className="text-2xl font-bold text-navy-900">{value}</p>
-          <p className="text-sm text-muted-foreground">{label}</p>
+    <div className="bg-white/5 border border-white/10 rounded-xl p-4 flex items-center gap-4">
+      <div className={`p-3 rounded-xl ${iconBg} ${iconColor}`}>{icon}</div>
+      <div>
+        <div className="flex items-baseline gap-2">
+          <p className="text-2xl font-bold text-white">{value}</p>
+          {subtext && (
+            <span className="text-xs text-white/60">{subtext}</span>
+          )}
         </div>
-      </CardContent>
-    </Card>
+        <p className="text-sm text-white/60">{label}</p>
+      </div>
+    </div>
   );
 }
 

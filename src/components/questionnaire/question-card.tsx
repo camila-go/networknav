@@ -22,22 +22,22 @@ export function QuestionCard({ question, value, customValue, onChange, onCustomC
     <div className="space-y-6">
       {/* Question text */}
       <div className="space-y-2">
-        <h3 className="text-xl md:text-2xl font-bold text-navy-800 font-display">
+        <h3 className="text-xl md:text-2xl font-bold text-white font-display">
           {question.text}
         </h3>
         {!question.required && (
-          <Badge variant="secondary" className="text-xs font-medium">
+          <Badge variant="secondary" className="text-xs font-medium bg-white/10 text-white/70">
             Optional
           </Badge>
         )}
         {(question.type === "multi-select" || question.type === "multi-select-custom") && question.maxSelections && (
-          <p className="text-sm text-navy-600 font-medium">
+          <p className="text-sm text-white/60 font-medium">
             Select {question.minSelections}-{question.maxSelections} options
             {question.type === "multi-select-custom" && " (or add your own!)"}
           </p>
         )}
         {question.type === "rank" && (
-          <p className="text-sm text-navy-600 font-medium">
+          <p className="text-sm text-white/60 font-medium">
             Drag to rank your top {question.maxSelections || 3}
           </p>
         )}

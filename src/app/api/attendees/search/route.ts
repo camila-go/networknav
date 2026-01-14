@@ -4,6 +4,8 @@ import { users, questionnaireResponses } from "@/lib/stores";
 import { cookies } from "next/headers";
 import type { SearchFilters, AttendeeSearchResult, Commonality, PublicUser } from "@/types";
 import { QUESTIONNAIRE_SECTIONS } from "@/lib/questionnaire-data";
+import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
+import type { UserProfileRow } from "@/types/database";
 
 // Get label for a value from questionnaire options
 function getLabel(questionId: string, value: string): string {
@@ -296,8 +298,10 @@ export async function POST(request: NextRequest) {
     const deviceId = cookieStore.get("device_id")?.value;
 
     let currentUserId: string | undefined;
+    let currentUserEmail: string | undefined;
     if (session) {
       currentUserId = session.userId;
+      currentUserEmail = session.email;
     } else if (deviceId) {
       currentUserId = deviceId;
     } else {
@@ -317,76 +321,104 @@ export async function POST(request: NextRequest) {
     };
 
     // Get current user's responses for match calculation
-    const currentUserResponses = questionnaireResponses.get(currentUserId);
-    const currentResponses = currentUserResponses?.responses || {};
+    let currentResponses: Record<string, unknown> = {};
+    
+    // Try Supabase first for current user's questionnaire data
+    if (isSupabaseConfigured && supabaseAdmin) {
+      const { data: currentProfile } = await supabaseAdmin
+        .from('user_profiles')
+        .select('questionnaire_data')
+        .eq('user_id', currentUserId)
+        .single();
+      
+      const profileData = currentProfile as { questionnaire_data?: Record<string, unknown> } | null;
+      if (profileData?.questionnaire_data) {
+        currentResponses = profileData.questionnaire_data;
+      }
+    }
+    
+    // Fall back to in-memory store
+    if (Object.keys(currentResponses).length === 0) {
+      const currentUserResponses = questionnaireResponses.get(currentUserId);
+      currentResponses = currentUserResponses?.responses || {};
+    }
 
     const results: AttendeeSearchResult[] = [];
 
-    // Search through all users with completed questionnaires
-    for (const [, user] of users.entries()) {
-      // Skip current user
-      if (user.id === currentUserId) continue;
-      
-      // Skip users without completed questionnaires
-      if (!user.questionnaireCompleted) continue;
-
-      const candidateResponses = questionnaireResponses.get(user.id);
-      if (!candidateResponses) continue;
-
-      // Apply filters
-      if (filters && Object.keys(filters).length > 0) {
-        if (!matchesFilters(candidateResponses.responses, { location: user.location }, filters)) {
-          continue;
-        }
-      }
-
-      // Apply keyword search
-      if (keywords && keywords.trim() !== "") {
-        if (!matchesKeywords(
-          { name: user.name, position: user.position, title: user.title, company: user.company },
-          candidateResponses.responses,
-          keywords
-        )) {
-          continue;
-        }
-      }
-
-      // Calculate match data
-      const { percentage, commonalities } = calculateMatchData(
+    // Try to fetch from Supabase first
+    if (isSupabaseConfigured && supabaseAdmin) {
+      const supabaseResults = await searchSupabaseUsers(
+        currentUserId,
+        currentUserEmail,
         currentResponses,
-        candidateResponses.responses
+        filters,
+        keywords
       );
-
-      const publicUser: PublicUser = {
-        id: user.id,
-        profile: {
-          name: user.name,
-          position: user.position,
-          title: user.title,
-          company: user.company,
-          photoUrl: user.photoUrl,
-          location: user.location,
-        },
-        questionnaireCompleted: user.questionnaireCompleted,
-      };
-
-      results.push({
-        user: publicUser,
-        matchPercentage: percentage,
-        topCommonalities: commonalities,
-        questionnaire: {
-          industry: candidateResponses.responses.industry as string,
-          leadershipLevel: candidateResponses.responses.leadershipLevel as string,
-          organizationSize: candidateResponses.responses.organizationSize as string,
-          leadershipPriorities: candidateResponses.responses.leadershipPriorities as string[],
-          leadershipChallenges: candidateResponses.responses.leadershipChallenges as string[],
-        },
-      });
+      results.push(...supabaseResults);
     }
-
-    // Add demo attendees if no real users (for demo purposes)
+    
+    // If no Supabase results, search through in-memory users
     if (results.length === 0) {
-      results.push(...getDemoAttendees(currentResponses, filters, keywords));
+      for (const [, user] of users.entries()) {
+        // Skip current user
+        if (user.id === currentUserId) continue;
+        
+        // Skip users without completed questionnaires
+        if (!user.questionnaireCompleted) continue;
+
+        const candidateResponses = questionnaireResponses.get(user.id);
+        if (!candidateResponses) continue;
+
+        // Apply filters
+        if (filters && Object.keys(filters).length > 0) {
+          if (!matchesFilters(candidateResponses.responses, { location: user.location }, filters)) {
+            continue;
+          }
+        }
+
+        // Apply keyword search
+        if (keywords && keywords.trim() !== "") {
+          if (!matchesKeywords(
+            { name: user.name, position: user.position, title: user.title, company: user.company },
+            candidateResponses.responses,
+            keywords
+          )) {
+            continue;
+          }
+        }
+
+        // Calculate match data
+        const { percentage, commonalities } = calculateMatchData(
+          currentResponses,
+          candidateResponses.responses
+        );
+
+        const publicUser: PublicUser = {
+          id: user.id,
+          profile: {
+            name: user.name,
+            position: user.position,
+            title: user.title,
+            company: user.company,
+            photoUrl: user.photoUrl,
+            location: user.location,
+          },
+          questionnaireCompleted: user.questionnaireCompleted,
+        };
+
+        results.push({
+          user: publicUser,
+          matchPercentage: percentage,
+          topCommonalities: commonalities,
+          questionnaire: {
+            industry: candidateResponses.responses.industry as string,
+            leadershipLevel: candidateResponses.responses.leadershipLevel as string,
+            organizationSize: candidateResponses.responses.organizationSize as string,
+            leadershipPriorities: candidateResponses.responses.leadershipPriorities as string[],
+            leadershipChallenges: candidateResponses.responses.leadershipChallenges as string[],
+          },
+        });
+      }
     }
 
     // Sort results
@@ -435,6 +467,109 @@ export async function POST(request: NextRequest) {
       { success: false, error: "An unexpected error occurred" },
       { status: 500 }
     );
+  }
+}
+
+// Search users from Supabase
+async function searchSupabaseUsers(
+  currentUserId: string,
+  currentUserEmail: string | undefined,
+  currentResponses: Record<string, unknown>,
+  filters?: SearchFilters,
+  keywords?: string
+): Promise<AttendeeSearchResult[]> {
+  if (!supabaseAdmin) return [];
+
+  try {
+    // Build query
+    let query = supabaseAdmin
+      .from('user_profiles')
+      .select('id, user_id, name, email, position, title, company, photo_url, location, questionnaire_data, questionnaire_completed')
+      .eq('is_active', true)
+      .neq('user_id', currentUserId)
+      .not('name', 'is', null);
+
+    // Exclude current user by email too if available
+    if (currentUserEmail) {
+      query = query.neq('email', currentUserEmail.toLowerCase());
+    }
+
+    const { data: profiles, error } = await query.limit(100);
+
+    if (error) {
+      console.error('Supabase search error:', error);
+      return [];
+    }
+
+    if (!profiles || profiles.length === 0) {
+      return [];
+    }
+
+    const results: AttendeeSearchResult[] = [];
+
+    for (const profile of profiles as UserProfileRow[]) {
+      if (!profile.name) continue;
+
+      const candidateResponses = (profile.questionnaire_data || {}) as Record<string, unknown>;
+
+      // Apply filters
+      if (filters && Object.keys(filters).length > 0) {
+        if (!matchesFilters(candidateResponses, { location: profile.location || undefined }, filters)) {
+          continue;
+        }
+      }
+
+      // Apply keyword search
+      if (keywords && keywords.trim() !== "") {
+        if (!matchesKeywords(
+          { 
+            name: profile.name, 
+            position: profile.position || '', 
+            title: profile.title || '', 
+            company: profile.company || '' 
+          },
+          candidateResponses,
+          keywords
+        )) {
+          continue;
+        }
+      }
+
+      // Calculate match data
+      const { percentage, commonalities } = calculateMatchData(
+        currentResponses,
+        candidateResponses
+      );
+
+      results.push({
+        user: {
+          id: profile.id,
+          profile: {
+            name: profile.name!,
+            position: profile.position || '',
+            title: profile.title || '',
+            company: profile.company || undefined,
+            photoUrl: profile.photo_url || undefined,
+            location: profile.location || undefined,
+          },
+          questionnaireCompleted: profile.questionnaire_completed || false,
+        },
+        matchPercentage: percentage,
+        topCommonalities: commonalities,
+        questionnaire: {
+          industry: (candidateResponses.industry as string) || '',
+          leadershipLevel: (candidateResponses.leadershipLevel as string) || '',
+          organizationSize: (candidateResponses.organizationSize as string) || '',
+          leadershipPriorities: (candidateResponses.leadershipPriorities as string[]) || [],
+          leadershipChallenges: (candidateResponses.leadershipChallenges as string[]) || [],
+        },
+      });
+    }
+
+    return results;
+  } catch (error) {
+    console.error('Error searching Supabase users:', error);
+    return [];
   }
 }
 

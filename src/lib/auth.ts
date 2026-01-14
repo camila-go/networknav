@@ -25,7 +25,8 @@ export const REFRESH_TOKEN_COOKIE = "refresh_token";
 // ============================================
 
 export async function hashPassword(password: string): Promise<string> {
-  return bcrypt.hash(password, 12);
+  // Salt rounds: 10 is a good balance of security and speed
+  return bcrypt.hash(password, 10);
 }
 
 export async function verifyPassword(

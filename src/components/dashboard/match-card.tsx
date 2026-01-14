@@ -50,7 +50,7 @@ export function MatchCard({ match, onPass, onConnect }: MatchCardProps) {
   }
 
   return (
-    <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
+    <div className="overflow-hidden rounded-xl bg-white/5 border border-white/10 hover:border-white/20 transition-all duration-300">
       {/* Header with match type badge */}
       <div className="relative">
         <div className="absolute top-3 right-3 z-10">
@@ -59,8 +59,8 @@ export function MatchCard({ match, onPass, onConnect }: MatchCardProps) {
             className={cn(
               "gap-1",
               type === "high-affinity"
-                ? "bg-teal-600 text-white"
-                : "bg-amber-100 text-amber-700"
+                ? "bg-gradient-to-r from-cyan-500 to-teal-500 text-black border-0"
+                : "bg-amber-500/20 text-amber-400 border-amber-500/30"
             )}
           >
             {type === "high-affinity" ? (
@@ -81,24 +81,24 @@ export function MatchCard({ match, onPass, onConnect }: MatchCardProps) {
         <div className="p-6 pb-4">
           <div className="flex items-start gap-4">
             <Link href={profileUrl} className="flex-shrink-0">
-              <Avatar className="h-16 w-16 border-2 border-white shadow-md cursor-pointer hover:ring-2 hover:ring-teal-500 hover:ring-offset-2 transition-all">
+              <Avatar className="h-16 w-16 border-2 border-white/20 shadow-md cursor-pointer hover:ring-2 hover:ring-cyan-500 hover:ring-offset-2 hover:ring-offset-black transition-all">
                 <AvatarImage src={matchedUser.profile.photoUrl} />
-                <AvatarFallback className="bg-gradient-to-br from-teal-500 to-teal-600 text-white text-lg">
+                <AvatarFallback className="bg-gradient-to-br from-cyan-500 to-teal-500 text-black text-lg font-semibold">
                   {initials}
                 </AvatarFallback>
               </Avatar>
             </Link>
             <div className="flex-1 min-w-0">
-              <Link href={profileUrl} className="hover:text-teal-600 transition-colors">
-                <h3 className="font-semibold text-lg text-navy-900 truncate hover:text-teal-600">
+              <Link href={profileUrl} className="hover:text-cyan-400 transition-colors">
+                <h3 className="font-semibold text-lg text-white truncate hover:text-cyan-400">
                   {matchedUser.profile.name}
                 </h3>
               </Link>
-              <p className="text-sm text-navy-600 truncate">
+              <p className="text-sm text-white/70 truncate">
                 {matchedUser.profile.position}
               </p>
               {matchedUser.profile.company && (
-                <p className="text-sm text-teal-600 truncate">
+                <p className="text-sm text-cyan-400 truncate">
                   {matchedUser.profile.company}
                 </p>
               )}
@@ -107,19 +107,19 @@ export function MatchCard({ match, onPass, onConnect }: MatchCardProps) {
         </div>
       </div>
 
-      <CardContent className="pt-0 space-y-4">
+      <div className="px-6 pb-4 space-y-4">
         {/* Commonalities */}
         <div>
-          <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+          <h4 className="text-xs font-medium text-white/50 uppercase tracking-wider mb-2">
             {type === "high-affinity" ? "What you share" : "Why connect"}
           </h4>
           <ul className="space-y-1.5">
             {displayedCommonalities.map((commonality, index) => (
               <li
                 key={index}
-                className="flex items-start gap-2 text-sm text-navy-700"
+                className="flex items-start gap-2 text-sm text-white/80"
               >
-                <span className="text-primary mt-0.5">
+                <span className="mt-0.5">
                   {commonality.category === "professional" && "💼"}
                   {commonality.category === "hobby" && "🎯"}
                   {commonality.category === "lifestyle" && "🌟"}
@@ -133,7 +133,7 @@ export function MatchCard({ match, onPass, onConnect }: MatchCardProps) {
           {commonalities.length > 3 && (
             <button
               onClick={() => setShowAllCommonalities(!showAllCommonalities)}
-              className="mt-2 text-xs text-primary hover:underline flex items-center gap-1"
+              className="mt-2 text-xs text-cyan-400 hover:underline flex items-center gap-1"
             >
               {showAllCommonalities ? (
                 <>
@@ -150,48 +150,45 @@ export function MatchCard({ match, onPass, onConnect }: MatchCardProps) {
 
         {/* Conversation starter */}
         {conversationStarters.length > 0 && (
-          <div className="bg-primary/5 rounded-lg p-3">
-            <p className="text-xs font-medium text-primary mb-1">
+          <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-lg p-3">
+            <p className="text-xs font-medium text-cyan-400 mb-1">
               💬 Conversation starter
             </p>
-            <p className="text-sm text-navy-700">{conversationStarters[0]}</p>
+            <p className="text-sm text-white/80">{conversationStarters[0]}</p>
           </div>
         )}
 
         {/* Match score */}
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <div className="flex items-center justify-between text-xs text-white/50">
           <span>Match strength</span>
           <div className="flex items-center gap-2">
-            <div className="w-20 h-1.5 bg-navy-100 rounded-full overflow-hidden">
+            <div className="w-20 h-1.5 bg-white/10 rounded-full overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-primary to-teal-500 rounded-full"
+                className="h-full bg-gradient-to-r from-cyan-500 to-teal-500 rounded-full"
                 style={{ width: `${score * 100}%` }}
               />
             </div>
-            <span className="font-medium">{Math.round(score * 100)}%</span>
+            <span className="font-medium text-white">{Math.round(score * 100)}%</span>
           </div>
         </div>
-      </CardContent>
+      </div>
 
-      <CardFooter className="border-t bg-navy-50/50 gap-2 p-4">
-        <Button
-          variant="ghost"
-          size="sm"
+      <div className="border-t border-white/10 bg-white/5 flex gap-2 p-4">
+        <button
           onClick={() => onPass(match.id)}
-          className="flex-1 text-navy-500 hover:text-coral-600"
+          className="flex-1 inline-flex items-center justify-center gap-1 px-4 py-2 rounded-lg text-sm font-medium text-white/70 hover:text-white hover:bg-white/10 transition-colors"
         >
-          <X className="h-4 w-4 mr-1" />
+          <X className="h-4 w-4" />
           Pass
-        </Button>
-        <Button
-          size="sm"
+        </button>
+        <button
           onClick={handleRequestMeeting}
-          className="flex-1 gap-1 bg-teal-600 hover:bg-teal-700"
+          className="flex-1 inline-flex items-center justify-center gap-1 px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-cyan-500 to-teal-500 text-black hover:from-cyan-400 hover:to-teal-400 transition-colors"
         >
           <Calendar className="h-4 w-4" />
           Request Meeting
-        </Button>
-      </CardFooter>
+        </button>
+      </div>
 
       {/* Meeting Request Modal */}
       <MeetingRequestModal
@@ -202,7 +199,7 @@ export function MatchCard({ match, onPass, onConnect }: MatchCardProps) {
         conversationStarters={conversationStarters}
         onSuccess={handleMeetingSuccess}
       />
-    </Card>
+    </div>
   );
 }
 

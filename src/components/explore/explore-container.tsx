@@ -130,9 +130,9 @@ export function ExploreContainer() {
     });
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full bg-black">
       {/* Desktop filter sidebar */}
-      <aside className="hidden lg:block w-72 border-r bg-white flex-shrink-0">
+      <aside className="hidden lg:block w-72 border-r border-white/10 bg-black/50 flex-shrink-0">
         <FilterSidebar
           filters={filters}
           onFiltersChange={handleFiltersChange}
@@ -145,16 +145,17 @@ export function ExploreContainer() {
       {showMobileFilters && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div
-            className="absolute inset-0 bg-black/50"
+            className="absolute inset-0 bg-black/70"
             onClick={() => setShowMobileFilters(false)}
           />
-          <aside className="absolute left-0 top-0 bottom-0 w-80 bg-white shadow-xl">
-            <div className="flex items-center justify-between p-4 border-b">
-              <h2 className="font-semibold">Filters</h2>
+          <aside className="absolute left-0 top-0 bottom-0 w-80 bg-gray-900 shadow-xl border-r border-white/10">
+            <div className="flex items-center justify-between p-4 border-b border-white/10">
+              <h2 className="font-semibold text-white">Filters</h2>
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setShowMobileFilters(false)}
+                className="text-white/70 hover:text-white hover:bg-white/10"
               >
                 <X className="h-5 w-5" />
               </Button>
@@ -174,14 +175,14 @@ export function ExploreContainer() {
       {/* Main content */}
       <main className="flex-1 flex flex-col min-w-0">
         {/* Search header */}
-        <div className="sticky top-0 z-10 bg-white border-b p-4 space-y-3">
+        <div className="sticky top-0 z-10 bg-black/80 backdrop-blur-sm border-b border-white/10 p-4 space-y-3">
           {/* Search bar row */}
           <div className="flex items-center gap-3">
             {/* Mobile filter button */}
             <Button
               variant="outline"
               size="icon"
-              className="lg:hidden flex-shrink-0"
+              className="lg:hidden flex-shrink-0 border-white/20 text-white/70 hover:text-white hover:bg-white/10"
               onClick={() => setShowMobileFilters(true)}
             >
               <SlidersHorizontal className="h-4 w-4" />
@@ -189,18 +190,18 @@ export function ExploreContainer() {
 
             {/* Search input */}
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/50" />
               <Input
                 type="text"
                 placeholder="Search by name, company, or keywords..."
                 value={keywords}
                 onChange={(e) => setKeywords(e.target.value)}
-                className="pl-9 pr-9"
+                className="pl-9 pr-9 bg-white/5 border-white/20 text-white placeholder:text-white/50 focus:border-cyan-500/50"
               />
               {keywords && (
                 <button
                   onClick={() => setKeywords("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -209,25 +210,25 @@ export function ExploreContainer() {
 
             {/* Sort select */}
             <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
-              <SelectTrigger className="w-36 flex-shrink-0">
+              <SelectTrigger className="w-36 flex-shrink-0 bg-white/5 border-white/20 text-white">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="relevance">Relevance</SelectItem>
-                <SelectItem value="match">Match %</SelectItem>
-                <SelectItem value="name">Name</SelectItem>
-                <SelectItem value="level">Level</SelectItem>
+              <SelectContent className="bg-gray-900 border-white/20">
+                <SelectItem value="relevance" className="text-white hover:bg-white/10">Relevance</SelectItem>
+                <SelectItem value="match" className="text-white hover:bg-white/10">Match %</SelectItem>
+                <SelectItem value="name" className="text-white hover:bg-white/10">Name</SelectItem>
+                <SelectItem value="level" className="text-white hover:bg-white/10">Level</SelectItem>
               </SelectContent>
             </Select>
 
             {/* View toggle */}
-            <div className="hidden sm:flex items-center border rounded-lg">
+            <div className="hidden sm:flex items-center border border-white/20 rounded-lg">
               <Button
                 variant="ghost"
                 size="icon"
                 className={cn(
-                  "h-9 w-9 rounded-r-none",
-                  viewMode === "grid" && "bg-navy-100"
+                  "h-9 w-9 rounded-r-none text-white/70 hover:text-white hover:bg-white/10",
+                  viewMode === "grid" && "bg-white/10 text-cyan-400"
                 )}
                 onClick={() => setViewMode("grid")}
               >
@@ -237,8 +238,8 @@ export function ExploreContainer() {
                 variant="ghost"
                 size="icon"
                 className={cn(
-                  "h-9 w-9 rounded-l-none",
-                  viewMode === "list" && "bg-navy-100"
+                  "h-9 w-9 rounded-l-none text-white/70 hover:text-white hover:bg-white/10",
+                  viewMode === "list" && "bg-white/10 text-cyan-400"
                 )}
                 onClick={() => setViewMode("list")}
               >
@@ -250,12 +251,11 @@ export function ExploreContainer() {
           {/* Active filter tags */}
           {activeFilterTags.length > 0 && (
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm text-muted-foreground">Active filters:</span>
+              <span className="text-sm text-white/50">Active filters:</span>
               {activeFilterTags.slice(0, 5).map(({ key, value }, index) => (
-                <Badge
+                <span
                   key={`${key}-${value}-${index}`}
-                  variant="secondary"
-                  className="gap-1 bg-primary/10 text-primary"
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-cyan-500/10 text-cyan-400 border border-cyan-500/30"
                 >
                   {value}
                   <button
@@ -266,17 +266,23 @@ export function ExploreContainer() {
                         [key]: currentValues.filter((v) => v !== value),
                       });
                     }}
-                    className="ml-1 hover:bg-primary/20 rounded-full"
+                    className="ml-0.5 p-0.5 hover:bg-cyan-500/20 rounded-full transition-colors"
                   >
                     <X className="h-3 w-3" />
                   </button>
-                </Badge>
+                </span>
               ))}
               {activeFilterTags.length > 5 && (
-                <Badge variant="secondary" className="bg-navy-100">
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-white/5 text-white/70 border border-white/10">
                   +{activeFilterTags.length - 5} more
-                </Badge>
+                </span>
               )}
+              <button
+                onClick={() => setFilters({})}
+                className="text-sm text-cyan-400 hover:text-cyan-300 underline underline-offset-2"
+              >
+                Clear all
+              </button>
             </div>
           )}
         </div>
@@ -285,15 +291,15 @@ export function ExploreContainer() {
         <div className="flex-1 overflow-y-auto p-4">
           {isLoading ? (
             <div className="flex items-center justify-center py-20">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <Loader2 className="h-8 w-8 animate-spin text-cyan-400" />
             </div>
           ) : results.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center">
-              <div className="w-16 h-16 rounded-full bg-navy-100 flex items-center justify-center mb-4">
-                <Search className="h-8 w-8 text-navy-400" />
+              <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4">
+                <Search className="h-8 w-8 text-white/40" />
               </div>
-              <h3 className="font-semibold text-navy-900 mb-2">No attendees found</h3>
-              <p className="text-muted-foreground max-w-md">
+              <h3 className="font-semibold text-white mb-2">No attendees found</h3>
+              <p className="text-white/50 max-w-md">
                 Try adjusting your filters or search terms to find more connections.
               </p>
               {activeFilterTags.length > 0 && (
@@ -303,7 +309,7 @@ export function ExploreContainer() {
                     setFilters({});
                     setKeywords("");
                   }}
-                  className="mt-4"
+                  className="mt-4 border-white/20 text-white hover:bg-white/10"
                 >
                   Clear all filters
                 </Button>
@@ -312,7 +318,7 @@ export function ExploreContainer() {
           ) : (
             <>
               {/* Results count */}
-              <p className="text-sm text-muted-foreground mb-4">
+              <p className="text-sm text-white/50 mb-4">
                 Showing {results.length} of {totalResults} attendee
                 {totalResults !== 1 ? "s" : ""}
               </p>
@@ -342,11 +348,12 @@ export function ExploreContainer() {
                     size="sm"
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                     disabled={page === 1}
+                    className="border-white/20 text-white hover:bg-white/10 disabled:opacity-50"
                   >
                     <ChevronLeft className="h-4 w-4 mr-1" />
                     Previous
                   </Button>
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-sm text-white/50">
                     Page {page} of {Math.ceil(totalResults / pageSize)}
                   </span>
                   <Button
@@ -354,6 +361,7 @@ export function ExploreContainer() {
                     size="sm"
                     onClick={() => setPage((p) => p + 1)}
                     disabled={!hasMore}
+                    className="border-white/20 text-white hover:bg-white/10 disabled:opacity-50"
                   >
                     Next
                     <ChevronRight className="h-4 w-4 ml-1" />
@@ -367,4 +375,3 @@ export function ExploreContainer() {
     </div>
   );
 }
-

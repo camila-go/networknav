@@ -12,10 +12,10 @@ export default function DashboardPage() {
     <div className="space-y-8">
       {/* Welcome header */}
       <div>
-        <h1 className="text-3xl font-display font-bold text-navy-900">
+        <h1 className="text-3xl font-display font-bold text-white">
           Your Matches
         </h1>
-        <p className="text-muted-foreground mt-1">
+        <p className="text-white/60 mt-1">
           Discover leaders who share your challenges, interests, and goals
         </p>
       </div>
