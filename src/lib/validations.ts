@@ -80,6 +80,7 @@ export const questionnaireResponseSchema = z.object({
 
   // Section 3: Beyond the Boardroom
   rechargeActivities: z.array(z.string()).max(8).optional(),
+  customInterests: z.array(z.string()).max(10).optional(), // User-typed custom interests
   contentPreferences: z.array(z.string()).max(6).optional(),
   fitnessActivities: z.array(z.string()).max(5).optional(),
   idealWeekend: z.string().optional(),

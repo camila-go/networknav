@@ -6,10 +6,69 @@ import {
   createRefreshToken,
 } from "@/lib/auth";
 import { users } from "@/lib/stores";
+import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
 import { checkRateLimit } from "@/lib/security/rateLimit";
 
 // Rate limit for login: 5 attempts per 15 minutes per IP
 const LOGIN_RATE_LIMIT = { maxRequests: 5, windowMs: 15 * 60 * 1000 };
+
+// Helper to find user from Supabase and add to memory store
+async function findUserFromSupabase(email: string): Promise<{
+  id: string;
+  email: string;
+  passwordHash: string;
+  name: string;
+  position: string;
+  title: string;
+  company: string;
+  questionnaireCompleted: boolean;
+} | null> {
+  if (!isSupabaseConfigured || !supabaseAdmin) return null;
+  
+  try {
+    const { data: profile, error } = await supabaseAdmin
+      .from('user_profiles')
+      .select('id, email, password_hash, name, position, title, company, questionnaire_completed')
+      .eq('email', email.toLowerCase())
+      .single();
+    
+    if (error || !profile) return null;
+    
+    // Type assertion since we're selecting specific columns
+    const typedProfile = profile as {
+      id: string;
+      email: string;
+      password_hash?: string;
+      name?: string;
+      position?: string;
+      title?: string;
+      company?: string;
+      questionnaire_completed?: boolean;
+    };
+    
+    // Check if we have a password hash stored
+    // Note: In the current schema we might not have password_hash in Supabase
+    // If not, we can't verify the password from Supabase alone
+    if (!typedProfile.password_hash) {
+      console.log('User found in Supabase but no password hash stored');
+      return null;
+    }
+    
+    return {
+      id: typedProfile.id,
+      email: typedProfile.email,
+      passwordHash: typedProfile.password_hash,
+      name: typedProfile.name || 'User',
+      position: typedProfile.position || '',
+      title: typedProfile.title || '',
+      company: typedProfile.company || '',
+      questionnaireCompleted: typedProfile.questionnaire_completed || false,
+    };
+  } catch (err) {
+    console.error('Supabase lookup error:', err);
+    return null;
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -63,9 +122,36 @@ export async function POST(request: NextRequest) {
 
     const { email, password } = result.data;
 
-    // Find user
-    const user = users.get(email.toLowerCase());
+    // Find user from in-memory store first
+    let user = users.get(email.toLowerCase());
+    
+    // If not in memory, try Supabase
     if (!user) {
+      console.log(`User ${email} not in memory, checking Supabase...`);
+      const supabaseUser = await findUserFromSupabase(email);
+      if (supabaseUser) {
+        // Create a properly typed user object
+        const storedUser = {
+          id: supabaseUser.id,
+          email: supabaseUser.email,
+          passwordHash: supabaseUser.passwordHash,
+          name: supabaseUser.name,
+          position: supabaseUser.position,
+          title: supabaseUser.title,
+          company: supabaseUser.company,
+          questionnaireCompleted: supabaseUser.questionnaireCompleted,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+        // Add to memory store for future lookups
+        users.set(email.toLowerCase(), storedUser);
+        user = users.get(email.toLowerCase());
+        console.log(`User ${email} loaded from Supabase`);
+      }
+    }
+    
+    if (!user) {
+      console.log(`User ${email} not found in memory or Supabase`);
       return NextResponse.json(
         {
           success: false,

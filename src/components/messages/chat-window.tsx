@@ -136,27 +136,27 @@ export function ChatWindow({
   }
 
   return (
-    <div className="h-full flex flex-col bg-white">
+    <div className="h-full flex flex-col bg-black">
       {/* Header */}
-      <div className="flex items-center gap-3 p-4 border-b">
+      <div className="flex items-center gap-3 p-4 border-b border-white/10">
         {isMobile && onBack && (
-          <Button variant="ghost" size="icon" onClick={onBack}>
+          <Button variant="ghost" size="icon" onClick={onBack} className="text-white hover:bg-white/10">
             <ArrowLeft className="h-5 w-5" />
           </Button>
         )}
 
-        <Avatar className="h-10 w-10">
+        <Avatar className="h-10 w-10 border-2 border-white/20">
           <AvatarImage src={undefined} />
-          <AvatarFallback className="bg-gradient-to-br from-primary to-teal-500 text-white">
+          <AvatarFallback className="bg-gradient-to-br from-cyan-500 to-teal-500 text-black font-semibold">
             {initials}
           </AvatarFallback>
         </Avatar>
 
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-navy-900 truncate">
+          <h3 className="font-semibold text-white truncate">
             {otherUser?.name || "Unknown"}
           </h3>
-          <p className="text-sm text-muted-foreground truncate">
+          <p className="text-sm text-white/60 truncate">
             {otherUser?.position}
             {otherUser?.company && ` at ${otherUser.company}`}
           </p>
@@ -167,21 +167,21 @@ export function ChatWindow({
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
-            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            <Loader2 className="h-6 w-6 animate-spin text-cyan-400" />
           </div>
         ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
-            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+            <div className="w-16 h-16 rounded-full bg-cyan-500/10 flex items-center justify-center mb-4">
               <Avatar className="h-10 w-10">
-                <AvatarFallback className="bg-gradient-to-br from-primary to-teal-500 text-white">
+                <AvatarFallback className="bg-gradient-to-br from-cyan-500 to-teal-500 text-black font-semibold">
                   {initials}
                 </AvatarFallback>
               </Avatar>
             </div>
-            <h4 className="font-medium text-navy-900">
+            <h4 className="font-medium text-white">
               Start a conversation with {otherUser?.name}
             </h4>
-            <p className="text-sm text-muted-foreground mt-1 max-w-xs">
+            <p className="text-sm text-white/60 mt-1 max-w-xs">
               Say hello and share what you'd like to discuss at the conference!
             </p>
           </div>
@@ -198,7 +198,7 @@ export function ChatWindow({
               return (
                 <div key={message.id}>
                   {showTimestamp && (
-                    <div className="text-center text-xs text-muted-foreground mb-2">
+                    <div className="text-center text-xs text-white/40 mb-2">
                       {formatRelativeTime(message.createdAt)}
                     </div>
                   )}
@@ -212,8 +212,8 @@ export function ChatWindow({
                       className={cn(
                         "max-w-[70%] rounded-2xl px-4 py-2",
                         isSender
-                          ? "bg-primary text-white rounded-br-sm"
-                          : "bg-navy-100 text-navy-900 rounded-bl-sm"
+                          ? "bg-gradient-to-r from-cyan-500 to-teal-500 text-black font-medium rounded-br-sm"
+                          : "bg-white/10 text-white rounded-bl-sm"
                       )}
                     >
                       <p className="text-sm whitespace-pre-wrap">
@@ -230,19 +230,20 @@ export function ChatWindow({
       </div>
 
       {/* Message input */}
-      <form onSubmit={handleSend} className="p-4 border-t">
+      <form onSubmit={handleSend} className="p-4 border-t border-white/10">
         <div className="flex gap-2">
           <Input
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             placeholder="Type a message..."
-            className="flex-1"
+            className="flex-1 bg-white/5 border-white/20 text-white placeholder:text-white/40 focus:border-cyan-500 focus:ring-cyan-500/20"
             disabled={isSending}
           />
           <Button
             type="submit"
             size="icon"
             disabled={!newMessage.trim() || isSending}
+            className="bg-gradient-to-r from-cyan-500 to-teal-500 text-black hover:from-cyan-400 hover:to-teal-400 disabled:opacity-50"
           >
             {isSending ? (
               <Loader2 className="h-4 w-4 animate-spin" />

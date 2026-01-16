@@ -103,6 +103,7 @@ export async function POST(request: NextRequest) {
         id: userId,
         user_id: userId,
         email: email.toLowerCase(),
+        password_hash: passwordHash, // Store password hash for login persistence
         name,
         position,
         title,

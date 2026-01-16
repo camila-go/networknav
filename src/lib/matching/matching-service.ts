@@ -161,9 +161,11 @@ function ensureMatchDiversity(candidates: MatchCandidate[]): MatchCandidate[] {
  * Create a Match object from a candidate
  */
 function createMatch(userId: string, candidate: MatchCandidate): Match {
+  const firstName = candidate.user.profile.name?.split(' ')[0];
   const conversationStarters = generateConversationStarters(
     candidate.commonalities,
-    candidate.matchType
+    candidate.matchType,
+    firstName
   );
 
   return {

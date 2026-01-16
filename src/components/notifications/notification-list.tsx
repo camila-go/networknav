@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Bell, Check, Trash2, Loader2, Users, MessageCircle, Sparkles, AlertCircle } from "lucide-react";
+import { Bell, Check, Trash2, Loader2, Users, MessageCircle, Sparkles, AlertCircle, Calendar, CalendarCheck, CalendarX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
@@ -16,6 +16,9 @@ const NOTIFICATION_ICONS: Record<NotificationType, React.ReactNode> = {
   new_matches: <Sparkles className="h-4 w-4 text-primary" />,
   connection_request: <Users className="h-4 w-4 text-teal-500" />,
   connection_accepted: <Check className="h-4 w-4 text-green-500" />,
+  meeting_request: <Calendar className="h-4 w-4 text-cyan-500" />,
+  meeting_accepted: <CalendarCheck className="h-4 w-4 text-green-500" />,
+  meeting_declined: <CalendarX className="h-4 w-4 text-red-500" />,
   new_message: <MessageCircle className="h-4 w-4 text-blue-500" />,
   request_reminder: <AlertCircle className="h-4 w-4 text-amber-500" />,
   questionnaire_reminder: <Bell className="h-4 w-4 text-coral-500" />,

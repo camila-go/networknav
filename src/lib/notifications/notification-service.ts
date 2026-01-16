@@ -32,6 +32,21 @@ const NOTIFICATION_TEMPLATES: Record<NotificationType, (data?: Record<string, un
     body: `You're now connected with ${data?.recipientName || "them"}. Start a conversation!`,
   }),
   
+  meeting_request: (data) => ({
+    title: `☕ ${data?.senderName || "Someone"} wants to meet!`,
+    body: `${data?.senderName || "A leader"} from ${data?.company || "the conference"} requested a ${data?.meetingType || "meeting"} with you.`,
+  }),
+  
+  meeting_accepted: (data) => ({
+    title: `🎉 Meeting confirmed with ${data?.recipientName || "your connection"}!`,
+    body: `${data?.recipientName || "They"} accepted your meeting request. Check your calendar!`,
+  }),
+  
+  meeting_declined: (data) => ({
+    title: `Meeting update from ${data?.recipientName || "your connection"}`,
+    body: `${data?.recipientName || "They"} couldn't make the proposed times. Try suggesting new times!`,
+  }),
+  
   new_message: (data) => ({
     title: `New message from ${data?.senderName || "a connection"}`,
     body: data?.preview as string || "You have a new message waiting.",
@@ -247,5 +262,45 @@ export function notifyRequestReminder(
  */
 export function notifyQuestionnaireReminder(userId: string): Notification {
   return createNotification(userId, "questionnaire_reminder");
+}
+
+/**
+ * Notify user of a meeting request
+ */
+export function notifyMeetingRequest(
+  recipientId: string,
+  senderName: string,
+  company?: string,
+  meetingType?: string
+): Notification {
+  return createNotification(recipientId, "meeting_request", {
+    senderName,
+    company,
+    meetingType: meetingType || "meeting",
+  });
+}
+
+/**
+ * Notify user that their meeting request was accepted
+ */
+export function notifyMeetingAccepted(
+  requesterId: string,
+  recipientName: string
+): Notification {
+  return createNotification(requesterId, "meeting_accepted", {
+    recipientName,
+  });
+}
+
+/**
+ * Notify user that their meeting request was declined
+ */
+export function notifyMeetingDeclined(
+  requesterId: string,
+  recipientName: string
+): Notification {
+  return createNotification(requesterId, "meeting_declined", {
+    recipientName,
+  });
 }
 

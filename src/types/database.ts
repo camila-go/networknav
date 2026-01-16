@@ -26,6 +26,21 @@ export interface Database {
         Insert: ScheduledMeetingInsert;
         Update: ScheduledMeetingUpdate;
       };
+      meeting_requests: {
+        Row: MeetingRequestRow;
+        Insert: MeetingRequestInsert;
+        Update: MeetingRequestUpdate;
+      };
+      connections: {
+        Row: ConnectionRow;
+        Insert: ConnectionInsert;
+        Update: ConnectionUpdate;
+      };
+      messages: {
+        Row: MessageRow;
+        Insert: MessageInsert;
+        Update: MessageUpdate;
+      };
       reports: {
         Row: ReportRow;
         Insert: ReportInsert;
@@ -273,6 +288,107 @@ export interface ReportUpdate {
   reason?: string;
   description?: string | null;
   status?: ReportStatus;
+}
+
+// ============================================
+// Meeting Requests Table
+// ============================================
+
+export type MeetingRequestStatus = 'pending' | 'scheduled' | 'declined' | 'cancelled' | 'completed';
+export type MeetingType = 'video' | 'coffee' | 'conference' | 'phone';
+
+export interface MeetingRequestRow {
+  id: string;
+  requester_id: string;
+  recipient_id: string;
+  status: MeetingRequestStatus;
+  meeting_type: MeetingType;
+  duration: number;
+  context_message: string | null;
+  proposed_times: string[];
+  accepted_time: string | null;
+  meeting_link: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MeetingRequestInsert {
+  id?: string;
+  requester_id: string;
+  recipient_id: string;
+  status?: MeetingRequestStatus;
+  meeting_type: MeetingType;
+  duration: number;
+  context_message?: string | null;
+  proposed_times: string[];
+  accepted_time?: string | null;
+  meeting_link?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface MeetingRequestUpdate {
+  status?: MeetingRequestStatus;
+  accepted_time?: string | null;
+  meeting_link?: string | null;
+  updated_at?: string;
+}
+
+// ============================================
+// Connections Table
+// ============================================
+
+export type ConnectionStatus = 'pending' | 'accepted' | 'declined';
+
+export interface ConnectionRow {
+  id: string;
+  requester_id: string;
+  recipient_id: string;
+  status: ConnectionStatus;
+  message: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ConnectionInsert {
+  id?: string;
+  requester_id: string;
+  recipient_id: string;
+  status?: ConnectionStatus;
+  message?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ConnectionUpdate {
+  status?: ConnectionStatus;
+  updated_at?: string;
+}
+
+// ============================================
+// Messages Table
+// ============================================
+
+export interface MessageRow {
+  id: string;
+  connection_id: string;
+  sender_id: string;
+  content: string;
+  read: boolean;
+  created_at: string;
+}
+
+export interface MessageInsert {
+  id?: string;
+  connection_id: string;
+  sender_id: string;
+  content: string;
+  read?: boolean;
+  created_at?: string;
+}
+
+export interface MessageUpdate {
+  read?: boolean;
 }
 
 // ============================================

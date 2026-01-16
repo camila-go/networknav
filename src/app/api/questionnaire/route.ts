@@ -122,31 +122,34 @@ export async function POST(request: NextRequest) {
           updateData.profile_embedding = embedding;
         }
 
-        // Try to update existing profile, or insert if not exists
-        const { error: updateError } = await supabaseAdmin
+        // Use upsert with onConflict to handle both new and existing profiles
+        const upsertData = {
+          id: userId,
+          user_id: userId,
+          email: userEmail,
+          name: memoryUser?.name || 'User',
+          position: memoryUser?.position || null,
+          title: memoryUser?.title || null,
+          company: memoryUser?.company || null,
+          is_active: true,
+          is_visible: true,
+          ...updateData,
+        };
+        
+        const { error: upsertError } = await supabaseAdmin
           .from('user_profiles')
-          .update(updateData as never)
-          .eq('id', userId);
+          .upsert(upsertData as never, { onConflict: 'id' });
 
-        if (updateError) {
-          // Profile might not exist yet, try to insert
-          const insertData = {
-            id: userId,
-            user_id: userId,
-            email: userEmail,
-            name: memoryUser?.name || 'User',
-            position: memoryUser?.position,
-            title: memoryUser?.title,
-            company: memoryUser?.company,
-            ...updateData,
-          };
-          
+        if (upsertError) {
+          console.error('Supabase upsert error:', upsertError);
+          // Try update as fallback
           await supabaseAdmin
             .from('user_profiles')
-            .upsert(insertData as never);
+            .update(updateData as never)
+            .eq('email', userEmail.toLowerCase());
         }
 
-        console.log('✅ Questionnaire synced to Supabase:', userId);
+        console.log('✅ Questionnaire synced to Supabase:', userId, 'completed:', completionPercentage >= 80);
       } catch (supabaseError) {
         console.error('Supabase sync error (non-blocking):', supabaseError);
       }

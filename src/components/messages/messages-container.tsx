@@ -59,18 +59,12 @@ export function MessagesContainer() {
 
   async function fetchConversations() {
     try {
-      const response = await fetch("/api/messages");
+      const response = await fetch("/api/messages", { credentials: "include" });
       const result = await response.json();
 
       if (result.success) {
-        // Add mock user data for demo (in production, this comes from the API)
-        const conversationsWithUsers = result.data.conversations.map(
-          (conv: Conversation, index: number) => ({
-            ...conv,
-            otherUser: getMockUser(index),
-          })
-        );
-        setConversations(conversationsWithUsers);
+        // User data now comes from the API
+        setConversations(result.data.conversations);
       }
     } catch (error) {
       console.error("Failed to fetch conversations:", error);
@@ -94,8 +88,8 @@ export function MessagesContainer() {
 
   if (isLoading) {
     return (
-      <div className="h-full flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      <div className="h-full flex items-center justify-center bg-black">
+        <div className="w-12 h-12 border-4 border-cyan-400 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -113,7 +107,7 @@ export function MessagesContainer() {
       );
     }
     return (
-      <div className="h-full">
+      <div className="h-full bg-black">
         {conversations.length === 0 ? (
           <EmptyState />
         ) : (
@@ -129,9 +123,9 @@ export function MessagesContainer() {
 
   // Desktop view: side-by-side
   return (
-    <div className="h-full flex rounded-2xl overflow-hidden border bg-white">
+    <div className="h-full flex rounded-2xl overflow-hidden border border-white/10 bg-black">
       {/* Conversation list */}
-      <div className="w-80 border-r flex-shrink-0">
+      <div className="w-80 border-r border-white/10 flex-shrink-0 bg-black/50">
         {conversations.length === 0 && !showNewConversation ? (
           <EmptyState compact />
         ) : (
@@ -149,7 +143,7 @@ export function MessagesContainer() {
       </div>
 
       {/* Chat window */}
-      <div className="flex-1">
+      <div className="flex-1 bg-black">
         {showNewConversation && newConversationUser ? (
           <ChatWindow
             newConversation={{
@@ -167,22 +161,12 @@ export function MessagesContainer() {
             onMessageSent={handleMessageSent}
           />
         ) : (
-          <div className="h-full flex items-center justify-center text-navy-500">
+          <div className="h-full flex items-center justify-center text-white/50">
             <p>Select a conversation to start messaging</p>
           </div>
         )}
       </div>
     </div>
   );
-}
-
-// Mock user data for demo
-function getMockUser(index: number) {
-  const users = [
-    { id: "1", name: "Sarah Chen", position: "VP of Engineering", company: "TechCorp" },
-    { id: "2", name: "Marcus Johnson", position: "Chief People Officer", company: "GrowthStartup" },
-    { id: "3", name: "Elena Rodriguez", position: "CEO", company: "InnovateCo" },
-  ];
-  return users[index % users.length];
 }
 

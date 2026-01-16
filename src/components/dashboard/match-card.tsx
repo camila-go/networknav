@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { MatchWithUser } from "@/types";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ import {
   X,
   ChevronDown,
   ChevronUp,
+  MessageCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MeetingRequestModal } from "@/components/meetings/meeting-request-modal";
@@ -25,6 +27,7 @@ interface MatchCardProps {
 }
 
 export function MatchCard({ match, onPass, onConnect }: MatchCardProps) {
+  const router = useRouter();
   const [showAllCommonalities, setShowAllCommonalities] = useState(false);
   const [showMeetingModal, setShowMeetingModal] = useState(false);
   const { matchedUser, type, commonalities, conversationStarters, score } = match;
@@ -49,6 +52,10 @@ export function MatchCard({ match, onPass, onConnect }: MatchCardProps) {
     onConnect(match.id);
   }
 
+  function handleMessage() {
+    router.push(`/messages?userId=${match.matchedUserId}&name=${encodeURIComponent(matchedUser.profile.name)}`);
+  }
+
   return (
     <div className="overflow-hidden rounded-xl bg-white/5 border border-white/10 hover:border-white/20 transition-all duration-300">
       {/* Header with match type badge */}
@@ -59,7 +66,7 @@ export function MatchCard({ match, onPass, onConnect }: MatchCardProps) {
             className={cn(
               "gap-1",
               type === "high-affinity"
-                ? "bg-gradient-to-r from-cyan-500 to-teal-500 text-black border-0"
+                ? "bg-gradient-to-r from-fuchsia-500 to-pink-500 text-white border-0 shadow-lg shadow-fuchsia-500/30"
                 : "bg-amber-500/20 text-amber-400 border-amber-500/30"
             )}
           >
@@ -176,17 +183,24 @@ export function MatchCard({ match, onPass, onConnect }: MatchCardProps) {
       <div className="border-t border-white/10 bg-white/5 flex gap-2 p-4">
         <button
           onClick={() => onPass(match.id)}
-          className="flex-1 inline-flex items-center justify-center gap-1 px-4 py-2 rounded-lg text-sm font-medium text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+          className="inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-sm font-medium text-white/70 hover:text-white hover:bg-white/10 transition-colors"
         >
           <X className="h-4 w-4" />
           Pass
+        </button>
+        <button
+          onClick={handleMessage}
+          className="inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-sm font-medium text-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20 transition-colors"
+        >
+          <MessageCircle className="h-4 w-4" />
+          Message
         </button>
         <button
           onClick={handleRequestMeeting}
           className="flex-1 inline-flex items-center justify-center gap-1 px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-cyan-500 to-teal-500 text-black hover:from-cyan-400 hover:to-teal-400 transition-colors"
         >
           <Calendar className="h-4 w-4" />
-          Request Meeting
+          Meet
         </button>
       </div>
 

@@ -159,6 +159,7 @@ export interface Connection {
   requesterId: string;
   recipientId: string;
   status: ConnectionStatus;
+  message?: string | null;
   createdAt: Date;
   updatedAt: Date;
   expiresAt?: Date;
@@ -197,6 +198,9 @@ export type NotificationType =
   | "new_matches"
   | "connection_request"
   | "connection_accepted"
+  | "meeting_request"
+  | "meeting_accepted"
+  | "meeting_declined"
   | "new_message"
   | "request_reminder"
   | "questionnaire_reminder";

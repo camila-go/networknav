@@ -49,17 +49,17 @@ export function ConversationList({
   });
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col bg-black">
       {/* Header */}
-      <div className="p-4 border-b">
-        <h2 className="font-semibold text-lg text-navy-900 mb-3">Messages</h2>
+      <div className="p-4 border-b border-white/10">
+        <h2 className="font-semibold text-lg text-white mb-3">Messages</h2>
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-navy-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
           <Input
             placeholder="Search conversations..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9"
+            className="pl-9 bg-white/5 border-white/20 text-white placeholder:text-white/40 focus:border-cyan-500"
           />
         </div>
       </div>
@@ -72,22 +72,22 @@ export function ConversationList({
             onClick={onSelectNewConversation}
             className={cn(
               "w-full p-4 flex items-start gap-3 text-left transition-colors",
-              "bg-teal-50 border-b border-teal-200 border-l-2 border-l-teal-500"
+              "bg-cyan-500/10 border-b border-cyan-500/20 border-l-2 border-l-cyan-500"
             )}
           >
-            <Avatar className="h-12 w-12 flex-shrink-0">
-              <AvatarFallback className="bg-gradient-to-br from-teal-500 to-teal-600 text-white">
+            <Avatar className="h-12 w-12 flex-shrink-0 border-2 border-cyan-500/50">
+              <AvatarFallback className="bg-gradient-to-br from-cyan-500 to-teal-500 text-black font-semibold">
                 {newConversationUser.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between mb-1">
-                <span className="font-medium text-navy-900 truncate">
+                <span className="font-medium text-white truncate">
                   {newConversationUser.name}
                 </span>
-                <Badge className="bg-teal-600 text-white text-xs">New</Badge>
+                <Badge className="bg-cyan-500 text-black text-xs font-semibold">New</Badge>
               </div>
-              <p className="text-sm text-teal-700">
+              <p className="text-sm text-cyan-400">
                 Start a conversation...
               </p>
             </div>
@@ -95,7 +95,7 @@ export function ConversationList({
         )}
 
         {filteredConversations.length === 0 && !newConversationUser ? (
-          <div className="p-4 text-center text-navy-500 text-sm">
+          <div className="p-4 text-center text-white/50 text-sm">
             No conversations found
           </div>
         ) : (
@@ -135,30 +135,30 @@ function ConversationItem({
       onClick={onClick}
       className={cn(
         "w-full p-4 flex items-start gap-3 text-left transition-colors",
-        "hover:bg-navy-50 border-b border-navy-100",
-        isSelected && "bg-primary/5 border-l-2 border-l-primary"
+        "hover:bg-white/5 border-b border-white/10",
+        isSelected && "bg-cyan-500/10 border-l-2 border-l-cyan-500"
       )}
     >
-      <Avatar className="h-12 w-12 flex-shrink-0">
+      <Avatar className="h-12 w-12 flex-shrink-0 border-2 border-white/20">
         <AvatarImage src={undefined} />
-        <AvatarFallback className="bg-gradient-to-br from-primary to-teal-500 text-white">
+        <AvatarFallback className="bg-gradient-to-br from-cyan-500 to-teal-500 text-black font-semibold">
           {initials}
         </AvatarFallback>
       </Avatar>
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between mb-1">
-          <span className="font-medium text-navy-900 truncate">
+          <span className="font-medium text-white truncate">
             {otherUser?.name || "Unknown"}
           </span>
           {lastMessage && (
-            <span className="text-xs text-muted-foreground flex-shrink-0 ml-2">
+            <span className="text-xs text-white/40 flex-shrink-0 ml-2">
               {formatRelativeTime(lastMessage.createdAt)}
             </span>
           )}
         </div>
 
-        <p className="text-sm text-muted-foreground truncate">
+        <p className="text-sm text-white/60 truncate">
           {otherUser?.position}
           {otherUser?.company && ` at ${otherUser.company}`}
         </p>
@@ -168,8 +168,8 @@ function ConversationItem({
             className={cn(
               "text-sm truncate mt-1",
               unreadCount > 0
-                ? "text-navy-700 font-medium"
-                : "text-muted-foreground"
+                ? "text-white font-medium"
+                : "text-white/50"
             )}
           >
             {lastMessage.content}
@@ -178,7 +178,7 @@ function ConversationItem({
       </div>
 
       {unreadCount > 0 && (
-        <Badge className="bg-primary text-white h-5 min-w-[20px] flex items-center justify-center">
+        <Badge className="bg-cyan-500 text-black h-5 min-w-[20px] flex items-center justify-center font-semibold">
           {unreadCount}
         </Badge>
       )}

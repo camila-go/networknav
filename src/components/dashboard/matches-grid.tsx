@@ -102,7 +102,11 @@ const mockMatches: MatchWithUser[] = [
   },
 ];
 
-export function MatchesGrid() {
+interface MatchesGridProps {
+  onMatchesLoaded?: (count: number, avgScore: number) => void;
+}
+
+export function MatchesGrid({ onMatchesLoaded }: MatchesGridProps = {}) {
   const [matches, setMatches] = useState<MatchWithUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
@@ -117,14 +121,32 @@ export function MatchesGrid() {
       const result = await response.json();
 
       if (result.success && result.data.matches) {
-        setMatches(result.data.matches);
+        const fetchedMatches = result.data.matches;
+        setMatches(fetchedMatches);
+        
+        // Notify parent of match count
+        if (onMatchesLoaded) {
+          const avgScore = fetchedMatches.length > 0
+            ? Math.round(fetchedMatches.reduce((sum: number, m: MatchWithUser) => {
+                const score = m.score || 0;
+                return sum + (score > 1 ? score / 100 : score);
+              }, 0) / fetchedMatches.length * 100)
+            : 0;
+          onMatchesLoaded(fetchedMatches.length, avgScore);
+        }
       } else {
         // Use mock data as fallback
         setMatches(mockMatches);
+        if (onMatchesLoaded) {
+          onMatchesLoaded(mockMatches.length, 85);
+        }
       }
     } catch (error) {
       console.error("Failed to fetch matches:", error);
       setMatches(mockMatches);
+      if (onMatchesLoaded) {
+        onMatchesLoaded(mockMatches.length, 85);
+      }
     } finally {
       setIsLoading(false);
     }

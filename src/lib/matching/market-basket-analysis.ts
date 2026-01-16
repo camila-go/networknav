@@ -418,33 +418,57 @@ function deduplicateCommonalities(commonalities: Commonality[]): Commonality[] {
 
 export function generateConversationStarters(
   commonalities: Commonality[],
-  matchType: "high-affinity" | "strategic"
+  matchType: "high-affinity" | "strategic",
+  recipientFirstName?: string
 ): string[] {
   const starters: string[] = [];
+  const name = recipientFirstName || "them";
 
   for (const commonality of commonalities.slice(0, 2)) {
+    const desc = commonality.description.toLowerCase();
+    
     if (commonality.category === "professional") {
       if (matchType === "high-affinity") {
-        starters.push(`Discuss your shared experience with ${commonality.description.toLowerCase().replace("both", "").trim()}`);
+        // More conversational phrasing for similar backgrounds
+        if (desc.includes("both in") || desc.includes("industry")) {
+          starters.push(`I'd love to hear how you're navigating our industry right now`);
+        } else if (desc.includes("scaling") || desc.includes("team")) {
+          starters.push(`Would love to swap stories about scaling teams`);
+        } else if (desc.includes("challenges")) {
+          starters.push(`I'm curious how you've been tackling similar challenges`);
+        } else {
+          starters.push(`I think we'd have a lot to learn from each other`);
+        }
       } else {
-        starters.push(`Learn how they approach ${commonality.description.toLowerCase()}`);
+        // Strategic matches - focus on complementary value
+        if (desc.includes("complementary")) {
+          starters.push(`Your perspective would be really valuable for what I'm working on`);
+        } else {
+          starters.push(`I'd love to get your take on this from your vantage point`);
+        }
       }
     } else if (commonality.category === "hobby") {
-      starters.push(`Bond over your shared interest in ${commonality.description.toLowerCase().replace("both enjoy", "").trim()}`);
+      // Make hobby starters feel like genuine connection
+      const hobby = desc.replace("both enjoy", "").replace("both", "").trim();
+      if (hobby) {
+        starters.push(`Fellow ${hobby} enthusiast! Would love to chat about that too`);
+      }
     } else if (commonality.category === "values") {
-      starters.push(`Explore your aligned values around ${commonality.description.toLowerCase()}`);
+      starters.push(`It sounds like we share a similar leadership philosophy`);
     }
   }
 
-  // Add generic fallback starters
+  // Add warm, personable fallback starters
   if (starters.length === 0) {
     if (matchType === "high-affinity") {
-      starters.push("Share your current leadership challenges and wins");
+      starters.push(`I think we'd really hit it off — let's connect!`);
     } else {
-      starters.push("Explore how your different perspectives could create value together");
+      starters.push(`I'd value hearing your different perspective on things`);
     }
   }
 
-  return starters.slice(0, 3);
+  // Deduplicate and limit
+  const unique = [...new Set(starters)];
+  return unique.slice(0, 3);
 }
 

@@ -5,6 +5,42 @@ import { users, questionnaireResponses, userMatches } from "@/lib/stores";
 import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
 import type { Match } from "@/types";
 
+/**
+ * Generate personable, natural-sounding conversation starters for meeting invites
+ */
+function generatePersonableStarters(
+  firstName?: string,
+  company?: string,
+  position?: string,
+  matchType?: string
+): string[] {
+  const name = firstName || "you";
+  const starters: string[] = [];
+  
+  // Role-based starters that feel like genuine curiosity
+  if (position && company) {
+    starters.push(`I'd love to hear what ${name}'s working on at ${company}`);
+  } else if (company) {
+    starters.push(`Curious to learn more about what you're building at ${company}`);
+  } else if (position) {
+    starters.push(`Would love to hear about your journey as a ${position}`);
+  }
+  
+  // Match type-specific additions
+  if (matchType === 'high-affinity') {
+    starters.push(`Sounds like we have a lot in common — excited to connect!`);
+  } else {
+    starters.push(`I think we'd have interesting perspectives to share`);
+  }
+  
+  // Warm, general fallback
+  if (starters.length < 2) {
+    starters.push(`Looking forward to meeting and learning from each other`);
+  }
+  
+  return starters.slice(0, 2);
+}
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getSession();
@@ -161,6 +197,19 @@ async function generateMatchesFromSupabase(currentUserId: string, currentUserEma
   if (!supabaseAdmin) return [];
   
   try {
+    // Type for user profile from Supabase
+    type SupabaseProfile = {
+      id: string;
+      name: string;
+      email?: string;
+      position?: string;
+      title?: string;
+      company?: string;
+      photo_url?: string;
+      questionnaire_data?: Record<string, unknown>;
+      interests?: string[];
+    };
+
     // First, try to find the current user's Supabase profile by either ID or email
     let currentUserSupabaseId: string | null = null;
     
@@ -171,7 +220,7 @@ async function generateMatchesFromSupabase(currentUserId: string, currentUserEma
         .select('id')
         .eq('id', currentUserId)
         .single();
-      if (idMatch) currentUserSupabaseId = idMatch.id;
+      if (idMatch) currentUserSupabaseId = (idMatch as { id: string }).id;
     }
     
     // If not found by ID and we have an email, try to find by email
@@ -181,7 +230,7 @@ async function generateMatchesFromSupabase(currentUserId: string, currentUserEma
         .select('id, email')
         .eq('email', currentUserEmail.toLowerCase())
         .single();
-      if (emailMatch) currentUserSupabaseId = emailMatch.id;
+      if (emailMatch) currentUserSupabaseId = (emailMatch as { id: string; email: string }).id;
     }
     
     // Fetch all users from Supabase
@@ -199,9 +248,12 @@ async function generateMatchesFromSupabase(currentUserId: string, currentUserEma
     if (!profiles || profiles.length === 0) {
       return [];
     }
+
+    // Cast to typed array
+    const typedProfiles = profiles as unknown as SupabaseProfile[];
     
     // Filter out the current user by ID or email
-    const filteredProfiles = profiles.filter(profile => {
+    const filteredProfiles = typedProfiles.filter(profile => {
       // Don't show if Supabase ID matches
       if (currentUserSupabaseId && profile.id === currentUserSupabaseId) return false;
       // Don't show if local ID matches
@@ -280,19 +332,21 @@ async function generateMatchesFromSupabase(currentUserId: string, currentUserEma
           id: profile.id,
           profile: {
             name: profile.name || 'Anonymous',
-            position: profile.position || undefined,
-            title: profile.title || undefined,
-            company: profile.company || undefined,
-            photoUrl: profile.photo_url || undefined,
+            position: profile.position || '',
+            title: profile.title || '',
+            company: profile.company,
+            photoUrl: profile.photo_url,
           },
           questionnaireCompleted: hasQuestionnaire,
         },
         type,
         commonalities,
-        conversationStarters: [
-          `Ask ${profile.name?.split(' ')[0] || 'them'} about their role at ${profile.company || 'their organization'}`,
-          `Share your leadership experiences and learn from theirs`,
-        ],
+        conversationStarters: generatePersonableStarters(
+          profile.name?.split(' ')[0],
+          profile.company,
+          profile.position,
+          type
+        ),
         score,
         generatedAt: now,
         viewed: false,
@@ -335,8 +389,8 @@ function generateDemoMatches(userId: string): Match[] {
         { category: "values", description: "Share servant leadership philosophy", weight: 0.8 },
       ],
       conversationStarters: [
-        "Ask Sarah about her experience scaling engineering teams from 20 to 100+",
-        "Compare notes on your approaches to talent retention in tech",
+        "I'd love to hear how you scaled your engineering team — we're going through something similar",
+        "Would be great to swap notes on talent retention strategies",
       ],
       score: 0.92,
       generatedAt: now,
@@ -364,8 +418,8 @@ function generateDemoMatches(userId: string): Match[] {
         { category: "lifestyle", description: "Both value work-life integration", weight: 0.6 },
       ],
       conversationStarters: [
-        "Marcus's people expertise could help with your talent retention challenges",
-        "Discuss the intersection of tech and culture in scaling organizations",
+        "Your people expertise sounds like exactly what I need perspective on",
+        "I'm curious how you think about culture as organizations scale",
       ],
       score: 0.78,
       generatedAt: now,
@@ -393,8 +447,8 @@ function generateDemoMatches(userId: string): Match[] {
         { category: "values", description: "Passionate about mentorship", weight: 0.75 },
       ],
       conversationStarters: [
-        "Elena just closed Series B - ask about her fundraising journey",
-        "Compare your approaches to building executive teams",
+        "Would love to hear about your fundraising journey — congrats on Series B!",
+        "I'm navigating similar exec team challenges, would value your perspective",
       ],
       score: 0.89,
       generatedAt: now,
@@ -422,8 +476,8 @@ function generateDemoMatches(userId: string): Match[] {
         { category: "hobby", description: "Both enjoy leadership podcasts", weight: 0.6 },
       ],
       conversationStarters: [
-        "David has been implementing OKRs - ask about his experience",
-        "Discuss product-engineering collaboration strategies",
+        "I heard you've been rolling out OKRs — I'd love to hear how it's going",
+        "Would be great to trade notes on product-engineering alignment",
       ],
       score: 0.84,
       generatedAt: now,
@@ -451,8 +505,8 @@ function generateDemoMatches(userId: string): Match[] {
         { category: "values", description: "Data-driven decision making", weight: 0.7 },
       ],
       conversationStarters: [
-        "Learn how Aisha approaches fintech compliance challenges",
-        "Explore cross-industry perspectives on digital transformation",
+        "I'm curious how you navigate fintech compliance — seems like a unique challenge",
+        "Would love a cross-industry perspective on digital transformation",
       ],
       score: 0.76,
       generatedAt: now,
@@ -480,8 +534,8 @@ function generateDemoMatches(userId: string): Match[] {
         { category: "lifestyle", description: "Similar communication styles", weight: 0.6 },
       ],
       conversationStarters: [
-        "James excels at process optimization - valuable for scaling teams",
-        "Discuss how to bridge tech and operations perspectives",
+        "Your ops expertise could really help with some scaling challenges I'm facing",
+        "I'd value your take on bridging tech and operations — it's tricky!",
       ],
       score: 0.72,
       generatedAt: now,

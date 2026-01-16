@@ -1,13 +1,16 @@
-import { Suspense } from "react";
+"use client";
+
+import { Suspense, useState, useCallback } from "react";
 import { MatchesGrid } from "@/components/dashboard/matches-grid";
 import { StatsCards } from "@/components/dashboard/stats-cards";
 
-export const metadata = {
-  title: "Dashboard | Jynx",
-  description: "View your leadership matches and connections",
-};
-
 export default function DashboardPage() {
+  const [matchStats, setMatchStats] = useState({ count: 0, avgScore: 0 });
+
+  const handleMatchesLoaded = useCallback((count: number, avgScore: number) => {
+    setMatchStats({ count, avgScore });
+  }, []);
+
   return (
     <div className="space-y-8">
       {/* Welcome header */}
@@ -22,7 +25,7 @@ export default function DashboardPage() {
 
       {/* Stats overview */}
       <Suspense fallback={<div className="h-24 shimmer rounded-xl" />}>
-        <StatsCards />
+        <StatsCards matchCount={matchStats.count} matchScore={matchStats.avgScore} />
       </Suspense>
 
       {/* Matches grid */}
@@ -35,7 +38,7 @@ export default function DashboardPage() {
           </div>
         }
       >
-        <MatchesGrid />
+        <MatchesGrid onMatchesLoaded={handleMatchesLoaded} />
       </Suspense>
     </div>
   );

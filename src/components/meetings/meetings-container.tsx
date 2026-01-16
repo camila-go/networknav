@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,8 +19,12 @@ import {
   CalendarClock,
   Loader2,
   ExternalLink,
+  List,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
-import { format, formatDistanceToNow, isFuture } from "date-fns";
+import { format, formatDistanceToNow, isFuture, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, addMonths, subMonths } from "date-fns";
 import type { MeetingWithUsers, MeetingType } from "@/types";
 import Link from "next/link";
 
@@ -34,14 +38,22 @@ const MEETING_TYPE_ICONS: Record<MeetingType, typeof Video> = {
 export function MeetingsContainer() {
   const { toast } = useToast();
   const [meetings, setMeetings] = useState<MeetingWithUsers[]>([]);
+  const [allMeetings, setAllMeetings] = useState<MeetingWithUsers[]>([]);
   const [stats, setStats] = useState({ pending: 0, upcoming: 0, completed: 0 });
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("upcoming");
+  // Default to "requests" tab since new meetings start as pending
+  const [activeTab, setActiveTab] = useState("requests");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
+  const [calendarDate, setCalendarDate] = useState(new Date());
 
   useEffect(() => {
     fetchMeetings();
   }, [activeTab]);
+
+  useEffect(() => {
+    fetchAllMeetings();
+  }, []);
 
   async function fetchMeetings() {
     setIsLoading(true);
@@ -59,6 +71,38 @@ export function MeetingsContainer() {
       setIsLoading(false);
     }
   }
+
+  async function fetchAllMeetings() {
+    try {
+      const response = await fetch(`/api/meetings?filter=all`);
+      const result = await response.json();
+
+      if (result.success) {
+        setAllMeetings(result.data.meetings);
+      }
+    } catch (error) {
+      console.error("Failed to fetch all meetings:", error);
+    }
+  }
+
+  // Calendar helper functions
+  const calendarDays = useMemo(() => {
+    const start = startOfMonth(calendarDate);
+    const end = endOfMonth(calendarDate);
+    return eachDayOfInterval({ start, end });
+  }, [calendarDate]);
+
+  const meetingsByDate = useMemo(() => {
+    const map = new Map<string, MeetingWithUsers[]>();
+    allMeetings.forEach(meeting => {
+      if (meeting.acceptedTime) {
+        const dateKey = format(new Date(meeting.acceptedTime), "yyyy-MM-dd");
+        const existing = map.get(dateKey) || [];
+        map.set(dateKey, [...existing, meeting]);
+      }
+    });
+    return map;
+  }, [allMeetings]);
 
   async function handleMeetingAction(meetingId: string, action: string, data?: object) {
     setActionLoading(meetingId);
@@ -98,11 +142,42 @@ export function MeetingsContainer() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-white font-display">My Meetings</h1>
-        <p className="text-white/60">
-          Manage your scheduled meetings and requests
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-white font-display">My Meetings</h1>
+          <p className="text-white/60">
+            Manage your scheduled meetings and requests
+          </p>
+        </div>
+        {/* View Toggle */}
+        <div className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-lg p-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setViewMode("list")}
+            className={cn(
+              "h-8 px-3 transition-colors",
+              viewMode === "list" 
+                ? "bg-cyan-500/20 text-cyan-400" 
+                : "text-white/50 hover:text-white hover:bg-white/5"
+            )}
+          >
+            <List className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setViewMode("calendar")}
+            className={cn(
+              "h-8 px-3 transition-colors",
+              viewMode === "calendar" 
+                ? "bg-cyan-500/20 text-cyan-400" 
+                : "text-white/50 hover:text-white hover:bg-white/5"
+            )}
+          >
+            <CalendarDays className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -130,8 +205,127 @@ export function MeetingsContainer() {
         />
       </div>
 
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      {/* Calendar View */}
+      {viewMode === "calendar" ? (
+        <div className="rounded-xl bg-white/5 border border-white/10 p-4">
+          {/* Calendar Header */}
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-white">
+              {format(calendarDate, "MMMM yyyy")}
+            </h2>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setCalendarDate(subMonths(calendarDate, 1))}
+                className="h-8 w-8 text-white/60 hover:text-white hover:bg-white/10"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setCalendarDate(new Date())}
+                className="text-cyan-400 hover:bg-cyan-500/10"
+              >
+                Today
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setCalendarDate(addMonths(calendarDate, 1))}
+                className="h-8 w-8 text-white/60 hover:text-white hover:bg-white/10"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Calendar Grid */}
+          <div className="grid grid-cols-7 gap-1">
+            {/* Day headers */}
+            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(day => (
+              <div key={day} className="text-center text-xs text-white/50 py-2 font-medium">
+                {day}
+              </div>
+            ))}
+            
+            {/* Empty cells for start of month */}
+            {Array.from({ length: calendarDays[0]?.getDay() || 0 }).map((_, i) => (
+              <div key={`empty-${i}`} className="aspect-square" />
+            ))}
+            
+            {/* Calendar days */}
+            {calendarDays.map(day => {
+              const dateKey = format(day, "yyyy-MM-dd");
+              const dayMeetings = meetingsByDate.get(dateKey) || [];
+              const isToday = isSameDay(day, new Date());
+              const hasScheduledMeetings = dayMeetings.some(m => m.status === "scheduled");
+              
+              return (
+                <div
+                  key={dateKey}
+                  className={cn(
+                    "aspect-square p-1 rounded-lg relative transition-colors",
+                    isToday && "bg-cyan-500/20 border border-cyan-500/50",
+                    !isToday && hasScheduledMeetings && "bg-white/5 hover:bg-white/10",
+                    !isToday && !hasScheduledMeetings && "hover:bg-white/5"
+                  )}
+                >
+                  <span className={cn(
+                    "text-sm",
+                    isToday ? "text-cyan-400 font-semibold" : "text-white/70"
+                  )}>
+                    {format(day, "d")}
+                  </span>
+                  
+                  {/* Meeting indicators */}
+                  {dayMeetings.length > 0 && (
+                    <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex gap-0.5">
+                      {dayMeetings.slice(0, 3).map((meeting, i) => {
+                        const MeetingIcon = MEETING_TYPE_ICONS[meeting.meetingType];
+                        return (
+                          <div
+                            key={meeting.id}
+                            className={cn(
+                              "w-1.5 h-1.5 rounded-full",
+                              meeting.status === "scheduled" && "bg-cyan-400",
+                              meeting.status === "pending" && "bg-amber-400",
+                              meeting.status === "completed" && "bg-teal-400"
+                            )}
+                            title={`${meeting.requester.profile.name} - ${meeting.meetingType}`}
+                          />
+                        );
+                      })}
+                      {dayMeetings.length > 3 && (
+                        <span className="text-[10px] text-white/50">+{dayMeetings.length - 3}</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Legend */}
+          <div className="flex items-center gap-4 mt-4 pt-4 border-t border-white/10 text-xs text-white/50">
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-cyan-400" />
+              <span>Scheduled</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-amber-400" />
+              <span>Pending</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-teal-400" />
+              <span>Completed</span>
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* List View - Tabs */
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-3 bg-white/5 border border-white/10">
           <TabsTrigger 
             value="upcoming" 
@@ -231,6 +425,7 @@ export function MeetingsContainer() {
           )}
         </TabsContent>
       </Tabs>
+      )}
     </div>
   );
 }
