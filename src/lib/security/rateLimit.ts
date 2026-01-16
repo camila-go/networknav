@@ -15,12 +15,28 @@ const rateLimitMap = new Map<string, RateLimitRecord>();
  * Rate limit configurations for different actions
  */
 export const RATE_LIMITS = {
+  // Authentication - strict limits to prevent brute force
+  'login': { maxRequests: 5, windowMs: 15 * 60 * 1000 }, // 5 per 15 minutes
+  'register': { maxRequests: 3, windowMs: 60 * 60 * 1000 }, // 3 per hour
+  'password-reset': { maxRequests: 3, windowMs: 60 * 60 * 1000 }, // 3 per hour
+  
+  // Profile & data updates
   'update-profile': { maxRequests: 5, windowMs: 60 * 60 * 1000 }, // 5 per hour
+  'questionnaire-save': { maxRequests: 30, windowMs: 60 * 60 * 1000 }, // 30 per hour
+  
+  // Matching & discovery
   'compute-matches': { maxRequests: 10, windowMs: 60 * 60 * 1000 }, // 10 per hour
+  'search': { maxRequests: 100, windowMs: 60 * 60 * 1000 }, // 100 per hour
+  
+  // Meetings & connections
   'schedule-meeting': { maxRequests: 20, windowMs: 60 * 60 * 1000 }, // 20 per hour
+  'send-message': { maxRequests: 50, windowMs: 60 * 60 * 1000 }, // 50 per hour
+  
+  // Moderation actions
   'report-user': { maxRequests: 5, windowMs: 24 * 60 * 60 * 1000 }, // 5 per day
   'block-user': { maxRequests: 20, windowMs: 24 * 60 * 60 * 1000 }, // 20 per day
-  'search': { maxRequests: 100, windowMs: 60 * 60 * 1000 }, // 100 per hour
+  
+  // Default fallback
   'api-default': { maxRequests: 60, windowMs: 60 * 1000 }, // 60 per minute
 } as const;
 

@@ -93,28 +93,29 @@ export function ProfileForm() {
   }
 
   if (isLoading) {
-    return <div className="h-64 shimmer rounded-lg" />;
+    return <div className="h-64 bg-white/5 animate-pulse rounded-lg" />;
   }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       {/* Avatar */}
       <div className="flex items-center gap-4">
-        <Avatar className="h-20 w-20">
+        <Avatar className="h-20 w-20 border-2 border-white/20">
           <AvatarImage src={watch("photoUrl")} />
-          <AvatarFallback className="bg-gradient-to-br from-primary to-teal-500 text-white text-xl">
+          <AvatarFallback className="bg-gradient-to-br from-cyan-500 to-teal-500 text-black text-xl font-semibold">
             {initials || "?"}
           </AvatarFallback>
         </Avatar>
         <div className="flex-1">
-          <Label htmlFor="photoUrl">Photo URL</Label>
+          <Label htmlFor="photoUrl" className="text-white/80">Photo URL</Label>
           <Input
             id="photoUrl"
             type="url"
             placeholder="https://example.com/photo.jpg"
             {...register("photoUrl")}
+            className="bg-white/5 border-white/20 text-white placeholder:text-white/40"
           />
-          <p className="text-xs text-muted-foreground mt-1">
+          <p className="text-xs text-white/50 mt-1">
             Enter a URL to your profile photo
           </p>
         </div>
@@ -122,65 +123,74 @@ export function ProfileForm() {
 
       {/* Name */}
       <div className="space-y-2">
-        <Label htmlFor="name">Full Name</Label>
+        <Label htmlFor="name" className="text-white/80">Full Name</Label>
         <Input
           id="name"
           {...register("name")}
-          className={errors.name ? "border-destructive" : ""}
+          className={`bg-white/5 border-white/20 text-white placeholder:text-white/40 ${errors.name ? "border-red-500" : ""}`}
         />
         {errors.name && (
-          <p className="text-sm text-destructive">{errors.name.message}</p>
+          <p className="text-sm text-red-400">{errors.name.message}</p>
         )}
       </div>
 
       {/* Position & Title */}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="position">Position</Label>
+          <Label htmlFor="position" className="text-white/80">Position</Label>
           <Input
             id="position"
             {...register("position")}
-            className={errors.position ? "border-destructive" : ""}
+            className={`bg-white/5 border-white/20 text-white placeholder:text-white/40 ${errors.position ? "border-red-500" : ""}`}
           />
           {errors.position && (
-            <p className="text-sm text-destructive">{errors.position.message}</p>
+            <p className="text-sm text-red-400">{errors.position.message}</p>
           )}
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="title">Title</Label>
+          <Label htmlFor="title" className="text-white/80">Title</Label>
           <Input
             id="title"
             {...register("title")}
-            className={errors.title ? "border-destructive" : ""}
+            className={`bg-white/5 border-white/20 text-white placeholder:text-white/40 ${errors.title ? "border-red-500" : ""}`}
           />
           {errors.title && (
-            <p className="text-sm text-destructive">{errors.title.message}</p>
+            <p className="text-sm text-red-400">{errors.title.message}</p>
           )}
         </div>
       </div>
 
       {/* Company */}
       <div className="space-y-2">
-        <Label htmlFor="company">
-          Company <span className="text-muted-foreground">(Optional)</span>
+        <Label htmlFor="company" className="text-white/80">
+          Company <span className="text-white/40">(Optional)</span>
         </Label>
-        <Input id="company" {...register("company")} />
+        <Input 
+          id="company" 
+          {...register("company")} 
+          className="bg-white/5 border-white/20 text-white placeholder:text-white/40"
+        />
       </div>
 
       {/* Location */}
       <div className="space-y-2">
-        <Label htmlFor="location">
-          Location <span className="text-muted-foreground">(Optional)</span>
+        <Label htmlFor="location" className="text-white/80">
+          Location <span className="text-white/40">(Optional)</span>
         </Label>
         <Input
           id="location"
           placeholder="San Francisco, CA"
           {...register("location")}
+          className="bg-white/5 border-white/20 text-white placeholder:text-white/40"
         />
       </div>
 
-      <Button type="submit" disabled={isSubmitting || !isDirty}>
+      <Button 
+        type="submit" 
+        disabled={isSubmitting || !isDirty}
+        className="bg-gradient-to-r from-cyan-500 to-teal-500 text-black hover:from-cyan-400 hover:to-teal-400 disabled:opacity-50"
+      >
         {isSubmitting ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -196,4 +206,3 @@ export function ProfileForm() {
     </form>
   );
 }
-

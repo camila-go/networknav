@@ -2,11 +2,10 @@ import Link from "next/link";
 import { ArrowRight, Users, Sparkles, MessageCircle, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-// Radial dot matrix component inspired by Global Summit 2026
-function RadialDotMatrix() {
-  // Generate dots in concentric circles
+// Generate dot data for the radial matrix
+function generateDots() {
   const rings = 12;
-  const dots: { x: number; y: number; color: string; size: number; delay: number }[] = [];
+  const dots: { x: number; y: number; color: string; size: number; delay: number; floatDuration: number; twinkleDuration: number }[] = [];
   
   for (let ring = 1; ring <= rings; ring++) {
     const dotsInRing = ring * 8;
@@ -28,10 +27,18 @@ function RadialDotMatrix() {
         y,
         color: `hsla(${hue}, ${saturation}%, ${lightness}%, ${opacity})`,
         size: Math.max(2, 6 - ring * 0.3),
-        delay: ring * 0.1,
+        delay: (ring * 0.3) + (i * 0.02),
+        floatDuration: 4 + (ring % 3),
+        twinkleDuration: 6 + (i % 4),
       });
     }
   }
+  return dots;
+}
+
+// Radial dot matrix component with subtle floating animation
+function RadialDotMatrix() {
+  const dots = generateDots();
 
   return (
     <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
@@ -40,19 +47,7 @@ function RadialDotMatrix() {
         viewBox="0 0 100 100"
         preserveAspectRatio="xMidYMid slice"
       >
-        <defs>
-          <radialGradient id="centerGlow" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="rgba(0, 255, 255, 0.8)" />
-            <stop offset="30%" stopColor="rgba(0, 255, 200, 0.4)" />
-            <stop offset="60%" stopColor="rgba(0, 200, 255, 0.1)" />
-            <stop offset="100%" stopColor="transparent" />
-          </radialGradient>
-        </defs>
-        
-        {/* Center glow */}
-        <circle cx="50" cy="50" r="15" fill="url(#centerGlow)" />
-        
-        {/* Animated dots */}
+        {/* Animated dots with floating effect */}
         {dots.map((dot, index) => (
           <circle
             key={index}
@@ -60,20 +55,15 @@ function RadialDotMatrix() {
             cy={dot.y}
             r={dot.size / 10}
             fill={dot.color}
-            className="animate-pulse-soft"
+            className="animate-dot"
             style={{ 
-              animationDelay: `${dot.delay}s`,
-              animationDuration: '3s'
-            }}
+              '--animation-delay': `${dot.delay}s`,
+              '--float-duration': `${dot.floatDuration}s`,
+              '--twinkle-duration': `${dot.twinkleDuration}s`,
+            } as React.CSSProperties}
           />
         ))}
       </svg>
-      
-      {/* Bright center circle */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 md:w-48 md:h-48">
-        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-cyan-400 via-teal-300 to-cyan-500 opacity-60 blur-2xl animate-pulse-soft" />
-        <div className="absolute inset-4 rounded-full bg-gradient-to-br from-white via-cyan-100 to-teal-200 opacity-80 blur-xl" />
-      </div>
     </div>
   );
 }

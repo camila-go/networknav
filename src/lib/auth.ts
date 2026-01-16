@@ -3,14 +3,48 @@ import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
 import type { AuthSession } from "@/types";
 
-// Environment variables - create Uint8Array secrets
-function getSecret(envVar: string, fallback: string): Uint8Array {
-  const secret = process.env[envVar] || fallback;
+// ============================================
+// Environment & Secret Configuration
+// ============================================
+
+const IS_PRODUCTION = process.env.NODE_ENV === "production";
+
+/**
+ * Get JWT secret with strict production validation
+ * In production, secrets MUST be configured - no fallbacks allowed
+ */
+function getSecret(envVar: string, devFallback: string): Uint8Array {
+  const secret = process.env[envVar];
+  
+  if (!secret) {
+    if (IS_PRODUCTION) {
+      throw new Error(
+        `SECURITY ERROR: ${envVar} is not configured. ` +
+        `JWT secrets are required in production. ` +
+        `Please set ${envVar} in your environment variables.`
+      );
+    }
+    // Development only - warn about using fallback
+    console.warn(
+      `⚠️  WARNING: Using development fallback for ${envVar}. ` +
+      `Set ${envVar} in .env.local for production-like behavior.`
+    );
+    return new TextEncoder().encode(devFallback);
+  }
+  
+  // Validate secret strength
+  if (secret.length < 32) {
+    throw new Error(
+      `SECURITY ERROR: ${envVar} must be at least 32 characters long. ` +
+      `Current length: ${secret.length}`
+    );
+  }
+  
   return new TextEncoder().encode(secret);
 }
 
-const JWT_SECRET = getSecret("JWT_SECRET", "development-secret-key-change-in-production");
-const JWT_REFRESH_SECRET = getSecret("JWT_REFRESH_SECRET", "development-refresh-key-change-in-production");
+const JWT_SECRET = getSecret("JWT_SECRET", "development-secret-key-change-in-production-min32chars");
+const JWT_REFRESH_SECRET = getSecret("JWT_REFRESH_SECRET", "development-refresh-key-change-in-production-min32");
 
 // Token expiration times
 const ACCESS_TOKEN_EXPIRY = "15m";

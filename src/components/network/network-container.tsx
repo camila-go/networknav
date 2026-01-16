@@ -23,9 +23,6 @@ import {
   TrendingUp,
   Lightbulb,
   X,
-  ZoomIn,
-  ZoomOut,
-  RotateCcw,
   Calendar,
   Loader2,
 } from "lucide-react";
@@ -96,10 +93,10 @@ export function NetworkContainer() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-full">
+      <div className="flex items-center justify-center h-full bg-black">
         <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-muted-foreground">Building your network map...</p>
+          <Loader2 className="h-12 w-12 animate-spin text-cyan-400 mx-auto mb-4" />
+          <p className="text-white/60">Building your network map...</p>
         </div>
       </div>
     );
@@ -107,15 +104,17 @@ export function NetworkContainer() {
 
   if (!networkData) {
     return (
-      <div className="flex items-center justify-center h-full">
+      <div className="flex items-center justify-center h-full bg-black">
         <div className="text-center">
-          <Network className="h-16 w-16 text-navy-200 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-navy-900 mb-2">No Network Data</h2>
-          <p className="text-muted-foreground mb-4">
+          <Network className="h-16 w-16 text-white/20 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-white mb-2">No Network Data</h2>
+          <p className="text-white/60 mb-4">
             Complete your questionnaire to see your network map
           </p>
           <Link href="/onboarding">
-            <Button>Complete Questionnaire</Button>
+            <Button className="bg-gradient-to-r from-cyan-500 to-teal-500 text-black hover:from-cyan-400 hover:to-teal-400">
+              Complete Questionnaire
+            </Button>
           </Link>
         </div>
       </div>
@@ -123,38 +122,38 @@ export function NetworkContainer() {
   }
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full bg-black">
       {/* Main visualization area */}
       <div className="flex-1 flex flex-col p-4">
         {/* Controls bar */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <Network className="h-5 w-5 text-primary" />
-              <h1 className="text-lg font-semibold text-navy-900">My Network Map</h1>
+              <Network className="h-5 w-5 text-cyan-400" />
+              <h1 className="text-lg font-semibold text-white">My Network Map</h1>
             </div>
 
             {/* Filter select */}
             <Select value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
-              <SelectTrigger className="w-40">
+              <SelectTrigger className="w-40 bg-white/5 border-white/20 text-white">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">
+              <SelectContent className="bg-gray-900 border-white/20">
+                <SelectItem value="all" className="text-white hover:bg-white/10">
                   <span className="flex items-center gap-2">
                     <Users className="h-4 w-4" />
                     All Connections
                   </span>
                 </SelectItem>
-                <SelectItem value="high-affinity">
+                <SelectItem value="high-affinity" className="text-white hover:bg-white/10">
                   <span className="flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 text-teal-500" />
+                    <Sparkles className="h-4 w-4 text-teal-400" />
                     High-Affinity
                   </span>
                 </SelectItem>
-                <SelectItem value="strategic">
+                <SelectItem value="strategic" className="text-white hover:bg-white/10">
                   <span className="flex items-center gap-2">
-                    <Zap className="h-4 w-4 text-amber-500" />
+                    <Zap className="h-4 w-4 text-amber-400" />
                     Strategic
                   </span>
                 </SelectItem>
@@ -166,21 +165,21 @@ export function NetworkContainer() {
           <div className="flex items-center gap-4 text-sm">
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 rounded-full bg-gradient-to-br from-teal-500 to-teal-400" />
-              <span className="text-muted-foreground">High-Affinity</span>
+              <span className="text-white/60">High-Affinity</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 rounded-full bg-gradient-to-br from-amber-500 to-amber-400" />
-              <span className="text-muted-foreground">Strategic</span>
+              <span className="text-white/60">Strategic</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 rounded-full bg-gradient-to-br from-cyan-500 to-cyan-400" />
-              <span className="text-muted-foreground">You</span>
+              <span className="text-white/60">You</span>
             </div>
           </div>
         </div>
 
         {/* Graph visualization */}
-        <div className="flex-1 rounded-xl border bg-white overflow-hidden relative">
+        <div className="flex-1 rounded-xl border border-white/10 overflow-hidden relative">
           <NetworkGraph
             data={networkData}
             filter={filter}
@@ -190,54 +189,57 @@ export function NetworkContainer() {
 
           {/* Hover tooltip */}
           {hoveredNode && hoveredNode.matchType !== "neutral" && (
-            <div className="absolute bottom-4 left-4 bg-white rounded-lg shadow-lg p-3 border max-w-xs">
-              <p className="font-semibold text-navy-900">{hoveredNode.name}</p>
-              <p className="text-sm text-muted-foreground">{hoveredNode.title}</p>
+            <div className="absolute bottom-4 left-4 bg-gray-900/95 backdrop-blur-sm rounded-lg shadow-lg p-4 border border-white/20 max-w-xs animate-fade-in">
+              <p className="font-semibold text-white">{hoveredNode.name}</p>
+              <p className="text-sm text-white/60">{hoveredNode.title}</p>
               {hoveredNode.company && (
-                <p className="text-sm text-primary">{hoveredNode.company}</p>
+                <p className="text-sm text-cyan-400">{hoveredNode.company}</p>
               )}
               <div className="mt-2 flex flex-wrap gap-1">
-                {hoveredNode.commonalities.slice(0, 2).map((c, i) => (
-                  <Badge key={i} variant="secondary" className="text-xs">
+                {hoveredNode.commonalities.slice(0, 3).map((c, i) => (
+                  <Badge key={i} variant="secondary" className="text-xs bg-white/10 text-white/80 border-white/20">
                     {c}
                   </Badge>
                 ))}
+                {hoveredNode.commonalities.length > 3 && (
+                  <Badge variant="secondary" className="text-xs bg-cyan-500/20 text-cyan-400 border-cyan-500/30">
+                    +{hoveredNode.commonalities.length - 3} more
+                  </Badge>
+                )}
               </div>
             </div>
           )}
 
           {/* Instructions */}
-          <div className="absolute top-4 right-4 text-xs text-muted-foreground bg-white/80 backdrop-blur-sm rounded-lg px-3 py-2">
+          <div className="absolute top-4 right-4 text-xs text-white/50 bg-black/60 backdrop-blur-sm rounded-lg px-3 py-2 border border-white/10">
             <p>🖱️ Click node to view • Drag to move • Scroll to zoom</p>
           </div>
         </div>
       </div>
 
       {/* Insights sidebar */}
-      <aside className="w-80 border-l bg-white p-4 flex flex-col gap-4 overflow-y-auto">
+      <aside className="w-80 border-l border-white/10 bg-black/50 p-4 flex flex-col gap-4 overflow-y-auto">
         {/* Selected node panel */}
         {selectedNode ? (
-          <Card className="border-2 border-primary/20">
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Selected Connection
-                </CardTitle>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6"
-                  onClick={() => setSelectedNode(null)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <div className="rounded-xl bg-white/5 border-2 border-cyan-500/30 p-4">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-medium text-white/50">
+                Selected Connection
+              </span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 text-white/50 hover:text-white hover:bg-white/10"
+                onClick={() => setSelectedNode(null)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="space-y-4">
               <div className="flex items-center gap-3">
-                <Avatar className="h-12 w-12">
+                <Avatar className="h-12 w-12 border-2 border-white/20">
                   <AvatarFallback className={cn(
-                    "text-white",
+                    "text-black font-semibold",
                     selectedNode.matchType === "high-affinity"
                       ? "bg-gradient-to-br from-teal-500 to-teal-400"
                       : "bg-gradient-to-br from-amber-500 to-amber-400"
@@ -246,10 +248,10 @@ export function NetworkContainer() {
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <p className="font-semibold text-navy-900">{selectedNode.name}</p>
-                  <p className="text-sm text-muted-foreground">{selectedNode.title}</p>
+                  <p className="font-semibold text-white">{selectedNode.name}</p>
+                  <p className="text-sm text-white/60">{selectedNode.title}</p>
                   {selectedNode.company && (
-                    <p className="text-sm text-primary">{selectedNode.company}</p>
+                    <p className="text-sm text-cyan-400">{selectedNode.company}</p>
                   )}
                 </div>
               </div>
@@ -259,8 +261,8 @@ export function NetworkContainer() {
                   className={cn(
                     "mb-2",
                     selectedNode.matchType === "high-affinity"
-                      ? "bg-teal-100 text-teal-700"
-                      : "bg-amber-100 text-amber-700"
+                      ? "bg-teal-500/20 text-teal-400 border-teal-500/30"
+                      : "bg-amber-500/20 text-amber-400 border-amber-500/30"
                   )}
                 >
                   {selectedNode.matchType === "high-affinity" ? (
@@ -276,13 +278,13 @@ export function NetworkContainer() {
                   )}
                 </Badge>
 
-                <p className="text-xs font-medium text-muted-foreground mb-2">
+                <p className="text-xs font-medium text-white/50 mb-2">
                   {selectedNode.commonalityCount} commonalities
                 </p>
                 <ul className="space-y-1">
                   {selectedNode.commonalities.map((c, i) => (
-                    <li key={i} className="text-sm text-navy-700 flex items-start gap-2">
-                      <span className="text-primary">•</span>
+                    <li key={i} className="text-sm text-white/70 flex items-start gap-2">
+                      <span className="text-cyan-400">•</span>
                       {c}
                     </li>
                   ))}
@@ -291,114 +293,106 @@ export function NetworkContainer() {
 
               <div className="flex gap-2">
                 <Link href={`/user/${selectedNode.id}`} className="flex-1">
-                  <Button variant="outline" size="sm" className="w-full">
+                  <Button variant="outline" size="sm" className="w-full border-white/20 text-white hover:bg-white/10">
                     View Profile
                   </Button>
                 </Link>
                 <Button
                   size="sm"
-                  className="flex-1 gap-1"
+                  className="flex-1 gap-1 bg-gradient-to-r from-cyan-500 to-teal-500 text-black hover:from-cyan-400 hover:to-teal-400"
                   onClick={() => setShowMeetingModal(true)}
                 >
                   <Calendar className="h-4 w-4" />
                   Meet
                 </Button>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         ) : (
-          <Card className="border-dashed">
-            <CardContent className="py-8 text-center">
-              <Network className="h-8 w-8 text-navy-200 mx-auto mb-2" />
-              <p className="text-sm text-muted-foreground">
-                Click a node to view details
-              </p>
-            </CardContent>
-          </Card>
+          <div className="rounded-xl bg-white/5 border border-dashed border-white/20 p-8 text-center">
+            <Network className="h-8 w-8 text-white/20 mx-auto mb-2" />
+            <p className="text-sm text-white/50">
+              Click a node to view details
+            </p>
+          </div>
         )}
 
         {/* Insights */}
         {insights && (
           <>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-primary" />
-                  Network Stats
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
+            <div className="rounded-xl bg-white/5 border border-white/10 p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <TrendingUp className="h-4 w-4 text-cyan-400" />
+                <span className="text-sm font-medium text-white">Network Stats</span>
+              </div>
+              <div className="space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Total Connections</span>
-                  <span className="font-semibold text-navy-900">{insights.totalConnections}</span>
+                  <span className="text-sm text-white/60">Total Connections</span>
+                  <span className="font-semibold text-white">{insights.totalConnections}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground flex items-center gap-1">
-                    <Sparkles className="h-3 w-3 text-teal-500" />
+                  <span className="text-sm text-white/60 flex items-center gap-1">
+                    <Sparkles className="h-3 w-3 text-teal-400" />
                     High-Affinity
                   </span>
-                  <span className="font-semibold text-teal-600">{insights.highAffinityCount}</span>
+                  <span className="font-semibold text-teal-400">{insights.highAffinityCount}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground flex items-center gap-1">
-                    <Zap className="h-3 w-3 text-amber-500" />
+                  <span className="text-sm text-white/60 flex items-center gap-1">
+                    <Zap className="h-3 w-3 text-amber-400" />
                     Strategic
                   </span>
-                  <span className="font-semibold text-amber-600">{insights.strategicCount}</span>
+                  <span className="font-semibold text-amber-400">{insights.strategicCount}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Avg. Match Strength</span>
-                  <span className="font-semibold text-navy-900">{insights.averageStrength}%</span>
+                  <span className="text-sm text-white/60">Avg. Match Strength</span>
+                  <span className="font-semibold text-white">{insights.averageStrength}%</span>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
 
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <Lightbulb className="h-4 w-4 text-amber-500" />
-                  Insights
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
+            <div className="rounded-xl bg-white/5 border border-white/10 p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Lightbulb className="h-4 w-4 text-amber-400" />
+                <span className="text-sm font-medium text-white">Insights</span>
+              </div>
+              <div className="space-y-3">
                 <div>
-                  <p className="text-xs font-medium text-muted-foreground">Strongest Cluster</p>
-                  <p className="text-sm text-navy-900">{insights.strongestCluster}</p>
+                  <p className="text-xs font-medium text-white/50">Strongest Cluster</p>
+                  <p className="text-sm text-white">{insights.strongestCluster}</p>
                 </div>
                 <div>
-                  <p className="text-xs font-medium text-muted-foreground">Most Common Link</p>
-                  <p className="text-sm text-navy-900">{insights.topCommonality}</p>
+                  <p className="text-xs font-medium text-white/50">Most Common Link</p>
+                  <p className="text-sm text-white">{insights.topCommonality}</p>
                 </div>
-                <div className="p-3 bg-primary/5 rounded-lg">
-                  <p className="text-xs font-medium text-primary mb-1">💡 Recommendation</p>
-                  <p className="text-sm text-navy-700">{insights.recommendation}</p>
+                <div className="p-3 bg-cyan-500/10 border border-cyan-500/20 rounded-lg">
+                  <p className="text-xs font-medium text-cyan-400 mb-1">💡 Recommendation</p>
+                  <p className="text-sm text-white/80">{insights.recommendation}</p>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
 
             {/* Clusters */}
             {networkData?.clusters && networkData.clusters.length > 0 && (
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <Users className="h-4 w-4 text-primary" />
-                    Clusters
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
+              <div className="rounded-xl bg-white/5 border border-white/10 p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Users className="h-4 w-4 text-cyan-400" />
+                  <span className="text-sm font-medium text-white">Clusters</span>
+                </div>
+                <div className="space-y-2">
                   {networkData.clusters.map((cluster) => (
                     <div
                       key={cluster.id}
-                      className="p-2 rounded-lg border hover:bg-navy-50 transition-colors"
+                      className="p-2 rounded-lg border border-white/10 hover:bg-white/5 transition-colors"
                     >
-                      <p className="font-medium text-sm text-navy-900">{cluster.name}</p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="font-medium text-sm text-white">{cluster.name}</p>
+                      <p className="text-xs text-white/50">
                         {cluster.nodeIds.length} connections • {cluster.theme}
                       </p>
                     </div>
                   ))}
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             )}
           </>
         )}
@@ -429,6 +423,3 @@ export function NetworkContainer() {
     </div>
   );
 }
-
-
-

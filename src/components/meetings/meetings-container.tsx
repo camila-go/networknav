@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -21,7 +20,7 @@ import {
   Loader2,
   ExternalLink,
 } from "lucide-react";
-import { format, formatDistanceToNow, isPast, isFuture } from "date-fns";
+import { format, formatDistanceToNow, isFuture } from "date-fns";
 import type { MeetingWithUsers, MeetingType } from "@/types";
 import Link from "next/link";
 
@@ -100,8 +99,8 @@ export function MeetingsContainer() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-navy-900 font-display">My Meetings</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-2xl font-bold text-white font-display">My Meetings</h1>
+        <p className="text-white/60">
           Manage your scheduled meetings and requests
         </p>
       </div>
@@ -112,45 +111,56 @@ export function MeetingsContainer() {
           icon={<CalendarClock className="h-5 w-5" />}
           label="Upcoming"
           value={stats.upcoming}
-          color="text-primary"
-          bgColor="bg-primary/10"
+          color="text-cyan-400"
+          bgColor="bg-cyan-500/20"
         />
         <StatCard
           icon={<Clock className="h-5 w-5" />}
           label="Pending"
           value={stats.pending}
-          color="text-amber-600"
-          bgColor="bg-amber-50"
+          color="text-amber-400"
+          bgColor="bg-amber-500/20"
         />
         <StatCard
           icon={<Check className="h-5 w-5" />}
           label="Completed"
           value={stats.completed}
-          color="text-teal-600"
-          bgColor="bg-teal-50"
+          color="text-teal-400"
+          bgColor="bg-teal-500/20"
         />
       </div>
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="upcoming" className="gap-2">
+        <TabsList className="grid w-full grid-cols-3 bg-white/5 border border-white/10">
+          <TabsTrigger 
+            value="upcoming" 
+            className="gap-2 data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 text-white/70"
+          >
             Upcoming
             {stats.upcoming > 0 && (
-              <Badge variant="secondary" className="h-5 min-w-[20px] bg-primary/10 text-primary">
+              <Badge variant="secondary" className="h-5 min-w-[20px] bg-cyan-500/20 text-cyan-400">
                 {stats.upcoming}
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="requests" className="gap-2">
+          <TabsTrigger 
+            value="requests" 
+            className="gap-2 data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 text-white/70"
+          >
             Requests
             {stats.pending > 0 && (
-              <Badge variant="secondary" className="h-5 min-w-[20px] bg-amber-100 text-amber-700">
+              <Badge variant="secondary" className="h-5 min-w-[20px] bg-amber-500/20 text-amber-400">
                 {stats.pending}
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="past">Past</TabsTrigger>
+          <TabsTrigger 
+            value="past"
+            className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 text-white/70"
+          >
+            Past
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="upcoming" className="mt-6">
@@ -162,7 +172,9 @@ export function MeetingsContainer() {
               description="When you schedule meetings, they'll appear here."
               action={
                 <Link href="/explore">
-                  <Button>Find people to meet</Button>
+                  <Button className="bg-gradient-to-r from-cyan-500 to-teal-500 text-black hover:from-cyan-400 hover:to-teal-400">
+                    Find people to meet
+                  </Button>
                 </Link>
               }
             />
@@ -237,22 +249,20 @@ function StatCard({
   bgColor: string;
 }) {
   return (
-    <Card>
-      <CardContent className="p-4 flex items-center gap-3">
-        <div className={cn("p-2 rounded-lg", bgColor, color)}>{icon}</div>
-        <div>
-          <p className="text-2xl font-bold text-navy-900">{value}</p>
-          <p className="text-sm text-muted-foreground">{label}</p>
-        </div>
-      </CardContent>
-    </Card>
+    <div className="rounded-xl bg-white/5 border border-white/10 p-4 flex items-center gap-3">
+      <div className={cn("p-2 rounded-lg", bgColor, color)}>{icon}</div>
+      <div>
+        <p className="text-2xl font-bold text-white">{value}</p>
+        <p className="text-sm text-white/60">{label}</p>
+      </div>
+    </div>
   );
 }
 
 function LoadingState() {
   return (
     <div className="flex items-center justify-center py-12">
-      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <Loader2 className="h-8 w-8 animate-spin text-cyan-400" />
     </div>
   );
 }
@@ -268,9 +278,9 @@ function EmptyState({
 }) {
   return (
     <div className="text-center py-12">
-      <Calendar className="h-12 w-12 text-navy-200 mx-auto mb-4" />
-      <h3 className="font-semibold text-navy-900 mb-2">{title}</h3>
-      <p className="text-muted-foreground mb-4">{description}</p>
+      <Calendar className="h-12 w-12 text-white/20 mx-auto mb-4" />
+      <h3 className="font-semibold text-white mb-2">{title}</h3>
+      <p className="text-white/60 mb-4">{description}</p>
       {action}
     </div>
   );
@@ -285,7 +295,6 @@ function UpcomingMeetingCard({
   onAction: (id: string, action: string) => void;
   isLoading: boolean;
 }) {
-  // Determine the other person (not current user)
   const otherPerson = meeting.requester.id === meeting.recipientId
     ? meeting.requester
     : meeting.recipient;
@@ -299,78 +308,80 @@ function UpcomingMeetingCard({
   const MeetingIcon = MEETING_TYPE_ICONS[meeting.meetingType];
   const meetingTime = meeting.acceptedTime ? new Date(meeting.acceptedTime) : null;
   const isStartingSoon = meetingTime && isFuture(meetingTime) && 
-    (meetingTime.getTime() - Date.now()) < 15 * 60 * 1000; // 15 minutes
+    (meetingTime.getTime() - Date.now()) < 15 * 60 * 1000;
 
   return (
-    <Card className={cn(isStartingSoon && "border-primary/50 bg-primary/5")}>
-      <CardContent className="p-4">
-        <div className="flex items-start gap-4">
-          <Link href={`/user/${otherPerson.id}`}>
-            <Avatar className="h-12 w-12">
-              <AvatarImage src={otherPerson.profile.photoUrl} />
-              <AvatarFallback className="bg-gradient-to-br from-primary to-teal-500 text-white">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
-          </Link>
+    <div className={cn(
+      "rounded-xl bg-white/5 border border-white/10 p-4",
+      isStartingSoon && "border-cyan-500/50 bg-cyan-500/5"
+    )}>
+      <div className="flex items-start gap-4">
+        <Link href={`/user/${otherPerson.id}`}>
+          <Avatar className="h-12 w-12 border-2 border-white/20">
+            <AvatarImage src={otherPerson.profile.photoUrl} />
+            <AvatarFallback className="bg-gradient-to-br from-cyan-500 to-teal-500 text-black font-semibold">
+              {initials}
+            </AvatarFallback>
+          </Avatar>
+        </Link>
 
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <Link href={`/user/${otherPerson.id}`}>
-                  <h3 className="font-semibold text-navy-900 hover:text-primary">
-                    {otherPerson.profile.name}
-                  </h3>
-                </Link>
-                <p className="text-sm text-muted-foreground">
-                  {otherPerson.profile.position}
-                </p>
-              </div>
-              {isStartingSoon && (
-                <Badge className="bg-primary text-white">Starting Soon</Badge>
-              )}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <Link href={`/user/${otherPerson.id}`}>
+                <h3 className="font-semibold text-white hover:text-cyan-400 transition-colors">
+                  {otherPerson.profile.name}
+                </h3>
+              </Link>
+              <p className="text-sm text-white/60">
+                {otherPerson.profile.position}
+              </p>
             </div>
-
-            {meetingTime && (
-              <div className="flex items-center gap-4 mt-3 text-sm">
-                <div className="flex items-center gap-1.5 text-navy-700">
-                  <Calendar className="h-4 w-4 text-primary" />
-                  {format(meetingTime, "EEE, MMM d")}
-                </div>
-                <div className="flex items-center gap-1.5 text-navy-700">
-                  <Clock className="h-4 w-4 text-primary" />
-                  {format(meetingTime, "h:mm a")}
-                </div>
-                <div className="flex items-center gap-1.5 text-navy-700">
-                  <MeetingIcon className="h-4 w-4 text-primary" />
-                  {meeting.duration} min
-                </div>
-              </div>
+            {isStartingSoon && (
+              <Badge className="bg-cyan-500 text-black">Starting Soon</Badge>
             )}
+          </div>
 
-            <div className="flex items-center gap-2 mt-4">
-              {meeting.meetingLink && (
-                <Button size="sm" asChild>
-                  <a href={meeting.meetingLink} target="_blank" rel="noopener noreferrer">
-                    <Video className="h-4 w-4 mr-1" />
-                    Join Meeting
-                    <ExternalLink className="h-3 w-3 ml-1" />
-                  </a>
-                </Button>
-              )}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onAction(meeting.id, "cancel")}
-                disabled={isLoading}
-              >
-                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Cancel"}
-              </Button>
+          {meetingTime && (
+            <div className="flex items-center gap-4 mt-3 text-sm">
+              <div className="flex items-center gap-1.5 text-white/80">
+                <Calendar className="h-4 w-4 text-cyan-400" />
+                {format(meetingTime, "EEE, MMM d")}
+              </div>
+              <div className="flex items-center gap-1.5 text-white/80">
+                <Clock className="h-4 w-4 text-cyan-400" />
+                {format(meetingTime, "h:mm a")}
+              </div>
+              <div className="flex items-center gap-1.5 text-white/80">
+                <MeetingIcon className="h-4 w-4 text-cyan-400" />
+                {meeting.duration} min
+              </div>
             </div>
+          )}
+
+          <div className="flex items-center gap-2 mt-4">
+            {meeting.meetingLink && (
+              <Button size="sm" className="bg-gradient-to-r from-cyan-500 to-teal-500 text-black hover:from-cyan-400 hover:to-teal-400" asChild>
+                <a href={meeting.meetingLink} target="_blank" rel="noopener noreferrer">
+                  <Video className="h-4 w-4 mr-1" />
+                  Join Meeting
+                  <ExternalLink className="h-3 w-3 ml-1" />
+                </a>
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onAction(meeting.id, "cancel")}
+              disabled={isLoading}
+              className="border-white/20 text-white hover:bg-white/10"
+            >
+              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Cancel"}
+            </Button>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
@@ -385,10 +396,8 @@ function RequestCard({
 }) {
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
 
-  // Determine if current user is the recipient (needs to respond)
-  // For demo, we'll show response options for all pending requests
   const otherPerson = meeting.requester;
-  const isRecipient = true; // In production, compare with currentUserId
+  const isRecipient = true;
 
   const initials = otherPerson.profile.name
     .split(" ")
@@ -399,114 +408,110 @@ function RequestCard({
   const MeetingIcon = MEETING_TYPE_ICONS[meeting.meetingType];
 
   return (
-    <Card>
-      <CardContent className="p-4">
-        <div className="flex items-start gap-4">
-          <Link href={`/user/${otherPerson.id}`}>
-            <Avatar className="h-12 w-12">
-              <AvatarImage src={otherPerson.profile.photoUrl} />
-              <AvatarFallback className="bg-gradient-to-br from-primary to-teal-500 text-white">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
-          </Link>
+    <div className="rounded-xl bg-white/5 border border-white/10 p-4">
+      <div className="flex items-start gap-4">
+        <Link href={`/user/${otherPerson.id}`}>
+          <Avatar className="h-12 w-12 border-2 border-white/20">
+            <AvatarImage src={otherPerson.profile.photoUrl} />
+            <AvatarFallback className="bg-gradient-to-br from-cyan-500 to-teal-500 text-black font-semibold">
+              {initials}
+            </AvatarFallback>
+          </Avatar>
+        </Link>
 
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <Link href={`/user/${otherPerson.id}`}>
-                  <h3 className="font-semibold text-navy-900 hover:text-primary">
-                    {otherPerson.profile.name}
-                  </h3>
-                </Link>
-                <p className="text-sm text-muted-foreground">
-                  {otherPerson.profile.position}
-                </p>
-              </div>
-              <Badge variant="outline" className="text-amber-600 border-amber-200 bg-amber-50">
-                Pending
-              </Badge>
-            </div>
-
-            {meeting.contextMessage && (
-              <p className="mt-2 text-sm text-navy-700 bg-navy-50 p-2 rounded-lg">
-                "{meeting.contextMessage}"
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <Link href={`/user/${otherPerson.id}`}>
+                <h3 className="font-semibold text-white hover:text-cyan-400 transition-colors">
+                  {otherPerson.profile.name}
+                </h3>
+              </Link>
+              <p className="text-sm text-white/60">
+                {otherPerson.profile.position}
               </p>
-            )}
-
-            <div className="flex items-center gap-3 mt-3 text-sm text-navy-600">
-              <span className="flex items-center gap-1">
-                <MeetingIcon className="h-4 w-4" />
-                {meeting.meetingType}
-              </span>
-              <span className="flex items-center gap-1">
-                <Clock className="h-4 w-4" />
-                {meeting.duration} min
-              </span>
-              <span className="text-muted-foreground">
-                Sent {formatDistanceToNow(new Date(meeting.createdAt))} ago
-              </span>
             </div>
-
-            {/* Proposed times */}
-            {isRecipient && meeting.proposedTimes.length > 0 && (
-              <div className="mt-4 space-y-2">
-                <p className="text-xs font-medium text-muted-foreground">Select a time:</p>
-                <div className="flex flex-wrap gap-2">
-                  {meeting.proposedTimes.map((time, index) => {
-                    const timeDate = new Date(time);
-                    const isSelected = selectedTime === time.toString();
-                    return (
-                      <button
-                        key={index}
-                        onClick={() => setSelectedTime(time.toString())}
-                        className={cn(
-                          "px-3 py-2 rounded-lg border text-sm transition-all",
-                          isSelected
-                            ? "border-primary bg-primary/10 text-primary"
-                            : "border-navy-200 hover:border-primary/50"
-                        )}
-                      >
-                        {format(timeDate, "EEE, MMM d")} at {format(timeDate, "h:mm a")}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Actions */}
-            {isRecipient && (
-              <div className="flex items-center gap-2 mt-4">
-                <Button
-                  size="sm"
-                  onClick={() => onAction(meeting.id, "accept", { acceptedTime: selectedTime })}
-                  disabled={isLoading || !selectedTime}
-                  className="gap-1"
-                >
-                  {isLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Check className="h-4 w-4" />
-                  )}
-                  Accept
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onAction(meeting.id, "decline")}
-                  disabled={isLoading}
-                  className="gap-1"
-                >
-                  <X className="h-4 w-4" />
-                  Decline
-                </Button>
-              </div>
-            )}
+            <Badge variant="outline" className="text-amber-400 border-amber-500/30 bg-amber-500/10">
+              Pending
+            </Badge>
           </div>
+
+          {meeting.contextMessage && (
+            <p className="mt-2 text-sm text-white/80 bg-white/5 p-2 rounded-lg border border-white/10">
+              "{meeting.contextMessage}"
+            </p>
+          )}
+
+          <div className="flex items-center gap-3 mt-3 text-sm text-white/60">
+            <span className="flex items-center gap-1">
+              <MeetingIcon className="h-4 w-4" />
+              {meeting.meetingType}
+            </span>
+            <span className="flex items-center gap-1">
+              <Clock className="h-4 w-4" />
+              {meeting.duration} min
+            </span>
+            <span>
+              Sent {formatDistanceToNow(new Date(meeting.createdAt))} ago
+            </span>
+          </div>
+
+          {isRecipient && meeting.proposedTimes.length > 0 && (
+            <div className="mt-4 space-y-2">
+              <p className="text-xs font-medium text-white/50">Select a time:</p>
+              <div className="flex flex-wrap gap-2">
+                {meeting.proposedTimes.map((time, index) => {
+                  const timeDate = new Date(time);
+                  const isSelected = selectedTime === time.toString();
+                  return (
+                    <button
+                      key={index}
+                      onClick={() => setSelectedTime(time.toString())}
+                      className={cn(
+                        "px-3 py-2 rounded-lg border text-sm transition-all",
+                        isSelected
+                          ? "border-cyan-500 bg-cyan-500/20 text-cyan-400"
+                          : "border-white/20 text-white/70 hover:border-cyan-500/50"
+                      )}
+                    >
+                      {format(timeDate, "EEE, MMM d")} at {format(timeDate, "h:mm a")}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {isRecipient && (
+            <div className="flex items-center gap-2 mt-4">
+              <Button
+                size="sm"
+                onClick={() => onAction(meeting.id, "accept", { acceptedTime: selectedTime })}
+                disabled={isLoading || !selectedTime}
+                className="gap-1 bg-gradient-to-r from-cyan-500 to-teal-500 text-black hover:from-cyan-400 hover:to-teal-400"
+              >
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Check className="h-4 w-4" />
+                )}
+                Accept
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onAction(meeting.id, "decline")}
+                disabled={isLoading}
+                className="gap-1 border-white/20 text-white hover:bg-white/10"
+              >
+                <X className="h-4 w-4" />
+                Decline
+              </Button>
+            </div>
+          )}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
@@ -522,42 +527,39 @@ function PastMeetingCard({ meeting }: { meeting: MeetingWithUsers }) {
   const meetingTime = meeting.acceptedTime ? new Date(meeting.acceptedTime) : null;
 
   return (
-    <Card className="opacity-75">
-      <CardContent className="p-4">
-        <div className="flex items-center gap-4">
-          <Avatar className="h-10 w-10">
-            <AvatarImage src={otherPerson.profile.photoUrl} />
-            <AvatarFallback className="bg-gradient-to-br from-primary to-teal-500 text-white text-sm">
-              {initials}
-            </AvatarFallback>
-          </Avatar>
+    <div className="rounded-xl bg-white/5 border border-white/10 p-4 opacity-75">
+      <div className="flex items-center gap-4">
+        <Avatar className="h-10 w-10 border-2 border-white/20">
+          <AvatarImage src={otherPerson.profile.photoUrl} />
+          <AvatarFallback className="bg-gradient-to-br from-cyan-500 to-teal-500 text-black text-sm font-semibold">
+            {initials}
+          </AvatarFallback>
+        </Avatar>
 
-          <div className="flex-1 min-w-0">
-            <h3 className="font-medium text-navy-900">{otherPerson.profile.name}</h3>
-            <div className="flex items-center gap-3 text-sm text-muted-foreground">
-              {meetingTime && (
-                <span>{format(meetingTime, "MMM d, yyyy")}</span>
-              )}
-              <span className="flex items-center gap-1">
-                <MeetingIcon className="h-3 w-3" />
-                {meeting.duration} min
-              </span>
-            </div>
-          </div>
-
-          <Badge
-            variant="outline"
-            className={cn(
-              meeting.status === "completed" && "text-teal-600 border-teal-200 bg-teal-50",
-              meeting.status === "cancelled" && "text-red-600 border-red-200 bg-red-50",
-              meeting.status === "declined" && "text-navy-500 border-navy-200 bg-navy-50"
+        <div className="flex-1 min-w-0">
+          <h3 className="font-medium text-white">{otherPerson.profile.name}</h3>
+          <div className="flex items-center gap-3 text-sm text-white/50">
+            {meetingTime && (
+              <span>{format(meetingTime, "MMM d, yyyy")}</span>
             )}
-          >
-            {meeting.status}
-          </Badge>
+            <span className="flex items-center gap-1">
+              <MeetingIcon className="h-3 w-3" />
+              {meeting.duration} min
+            </span>
+          </div>
         </div>
-      </CardContent>
-    </Card>
+
+        <Badge
+          variant="outline"
+          className={cn(
+            meeting.status === "completed" && "text-teal-400 border-teal-500/30 bg-teal-500/10",
+            meeting.status === "cancelled" && "text-red-400 border-red-500/30 bg-red-500/10",
+            meeting.status === "declined" && "text-white/50 border-white/20 bg-white/5"
+          )}
+        >
+          {meeting.status}
+        </Badge>
+      </div>
+    </div>
   );
 }
-

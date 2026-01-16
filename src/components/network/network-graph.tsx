@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import * as d3 from "d3";
 import type { NetworkGraphData, NetworkNode, NetworkEdge } from "@/types";
-import { cn } from "@/lib/utils";
 
 interface NetworkGraphProps {
   data: NetworkGraphData;
@@ -31,6 +30,7 @@ export function NetworkGraph({
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width, height });
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
   // Update dimensions on resize
   useEffect(() => {
@@ -135,9 +135,8 @@ export function NetworkGraph({
       .selectAll("line")
       .data(links)
       .join("line")
-      .attr("stroke", "#cbd5e1")
-      .attr("stroke-opacity", 0.6)
-      .attr("stroke-width", (d) => Math.max(1, d.strength * 4));
+      .attr("stroke", "rgba(255,255,255,0.15)")
+      .attr("stroke-width", (d) => Math.max(1, d.strength * 3));
 
     // Draw nodes
     const node = g.append("g")
@@ -149,28 +148,28 @@ export function NetworkGraph({
       .call(drag(simulation) as any);
 
     // Node circles
-    node.append("circle")
+    const circles = node.append("circle")
       .attr("r", (d) => getNodeRadius(d))
       .attr("fill", (d) => getNodeColor(d))
-      .attr("stroke", "#fff")
+      .attr("stroke", "rgba(255,255,255,0.3)")
       .attr("stroke-width", 2)
-      .style("filter", "drop-shadow(0 2px 4px rgba(0,0,0,0.1))");
+      .style("filter", "drop-shadow(0 4px 8px rgba(0,0,0,0.3))");
 
     // Node labels (name)
-    node.append("text")
+    const nameLabels = node.append("text")
       .attr("dy", (d) => getNodeRadius(d) + 16)
       .attr("text-anchor", "middle")
       .attr("font-size", "11px")
       .attr("font-weight", "600")
-      .attr("fill", "#334155")
+      .attr("fill", "rgba(255,255,255,0.9)")
       .text((d) => d.name);
 
     // Node title labels (smaller)
-    node.append("text")
+    const titleLabels = node.append("text")
       .attr("dy", (d) => getNodeRadius(d) + 28)
       .attr("text-anchor", "middle")
       .attr("font-size", "9px")
-      .attr("fill", "#64748b")
+      .attr("fill", "rgba(255,255,255,0.5)")
       .text((d) => d.title.length > 20 ? d.title.slice(0, 20) + "..." : d.title);
 
     // Add initials to nodes
@@ -179,58 +178,130 @@ export function NetworkGraph({
       .attr("text-anchor", "middle")
       .attr("font-size", (d) => Math.max(10, getNodeRadius(d) * 0.6) + "px")
       .attr("font-weight", "bold")
-      .attr("fill", "#fff")
+      .attr("fill", "#000")
       .text((d) => getInitials(d.name));
 
-    // Hover effects
+    // Helper function to get connected node IDs
+    function getConnectedNodeIds(nodeId: string): Set<string> {
+      const connected = new Set<string>();
+      links.forEach(l => {
+        const sourceId = typeof l.source === 'object' ? (l.source as SimulationNode).id : l.source;
+        const targetId = typeof l.target === 'object' ? (l.target as SimulationNode).id : l.target;
+        if (sourceId === nodeId) connected.add(targetId as string);
+        if (targetId === nodeId) connected.add(sourceId as string);
+      });
+      return connected;
+    }
+
+    // Function to highlight connections (used on click)
+    function highlightConnections(clickedNode: SimulationNode | null) {
+      if (!clickedNode) {
+        // Reset all to default
+        link
+          .attr("stroke", "rgba(255,255,255,0.15)")
+          .attr("stroke-width", (d) => Math.max(1, d.strength * 3));
+        
+        circles
+          .attr("opacity", 1)
+          .attr("stroke", "rgba(255,255,255,0.3)")
+          .attr("stroke-width", 2);
+        
+        nameLabels.attr("opacity", 1);
+        titleLabels.attr("opacity", 1);
+        return;
+      }
+
+      const connectedIds = getConnectedNodeIds(clickedNode.id);
+
+      // Highlight edges
+      link
+        .attr("stroke", (l) => {
+          const sourceId = typeof l.source === 'object' ? (l.source as SimulationNode).id : l.source;
+          const targetId = typeof l.target === 'object' ? (l.target as SimulationNode).id : l.target;
+          if (sourceId === clickedNode.id || targetId === clickedNode.id) {
+            return "#22d3ee";
+          }
+          return "rgba(255,255,255,0.05)";
+        })
+        .attr("stroke-width", (l) => {
+          const sourceId = typeof l.source === 'object' ? (l.source as SimulationNode).id : l.source;
+          const targetId = typeof l.target === 'object' ? (l.target as SimulationNode).id : l.target;
+          if (sourceId === clickedNode.id || targetId === clickedNode.id) {
+            return Math.max(2, l.strength * 5);
+          }
+          return 1;
+        });
+
+      // Fade non-connected nodes
+      circles
+        .attr("opacity", (n) => {
+          if (n.id === clickedNode.id) return 1;
+          if (connectedIds.has(n.id)) return 1;
+          return 0.15;
+        })
+        .attr("stroke", (n) => {
+          if (n.id === clickedNode.id) return "#22d3ee";
+          return "rgba(255,255,255,0.3)";
+        })
+        .attr("stroke-width", (n) => {
+          if (n.id === clickedNode.id) return 3;
+          return 2;
+        });
+
+      nameLabels.attr("opacity", (n) => {
+        if (n.id === clickedNode.id) return 1;
+        if (connectedIds.has(n.id)) return 1;
+        return 0.15;
+      });
+
+      titleLabels.attr("opacity", (n) => {
+        if (n.id === clickedNode.id) return 1;
+        if (connectedIds.has(n.id)) return 1;
+        return 0.15;
+      });
+    }
+
+    // Hover effects - subtle scale only, no connection highlighting
     node
       .on("mouseenter", function (event, d) {
-        // Highlight connected nodes and edges
-        link
-          .attr("stroke-opacity", (l) =>
-            l.source === d || l.target === d ? 1 : 0.1
-          )
-          .attr("stroke", (l) =>
-            l.source === d || l.target === d ? "#0891b2" : "#cbd5e1"
-          );
-
-        node.selectAll("circle")
-          .attr("opacity", (n) => {
-            if (n === d) return 1;
-            const connected = links.some(
-              (l) =>
-                (l.source === d && l.target === n) ||
-                (l.target === d && l.source === n)
-            );
-            return connected ? 1 : 0.3;
-          });
-
+        // Just slightly enlarge the hovered node
         d3.select(this).select("circle")
-          .transition()
-          .duration(200)
-          .attr("r", getNodeRadius(d) + 4);
-
+          .attr("r", getNodeRadius(d) + 3)
+          .attr("stroke", "#22d3ee")
+          .attr("stroke-width", 2.5);
+        
         onNodeHover?.(d);
       })
       .on("mouseleave", function (event, d) {
-        // Reset styles
-        link
-          .attr("stroke-opacity", 0.6)
-          .attr("stroke", "#cbd5e1");
-
-        node.selectAll("circle")
-          .attr("opacity", 1);
-
+        // Reset to normal size (unless it's the selected node)
+        const isSelected = selectedNodeId === d.id;
         d3.select(this).select("circle")
-          .transition()
-          .duration(200)
-          .attr("r", getNodeRadius(d));
-
+          .attr("r", getNodeRadius(d))
+          .attr("stroke", isSelected ? "#22d3ee" : "rgba(255,255,255,0.3)")
+          .attr("stroke-width", isSelected ? 3 : 2);
+        
         onNodeHover?.(null);
       })
-      .on("click", (event, d) => {
+      .on("click", function (event, d) {
+        event.stopPropagation();
+        
+        // Toggle selection
+        if (selectedNodeId === d.id) {
+          setSelectedNodeId(null);
+          highlightConnections(null);
+        } else {
+          setSelectedNodeId(d.id);
+          highlightConnections(d);
+        }
+        
         onNodeClick?.(d);
       });
+
+    // Click on background to deselect
+    svg.on("click", () => {
+      setSelectedNodeId(null);
+      highlightConnections(null);
+    });
 
     // Simulation tick
     simulation.on("tick", () => {
@@ -272,10 +343,10 @@ export function NetworkGraph({
     return () => {
       simulation.stop();
     };
-  }, [data, dimensions, filter, filteredData, onNodeClick, onNodeHover]);
+  }, [data, dimensions, filter, filteredData, onNodeClick, onNodeHover, selectedNodeId]);
 
   return (
-    <div ref={containerRef} className="w-full h-full min-h-[400px] bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl overflow-hidden">
+    <div ref={containerRef} className="w-full h-full min-h-[400px] bg-gradient-to-br from-gray-950 via-gray-900 to-black rounded-xl overflow-hidden">
       <svg
         ref={svgRef}
         width={dimensions.width}
@@ -311,4 +382,3 @@ function getInitials(name: string): string {
     .toUpperCase()
     .slice(0, 2);
 }
-

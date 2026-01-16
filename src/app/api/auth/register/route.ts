@@ -7,9 +7,46 @@ import {
 } from "@/lib/auth";
 import { users } from "@/lib/stores";
 import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
+import { checkRateLimit } from "@/lib/security/rateLimit";
+
+// Rate limit for registration: 3 accounts per hour per IP
+const REGISTER_RATE_LIMIT = { maxRequests: 3, windowMs: 60 * 60 * 1000 };
 
 export async function POST(request: NextRequest) {
   try {
+    // Get IP for rate limiting
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() 
+      || request.headers.get("x-real-ip") 
+      || "unknown";
+    
+    // Check rate limit before processing
+    const rateLimitResult = await checkRateLimit(
+      `register:${ip}`,
+      "register",
+      REGISTER_RATE_LIMIT.maxRequests,
+      REGISTER_RATE_LIMIT.windowMs
+    );
+    
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Too many registration attempts. Please try again later.",
+          retryAfter: rateLimitResult.resetTime 
+            ? Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000)
+            : 3600,
+        },
+        { 
+          status: 429,
+          headers: {
+            "Retry-After": String(rateLimitResult.resetTime 
+              ? Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000)
+              : 3600),
+          },
+        }
+      );
+    }
+
     const body = await request.json();
 
     // Validate input
@@ -77,12 +114,17 @@ export async function POST(request: NextRequest) {
         updated_at: now.toISOString(),
       };
       
-      // Don't await - let it run in background
-      supabaseAdmin
-        .from('user_profiles')
-        .insert(profileData as never)
-        .then(() => console.log('✅ User profile saved to Supabase:', userId))
-        .catch((err) => console.error('Supabase save error:', err));
+      // Don't await - let it run in background using IIFE for proper error handling
+      (async () => {
+        try {
+          await supabaseAdmin
+            .from('user_profiles')
+            .insert(profileData as never);
+          console.log('✅ User profile saved to Supabase:', userId);
+        } catch (err) {
+          console.error('Supabase save error:', err);
+        }
+      })();
     }
 
     // Create tokens

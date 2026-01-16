@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth";
 import { meetings, users } from "@/lib/stores";
 import { cookies } from "next/headers";
 import type { Meeting, MeetingWithUsers, PublicUser } from "@/types";
+import { checkRateLimit } from "@/lib/security/rateLimit";
 
 // Helper to get user profile by ID
 function getUserById(userId: string): PublicUser | null {
@@ -148,6 +149,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { success: false, error: "Not authenticated" },
         { status: 401 }
+      );
+    }
+
+    // Rate limit meeting requests
+    const rateLimitResult = await checkRateLimit(currentUserId, "schedule-meeting");
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "You've sent too many meeting requests. Please try again later.",
+          retryAfter: rateLimitResult.resetTime 
+            ? Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000)
+            : 3600,
+        },
+        { status: 429 }
       );
     }
 

@@ -6,9 +6,46 @@ import {
   createRefreshToken,
 } from "@/lib/auth";
 import { users } from "@/lib/stores";
+import { checkRateLimit } from "@/lib/security/rateLimit";
+
+// Rate limit for login: 5 attempts per 15 minutes per IP
+const LOGIN_RATE_LIMIT = { maxRequests: 5, windowMs: 15 * 60 * 1000 };
 
 export async function POST(request: NextRequest) {
   try {
+    // Get IP for rate limiting (use forwarded IP in production)
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() 
+      || request.headers.get("x-real-ip") 
+      || "unknown";
+    
+    // Check rate limit before processing
+    const rateLimitResult = await checkRateLimit(
+      `login:${ip}`,
+      "login",
+      LOGIN_RATE_LIMIT.maxRequests,
+      LOGIN_RATE_LIMIT.windowMs
+    );
+    
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Too many login attempts. Please try again later.",
+          retryAfter: rateLimitResult.resetTime 
+            ? Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000)
+            : 900,
+        },
+        { 
+          status: 429,
+          headers: {
+            "Retry-After": String(rateLimitResult.resetTime 
+              ? Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000)
+              : 900),
+          },
+        }
+      );
+    }
+
     const body = await request.json();
 
     // Validate input

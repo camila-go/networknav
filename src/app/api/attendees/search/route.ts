@@ -573,223 +573,22 @@ async function searchSupabaseUsers(
   }
 }
 
-// Generate demo attendees for when no real users exist
-function getDemoAttendees(
-  currentResponses: Record<string, unknown>,
-  filters?: SearchFilters,
-  keywords?: string
-): AttendeeSearchResult[] {
-  const demoUsers = [
-    {
-      id: "demo-sarah",
-      name: "Sarah Chen",
-      position: "VP of Engineering",
-      title: "Engineering Leader",
-      company: "TechCorp",
-      location: "San Francisco, CA",
-      responses: {
-        industry: "technology",
-        leadershipLevel: "vp",
-        organizationSize: "large",
-        yearsExperience: "11-15",
-        leadershipPriorities: ["scaling", "innovation", "mentoring"],
-        leadershipChallenges: ["talent", "change", "disruption"],
-        rechargeActivities: ["outdoors", "reading", "travel"],
-        customInterests: ["Trail Running", "Sourdough Baking", "Board Games"],
-        leadershipPhilosophy: ["servant", "people-first", "collaborative"],
-        communicationStyle: "warm",
-      },
-    },
-    {
-      id: "demo-marcus",
-      name: "Marcus Johnson",
-      position: "Chief People Officer",
-      title: "HR Executive",
-      company: "GrowthStartup",
-      location: "New York, NY",
-      responses: {
-        industry: "technology",
-        leadershipLevel: "c-suite",
-        organizationSize: "mid-size",
-        yearsExperience: "16-20",
-        leadershipPriorities: ["culture", "mentoring", "transformation"],
-        leadershipChallenges: ["talent", "communication", "burnout"],
-        rechargeActivities: ["fitness", "reading", "volunteering"],
-        customInterests: ["Jazz Piano", "Mentoring Startups"],
-        leadershipPhilosophy: ["people-first", "coach", "authentic"],
-        communicationStyle: "warm",
-      },
-    },
-    {
-      id: "demo-elena",
-      name: "Elena Rodriguez",
-      position: "CEO",
-      title: "Founder & CEO",
-      company: "InnovateCo",
-      location: "Austin, TX",
-      responses: {
-        industry: "technology",
-        leadershipLevel: "founder",
-        organizationSize: "startup",
-        yearsExperience: "6-10",
-        leadershipPriorities: ["scaling", "financial", "strategy"],
-        leadershipChallenges: ["priorities", "budget", "buy-in"],
-        rechargeActivities: ["travel", "outdoors", "creative"],
-        customInterests: ["Pottery", "Rock Climbing", "Wine Tasting"],
-        leadershipPhilosophy: ["entrepreneurial", "visionary", "decisive"],
-        communicationStyle: "direct",
-      },
-    },
-    {
-      id: "demo-david",
-      name: "David Park",
-      position: "VP of Product",
-      title: "Product Leader",
-      company: "ScaleUp Inc",
-      location: "Seattle, WA",
-      responses: {
-        industry: "technology",
-        leadershipLevel: "vp",
-        organizationSize: "mid-size",
-        yearsExperience: "6-10",
-        leadershipPriorities: ["innovation", "strategy", "excellence"],
-        leadershipChallenges: ["priorities", "change", "decisions"],
-        rechargeActivities: ["gaming", "music", "learning"],
-        customInterests: ["Board Games", "Mechanical Keyboards", "Coffee Roasting"],
-        leadershipPhilosophy: ["data-informed", "results", "collaborative"],
-        communicationStyle: "data-driven",
-      },
-    },
-    {
-      id: "demo-aisha",
-      name: "Aisha Patel",
-      position: "CTO",
-      title: "Technology Executive",
-      company: "FinanceFlow",
-      location: "Chicago, IL",
-      responses: {
-        industry: "finance",
-        leadershipLevel: "c-suite",
-        organizationSize: "large",
-        yearsExperience: "11-15",
-        leadershipPriorities: ["transformation", "innovation", "scaling"],
-        leadershipChallenges: ["disruption", "change", "pipeline"],
-        rechargeActivities: ["reading", "meditation", "travel"],
-        customInterests: ["Blockchain", "Hot Yoga", "Sustainable Investing"],
-        leadershipPhilosophy: ["data-informed", "visionary", "coach"],
-        communicationStyle: "facts-first",
-      },
-    },
-    {
-      id: "demo-james",
-      name: "James Wilson",
-      position: "Director of Operations",
-      title: "Operations Leader",
-      company: "LogiTech Solutions",
-      location: "Denver, CO",
-      responses: {
-        industry: "manufacturing",
-        leadershipLevel: "director",
-        organizationSize: "mid-size",
-        yearsExperience: "11-15",
-        leadershipPriorities: ["excellence", "culture", "financial"],
-        leadershipChallenges: ["budget", "communication", "priorities"],
-        rechargeActivities: ["outdoors", "diy", "fitness"],
-        customInterests: ["Woodworking", "Mountain Biking", "Homebrewing"],
-        leadershipPhilosophy: ["results", "servant", "collaborative"],
-        communicationStyle: "direct",
-      },
-    },
-    {
-      id: "demo-lisa",
-      name: "Lisa Thompson",
-      position: "Senior Manager",
-      title: "Marketing Leader",
-      company: "BrandCo",
-      location: "Los Angeles, CA",
-      responses: {
-        industry: "media",
-        leadershipLevel: "manager",
-        organizationSize: "small",
-        yearsExperience: "3-5",
-        leadershipPriorities: ["culture", "mentoring", "innovation"],
-        leadershipChallenges: ["buy-in", "politics", "priorities"],
-        rechargeActivities: ["creative", "photography", "travel"],
-        customInterests: ["Film Photography", "Improv Comedy", "Vinyl Collecting"],
-        leadershipPhilosophy: ["authentic", "people-first", "visionary"],
-        communicationStyle: "storytelling",
-      },
-    },
-    {
-      id: "demo-michael",
-      name: "Michael Brown",
-      position: "SVP Sales",
-      title: "Sales Executive",
-      company: "EnterpriseNow",
-      location: "Boston, MA",
-      responses: {
-        industry: "consulting",
-        leadershipLevel: "senior-executive",
-        organizationSize: "large",
-        yearsExperience: "16-20",
-        leadershipPriorities: ["financial", "scaling", "expansion"],
-        leadershipChallenges: ["talent", "decisions", "disruption"],
-        rechargeActivities: ["golf", "reading", "movies"],
-        leadershipPhilosophy: ["results", "decisive", "entrepreneurial"],
-        communicationStyle: "direct",
-      },
-    },
-  ];
-
-  return demoUsers
-    .filter((demo) => {
-      // Apply filters to demo users
-      if (filters) {
-        if (!matchesFilters(demo.responses, { location: demo.location }, filters)) {
-          return false;
-        }
-      }
-      if (keywords && keywords.trim() !== "") {
-        if (!matchesKeywords(
-          { name: demo.name, position: demo.position, title: demo.title, company: demo.company },
-          demo.responses,
-          keywords
-        )) {
-          return false;
-        }
-      }
-      return true;
-    })
-    .map((demo) => {
-      const { percentage, commonalities } = calculateMatchData(currentResponses, demo.responses);
-      return {
-        user: {
-          id: demo.id,
-          profile: {
-            name: demo.name,
-            position: demo.position,
-            title: demo.title,
-            company: demo.company,
-            location: demo.location,
-          },
-          questionnaireCompleted: true,
-        },
-        matchPercentage: percentage,
-        topCommonalities: commonalities,
-        questionnaire: {
-          industry: demo.responses.industry,
-          leadershipLevel: demo.responses.leadershipLevel,
-          organizationSize: demo.responses.organizationSize,
-          leadershipPriorities: demo.responses.leadershipPriorities,
-          leadershipChallenges: demo.responses.leadershipChallenges,
-        },
-      };
-    });
-}
-
-// GET endpoint to fetch filter options
+// GET endpoint to fetch filter options (cached for 30 minutes)
 export async function GET() {
-  // Return available filter options from questionnaire data
+  // Import cache utilities
+  const { cache, CACHE_KEYS, CACHE_TTLS } = await import("@/lib/cache");
+  
+  // Check cache first
+  const cachedOptions = cache.get<Record<string, unknown>>(CACHE_KEYS.FILTER_OPTIONS);
+  if (cachedOptions) {
+    return NextResponse.json({
+      success: true,
+      data: cachedOptions,
+      cached: true,
+    });
+  }
+  
+  // Build filter options from questionnaire data
   const filterOptions = {
     industries: QUESTIONNAIRE_SECTIONS[0].questions
       .find((q) => q.id === "industry")
@@ -819,9 +618,13 @@ export async function GET() {
     ],
   };
 
+  // Cache the result for 30 minutes
+  cache.set(CACHE_KEYS.FILTER_OPTIONS, filterOptions, CACHE_TTLS.FILTER_OPTIONS);
+
   return NextResponse.json({
     success: true,
     data: filterOptions,
+    cached: false,
   });
 }
 
