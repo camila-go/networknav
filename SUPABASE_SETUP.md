@@ -52,8 +52,9 @@ CREATE EXTENSION IF NOT EXISTS vector;
 -- Main user profiles table with AI embeddings
 CREATE TABLE IF NOT EXISTS user_profiles (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  email TEXT,
+  user_id UUID,
+  email TEXT UNIQUE,
+  password_hash TEXT, -- Stores bcrypt hash for login persistence
   name TEXT NOT NULL,
   bio TEXT,
   interests TEXT[],
@@ -71,9 +72,11 @@ CREATE TABLE IF NOT EXISTS user_profiles (
   email_verified BOOLEAN DEFAULT false,
   blocked_users UUID[] DEFAULT '{}',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  UNIQUE(user_id)
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- If you already have the table, add the password_hash column:
+-- ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS password_hash TEXT;
 
 -- Create index for fast vector similarity search
 CREATE INDEX idx_profile_embedding ON user_profiles 
@@ -85,7 +88,46 @@ CREATE INDEX idx_user_profiles_user_id ON user_profiles(user_id);
 CREATE INDEX idx_user_profiles_active ON user_profiles(is_active) WHERE is_active = true;
 ```
 
-### C. Create Matches Table
+### C. Create Connections Table
+
+```sql
+-- Stores connections between users
+CREATE TABLE IF NOT EXISTS connections (
+  id TEXT PRIMARY KEY,
+  requester_id UUID NOT NULL,
+  recipient_id UUID NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'rejected')),
+  message TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Indexes for fast connection lookups
+CREATE INDEX idx_connections_requester ON connections(requester_id);
+CREATE INDEX idx_connections_recipient ON connections(recipient_id);
+CREATE INDEX idx_connections_status ON connections(status);
+```
+
+### D. Create Messages Table
+
+```sql
+-- Stores chat messages between connected users
+CREATE TABLE IF NOT EXISTS messages (
+  id TEXT PRIMARY KEY,
+  connection_id TEXT NOT NULL REFERENCES connections(id) ON DELETE CASCADE,
+  sender_id UUID NOT NULL,
+  content TEXT NOT NULL,
+  read BOOLEAN DEFAULT false,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Indexes for fast message lookups
+CREATE INDEX idx_messages_connection ON messages(connection_id);
+CREATE INDEX idx_messages_sender ON messages(sender_id);
+CREATE INDEX idx_messages_created ON messages(created_at);
+```
+
+### E. Create Matches Table
 
 ```sql
 -- Stores computed matches between users
@@ -103,7 +145,7 @@ CREATE INDEX idx_matches_user_id ON matches(user_id);
 CREATE INDEX idx_matches_score ON matches(similarity_score DESC);
 ```
 
-### D. Create Meeting Integration Tables
+### F. Create Meeting Integration Tables
 
 ```sql
 -- Stores OAuth tokens for Google Meet and Microsoft Teams
@@ -139,7 +181,7 @@ CREATE INDEX idx_scheduled_meetings_guest ON scheduled_meetings(guest_user_id);
 CREATE INDEX idx_scheduled_meetings_time ON scheduled_meetings(start_time);
 ```
 
-### E. Create Reports Table
+### G. Create Reports Table
 
 ```sql
 -- User reporting system
@@ -157,7 +199,7 @@ CREATE INDEX idx_reports_status ON reports(status);
 CREATE INDEX idx_reports_reported_user ON reports(reported_user_id);
 ```
 
-### F. Create Database Functions
+### H. Create Database Functions
 
 ```sql
 -- Function to find similar profiles using vector similarity
@@ -222,7 +264,7 @@ END;
 $$ LANGUAGE plpgsql;
 ```
 
-### G. Enable Row Level Security (RLS)
+### I. Enable Row Level Security (RLS)
 
 ```sql
 -- Enable RLS on all tables

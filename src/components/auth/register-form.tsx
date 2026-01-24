@@ -37,7 +37,6 @@ export function RegisterForm() {
   const hasNumber = /[0-9]/.test(password);
 
   async function onSubmit(data: RegisterInput) {
-    console.log("Form submitted with data:", data);
     try {
       const response = await fetch("/api/auth/register", {
         method: "POST",
@@ -46,7 +45,6 @@ export function RegisterForm() {
       });
 
       const result = await response.json();
-      console.log("Registration response:", result);
 
       if (!result.success) {
         toast({
@@ -165,10 +163,7 @@ export function RegisterForm() {
           />
           <button
             type="button"
-            onClick={() => {
-              console.log("Toggle password visibility. Current:", showPassword, "New:", !showPassword);
-              setShowPassword(!showPassword);
-            }}
+            onClick={() => setShowPassword(!showPassword)}
             className="px-3 rounded-lg bg-white/5 border border-white/20 text-white/60 hover:text-white hover:bg-white/10 transition-colors"
           >
             {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}

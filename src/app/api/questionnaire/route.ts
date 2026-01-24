@@ -122,31 +122,36 @@ export async function POST(request: NextRequest) {
           updateData.profile_embedding = embedding;
         }
 
-        // Use upsert with onConflict to handle both new and existing profiles
-        const upsertData = {
-          id: userId,
-          user_id: userId,
-          email: userEmail,
-          name: memoryUser?.name || 'User',
-          position: memoryUser?.position || null,
-          title: memoryUser?.title || null,
-          company: memoryUser?.company || null,
-          is_active: true,
-          is_visible: true,
-          ...updateData,
-        };
-        
-        const { error: upsertError } = await supabaseAdmin
+        // First try to update existing profile (don't overwrite user data with defaults)
+        const { error: updateError, count } = await supabaseAdmin
           .from('user_profiles')
-          .upsert(upsertData as never, { onConflict: 'id' });
+          .update(updateData as never)
+          .eq('id', userId)
+          .select('id', { count: 'exact', head: true });
 
-        if (upsertError) {
-          console.error('Supabase upsert error:', upsertError);
-          // Try update as fallback
-          await supabaseAdmin
+        // If no row was updated (user doesn't exist in Supabase), create a new one
+        if (updateError || count === 0) {
+          // Only insert new profile for demo users or if profile doesn't exist
+          const insertData = {
+            id: userId,
+            user_id: userId,
+            email: userEmail,
+            name: memoryUser?.name || 'User',
+            position: memoryUser?.position || null,
+            title: memoryUser?.title || null,
+            company: memoryUser?.company || null,
+            is_active: true,
+            is_visible: true,
+            ...updateData,
+          };
+          
+          const { error: insertError } = await supabaseAdmin
             .from('user_profiles')
-            .update(updateData as never)
-            .eq('email', userEmail.toLowerCase());
+            .insert(insertData as never);
+          
+          if (insertError && !insertError.message?.includes('duplicate')) {
+            console.error('Supabase insert error:', insertError);
+          }
         }
 
         console.log('✅ Questionnaire synced to Supabase:', userId, 'completed:', completionPercentage >= 80);

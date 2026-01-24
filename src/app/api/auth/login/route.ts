@@ -22,17 +22,21 @@ async function findUserFromSupabase(email: string): Promise<{
   title: string;
   company: string;
   questionnaireCompleted: boolean;
+  questionnaireData?: Record<string, unknown>;
 } | null> {
   if (!isSupabaseConfigured || !supabaseAdmin) return null;
   
   try {
     const { data: profile, error } = await supabaseAdmin
       .from('user_profiles')
-      .select('id, email, password_hash, name, position, title, company, questionnaire_completed')
+      .select('id, email, password_hash, name, position, title, company, questionnaire_completed, questionnaire_data')
       .eq('email', email.toLowerCase())
       .single();
     
-    if (error || !profile) return null;
+    if (error || !profile) {
+      console.log('Supabase profile lookup error:', error?.message || 'No profile found');
+      return null;
+    }
     
     // Type assertion since we're selecting specific columns
     const typedProfile = profile as {
@@ -44,15 +48,17 @@ async function findUserFromSupabase(email: string): Promise<{
       title?: string;
       company?: string;
       questionnaire_completed?: boolean;
+      questionnaire_data?: Record<string, unknown>;
     };
     
     // Check if we have a password hash stored
-    // Note: In the current schema we might not have password_hash in Supabase
-    // If not, we can't verify the password from Supabase alone
     if (!typedProfile.password_hash) {
-      console.log('User found in Supabase but no password hash stored');
+      console.log('User found in Supabase but no password hash stored - column may be missing');
+      console.log('Run: ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS password_hash TEXT;');
       return null;
     }
+    
+    console.log('✅ User loaded from Supabase:', typedProfile.name, typedProfile.email);
     
     return {
       id: typedProfile.id,
@@ -63,6 +69,7 @@ async function findUserFromSupabase(email: string): Promise<{
       title: typedProfile.title || '',
       company: typedProfile.company || '',
       questionnaireCompleted: typedProfile.questionnaire_completed || false,
+      questionnaireData: typedProfile.questionnaire_data,
     };
   } catch (err) {
     console.error('Supabase lookup error:', err);

@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
     // Save to in-memory store (for demo compatibility)
     users.set(email.toLowerCase(), user);
 
-    // Also save to Supabase if configured (fire-and-forget, don't block response)
+    // Save to Supabase if configured - await to ensure data is persisted
     if (isSupabaseConfigured && supabaseAdmin) {
       const profileData = {
         id: userId,
@@ -115,17 +115,24 @@ export async function POST(request: NextRequest) {
         updated_at: now.toISOString(),
       };
       
-      // Don't await - let it run in background using IIFE for proper error handling
-      (async () => {
-        try {
-          await supabaseAdmin
-            .from('user_profiles')
-            .insert(profileData as never);
-          console.log('✅ User profile saved to Supabase:', userId);
-        } catch (err) {
-          console.error('Supabase save error:', err);
+      try {
+        const { error } = await supabaseAdmin
+          .from('user_profiles')
+          .insert(profileData as never);
+        
+        if (error) {
+          console.error('❌ Supabase save error:', error);
+          // If it's a duplicate key error, that's okay - user already exists
+          if (!error.message?.includes('duplicate')) {
+            throw error;
+          }
+        } else {
+          console.log('✅ User profile saved to Supabase:', userId, 'Name:', name);
         }
-      })();
+      } catch (err) {
+        console.error('Supabase save error:', err);
+        // Don't fail registration if Supabase save fails - user is in memory
+      }
     }
 
     // Create tokens

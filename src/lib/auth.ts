@@ -205,9 +205,32 @@ async function refreshSession(
     return null;
   }
 
-  // In a real app, you'd fetch the user from DB here to get their email
-  // For now, we'll need to handle this in the API route
-  return null;
+  // Import users store to fetch user email
+  const { users } = await import("@/lib/stores");
+  const user = users.get(payload.userId);
+  
+  if (!user) {
+    // User not found in memory, clear cookies
+    await clearAuthCookies();
+    return null;
+  }
+
+  // Generate new tokens
+  const newAccessToken = await createAccessToken({
+    userId: user.id,
+    email: user.email,
+  });
+  const newRefreshToken = await createRefreshToken({ userId: user.id });
+
+  // Set new cookies
+  await setAuthCookies(newAccessToken, newRefreshToken);
+
+  // Return the new session
+  return {
+    userId: user.id,
+    email: user.email,
+    expiresAt: new Date(Date.now() + 15 * 60 * 1000), // 15 minutes
+  };
 }
 
 // ============================================
