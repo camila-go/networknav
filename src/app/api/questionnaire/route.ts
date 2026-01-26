@@ -123,15 +123,24 @@ export async function POST(request: NextRequest) {
         }
 
         // First try to update existing profile (don't overwrite user data with defaults)
-        const { error: updateError, count } = await supabaseAdmin
+        const { data: existingProfile } = await supabaseAdmin
           .from('user_profiles')
-          .update(updateData as never)
+          .select('id')
           .eq('id', userId)
-          .select('id', { count: 'exact', head: true });
+          .single();
 
-        // If no row was updated (user doesn't exist in Supabase), create a new one
-        if (updateError || count === 0) {
-          // Only insert new profile for demo users or if profile doesn't exist
+        if (existingProfile) {
+          // User exists - only update questionnaire data, don't touch name/position/etc
+          const { error: updateError } = await supabaseAdmin
+            .from('user_profiles')
+            .update(updateData as never)
+            .eq('id', userId);
+          
+          if (updateError) {
+            console.error('Supabase update error:', updateError);
+          }
+        } else {
+          // User doesn't exist in Supabase - create new profile (for demo users)
           const insertData = {
             id: userId,
             user_id: userId,

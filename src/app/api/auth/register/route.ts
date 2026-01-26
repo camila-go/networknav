@@ -63,6 +63,8 @@ export async function POST(request: NextRequest) {
     }
 
     const { email, password, name, position, title, company } = result.data;
+    
+    console.log('📝 Registration attempt:', { email, name, position, title, company });
 
     // Check if user already exists in memory
     if (users.has(email.toLowerCase())) {
