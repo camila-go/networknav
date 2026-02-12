@@ -32,11 +32,15 @@ if (typeof window !== "undefined") {
     disconnect: vi.fn(),
   }));
 
-  // Mock IntersectionObserver
-  global.IntersectionObserver = vi.fn().mockImplementation(() => ({
-    observe: vi.fn(),
-    unobserve: vi.fn(),
-    disconnect: vi.fn(),
-  }));
+  // Mock IntersectionObserver (must be a proper constructor for Next.js use-intersection)
+  global.IntersectionObserver = class IntersectionObserver {
+    constructor() {}
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  } as unknown as typeof globalThis.IntersectionObserver;
+
+  // Mock scrollIntoView (not implemented in jsdom)
+  Element.prototype.scrollIntoView = vi.fn();
 }
 

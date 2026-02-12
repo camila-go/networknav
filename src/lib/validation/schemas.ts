@@ -193,3 +193,17 @@ export const meetingRequestSchema = z.object({
 
 export type MeetingRequestInput = z.infer<typeof meetingRequestSchema>;
 
+// ============================================
+// Calendar Read Validation Schema
+// ============================================
+
+export const calendarQuerySchema = z.object({
+  mode: z.enum(['events', 'availability']),
+  platform: z.enum(['google', 'microsoft']).optional(),
+  targetUserId: z.string().optional(),
+  timeMin: z.string().datetime('Invalid timeMin format'),
+  timeMax: z.string().datetime('Invalid timeMax format'),
+});
+
+export type CalendarQueryInput = z.infer<typeof calendarQuerySchema>;
+

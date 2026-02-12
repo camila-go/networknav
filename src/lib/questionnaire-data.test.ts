@@ -9,16 +9,16 @@ import {
 } from "./questionnaire-data";
 
 describe("QUESTIONNAIRE_SECTIONS", () => {
-  it("should have exactly 4 sections", () => {
-    expect(QUESTIONNAIRE_SECTIONS).toHaveLength(4);
+  it("should have exactly 3 sections", () => {
+    expect(QUESTIONNAIRE_SECTIONS).toHaveLength(3);
   });
 
-  it("should have 20 total questions across all sections", () => {
+  it("should have 10 total questions across all sections", () => {
     const total = QUESTIONNAIRE_SECTIONS.reduce(
       (sum, section) => sum + section.questions.length,
       0
     );
-    expect(total).toBe(20);
+    expect(total).toBe(10);
   });
 
   it("should have unique section IDs", () => {
@@ -45,8 +45,8 @@ describe("QUESTIONNAIRE_SECTIONS", () => {
       expect(section.title).toBe("Your Leadership Context");
     });
 
-    it("should have 4 questions", () => {
-      expect(section.questions).toHaveLength(4);
+    it("should have 3 questions", () => {
+      expect(section.questions).toHaveLength(3);
     });
 
     it("should have all required questions", () => {
@@ -54,29 +54,28 @@ describe("QUESTIONNAIRE_SECTIONS", () => {
       expect(allRequired).toBe(true);
     });
 
-    it("should include industry, yearsExperience, leadershipLevel, organizationSize", () => {
+    it("should include industry, yearsExperience, leadershipLevel", () => {
       const questionIds = section.questions.map((q) => q.id);
       expect(questionIds).toContain("industry");
       expect(questionIds).toContain("yearsExperience");
       expect(questionIds).toContain("leadershipLevel");
-      expect(questionIds).toContain("organizationSize");
     });
   });
 
-  describe("Section 2: Building & Solving", () => {
+  describe("Section 2: Goals & Interests", () => {
     const section = QUESTIONNAIRE_SECTIONS[1];
 
     it("should be titled correctly", () => {
-      expect(section.title).toBe("What You're Building & Solving");
+      expect(section.title).toBe("Your Goals & Interests");
     });
 
-    it("should have 4 questions", () => {
-      expect(section.questions).toHaveLength(4);
+    it("should have 3 questions", () => {
+      expect(section.questions).toHaveLength(3);
     });
 
     it("should have multi-select questions with proper limits", () => {
       for (const question of section.questions) {
-        if (question.type === "multi-select") {
+        if (question.type === "multi-select" || question.type === "multi-select-custom") {
           expect(question.minSelections).toBeDefined();
           expect(question.maxSelections).toBeDefined();
           expect(question.minSelections).toBeLessThanOrEqual(
@@ -87,38 +86,28 @@ describe("QUESTIONNAIRE_SECTIONS", () => {
     });
   });
 
-  describe("Section 3: Beyond the Boardroom", () => {
+  describe("Section 3: Your Style", () => {
     const section = QUESTIONNAIRE_SECTIONS[2];
 
     it("should be titled correctly", () => {
-      expect(section.title).toBe("Beyond the Boardroom");
+      expect(section.title).toBe("Your Style");
     });
 
-    it("should have 6 questions", () => {
-      expect(section.questions).toHaveLength(6);
+    it("should have 4 questions", () => {
+      expect(section.questions).toHaveLength(4);
     });
 
-    it("should have some optional questions", () => {
-      const optionalQuestions = section.questions.filter((q) => !q.required);
-      expect(optionalQuestions.length).toBeGreaterThan(0);
-    });
-  });
-
-  describe("Section 4: Leadership Style", () => {
-    const section = QUESTIONNAIRE_SECTIONS[3];
-
-    it("should be titled correctly", () => {
-      expect(section.title).toBe("Your Leadership Style");
+    it("should have all required questions", () => {
+      const allRequired = section.questions.every((q) => q.required);
+      expect(allRequired).toBe(true);
     });
 
-    it("should have 6 questions", () => {
-      expect(section.questions).toHaveLength(6);
-    });
-
-    it("should include a rank-type question for relationship values", () => {
-      const rankQuestion = section.questions.find((q) => q.type === "rank");
-      expect(rankQuestion).toBeDefined();
-      expect(rankQuestion?.id).toBe("relationshipValues");
+    it("should include a multi-select question for relationship values", () => {
+      const multiSelectQuestion = section.questions.find(
+        (q) => q.id === "relationshipValues"
+      );
+      expect(multiSelectQuestion).toBeDefined();
+      expect(multiSelectQuestion?.type).toBe("multi-select");
     });
   });
 
@@ -129,6 +118,7 @@ describe("QUESTIONNAIRE_SECTIONS", () => {
           if (
             question.type === "single-select" ||
             question.type === "multi-select" ||
+            question.type === "multi-select-custom" ||
             question.type === "icon-select" ||
             question.type === "rank"
           ) {
@@ -169,16 +159,16 @@ describe("QUESTIONNAIRE_SECTIONS", () => {
 });
 
 describe("getTotalQuestions", () => {
-  it("should return 20 total questions", () => {
-    expect(getTotalQuestions()).toBe(20);
+  it("should return 10 total questions", () => {
+    expect(getTotalQuestions()).toBe(10);
   });
 });
 
 describe("getRequiredQuestions", () => {
   it("should return the correct number of required questions", () => {
     const required = getRequiredQuestions();
-    // Count manually: Section 1 (4) + Section 2 (4) + Section 3 (4 required) + Section 4 (5 required) = 17
-    expect(required).toBe(17);
+    // All 10 questions are required: Section 1 (3) + Section 2 (3) + Section 3 (4) = 10
+    expect(required).toBe(10);
   });
 
   it("should be less than or equal to total questions", () => {
@@ -187,25 +177,21 @@ describe("getRequiredQuestions", () => {
 });
 
 describe("getSectionProgress", () => {
-  it("should return 25% for section 0 of 4", () => {
-    expect(getSectionProgress(0, 4)).toBe(25);
+  it("should return 33% for section 0 of 3", () => {
+    expect(getSectionProgress(0, 3)).toBe(33);
   });
 
-  it("should return 50% for section 1 of 4", () => {
-    expect(getSectionProgress(1, 4)).toBe(50);
+  it("should return 67% for section 1 of 3", () => {
+    expect(getSectionProgress(1, 3)).toBe(67);
   });
 
-  it("should return 75% for section 2 of 4", () => {
-    expect(getSectionProgress(2, 4)).toBe(75);
-  });
-
-  it("should return 100% for section 3 of 4", () => {
-    expect(getSectionProgress(3, 4)).toBe(100);
+  it("should return 100% for section 2 of 3", () => {
+    expect(getSectionProgress(2, 3)).toBe(100);
   });
 
   it("should work with default total sections", () => {
-    expect(getSectionProgress(0)).toBe(25);
-    expect(getSectionProgress(3)).toBe(100);
+    expect(getSectionProgress(0)).toBe(33);
+    expect(getSectionProgress(2)).toBe(100);
   });
 });
 
@@ -224,8 +210,7 @@ describe("getSectionById", () => {
   it("should find all sections by their IDs", () => {
     const expectedIds = [
       "leadership-context",
-      "building-solving",
-      "beyond-boardroom",
+      "goals-interests",
       "leadership-style",
     ];
 
@@ -254,15 +239,15 @@ describe("getQuestionById", () => {
 
     // Section 2
     expect(getQuestionById("leadershipPriorities")?.section.id).toBe(
-      "building-solving"
+      "goals-interests"
+    );
+
+    // Section 2
+    expect(getQuestionById("rechargeActivities")?.section.id).toBe(
+      "goals-interests"
     );
 
     // Section 3
-    expect(getQuestionById("rechargeActivities")?.section.id).toBe(
-      "beyond-boardroom"
-    );
-
-    // Section 4
     expect(getQuestionById("leadershipPhilosophy")?.section.id).toBe(
       "leadership-style"
     );
@@ -287,7 +272,10 @@ describe("Questionnaire Data Integrity", () => {
   it("multi-select questions should have reasonable limits", () => {
     for (const section of QUESTIONNAIRE_SECTIONS) {
       for (const question of section.questions) {
-        if (question.type === "multi-select" && question.options) {
+        if (
+          (question.type === "multi-select" || question.type === "multi-select-custom") &&
+          question.options
+        ) {
           if (question.maxSelections) {
             // Max selections should not exceed available options
             expect(question.maxSelections).toBeLessThanOrEqual(
@@ -299,4 +287,3 @@ describe("Questionnaire Data Integrity", () => {
     }
   });
 });
-

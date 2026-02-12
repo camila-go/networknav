@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { ArrowLeft, Send, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatRelativeTime } from "@/lib/utils";
+import { useSocket } from "@/lib/socket/client";
+import type { MessageNewPayload, TypingPayload } from "@/lib/socket/types";
 import type { Connection, Message } from "@/types";
 
 interface Conversation {
@@ -45,7 +47,10 @@ export function ChatWindow({
   const [newMessage, setNewMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
+  const [isOtherTyping, setIsOtherTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout>();
+  const { socket, isConnected } = useSocket();
 
   // Handle both existing conversation and new conversation
   const isNewConversation = !conversation && newConversation;
@@ -56,7 +61,7 @@ export function ChatWindow({
     company: undefined,
   } : undefined);
   const connectionId = conversation?.connectionId;
-  
+
   const initials =
     otherUser?.name
       .split(" ")
@@ -64,6 +69,69 @@ export function ChatWindow({
       .join("")
       .toUpperCase()
       .slice(0, 2) || "?";
+
+  // Join/leave conversation room via Socket.io
+  useEffect(() => {
+    if (!socket || !connectionId) return;
+    socket.emit("conversation:join", connectionId);
+    return () => {
+      socket.emit("conversation:leave", connectionId);
+    };
+  }, [socket, connectionId]);
+
+  // Listen for real-time messages
+  useEffect(() => {
+    if (!socket) return;
+
+    function handleNewMessage(data: MessageNewPayload) {
+      if (data.connectionId === connectionId) {
+        setMessages((prev) => {
+          // Avoid duplicates (in case HTTP response also added it)
+          if (prev.some((m) => m.id === data.messageId)) return prev;
+          return [
+            ...prev,
+            {
+              id: data.messageId,
+              connectionId: data.connectionId,
+              senderId: data.senderId,
+              content: data.content,
+              read: false,
+              createdAt: new Date(data.createdAt),
+            },
+          ];
+        });
+      }
+    }
+
+    socket.on("message:new", handleNewMessage);
+    return () => {
+      socket.off("message:new", handleNewMessage);
+    };
+  }, [socket, connectionId]);
+
+  // Listen for typing indicators
+  useEffect(() => {
+    if (!socket) return;
+
+    function handleTyping(data: TypingPayload) {
+      if (data.connectionId === connectionId && data.userId !== otherUser?.id) return;
+      if (data.connectionId !== connectionId) return;
+      setIsOtherTyping(data.isTyping);
+
+      if (data.isTyping) {
+        clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = setTimeout(() => {
+          setIsOtherTyping(false);
+        }, 3000);
+      }
+    }
+
+    socket.on("message:typing", handleTyping);
+    return () => {
+      socket.off("message:typing", handleTyping);
+      clearTimeout(typingTimeoutRef.current);
+    };
+  }, [socket, connectionId, otherUser?.id]);
 
   useEffect(() => {
     if (connectionId) {
@@ -99,35 +167,80 @@ export function ChatWindow({
     if (!newMessage.trim() || isSending) return;
 
     setIsSending(true);
-    try {
-      const body: Record<string, string> = {
-        content: newMessage.trim(),
-      };
 
-      // For new conversations, send targetUserId instead of connectionId
-      if (isNewConversation && newConversation) {
-        body.targetUserId = newConversation.userId;
-      } else if (connectionId) {
-        body.connectionId = connectionId;
+    // Try Socket.io first, fall back to HTTP
+    if (socket && isConnected) {
+      socket.emit(
+        "message:send",
+        {
+          connectionId: connectionId || undefined,
+          targetUserId: isNewConversation ? newConversation?.userId : undefined,
+          content: newMessage.trim(),
+        },
+        (response) => {
+          if (response.success) {
+            setNewMessage("");
+            onMessageSent?.();
+            // Emit stop typing
+            if (connectionId) {
+              socket.emit("message:typing", {
+                connectionId,
+                userId: "",
+                userName: "",
+                isTyping: false,
+              });
+            }
+          } else {
+            console.error("Socket send failed:", response.error);
+          }
+          setIsSending(false);
+        }
+      );
+    } else {
+      // HTTP fallback
+      try {
+        const body: Record<string, string> = {
+          content: newMessage.trim(),
+        };
+
+        if (isNewConversation && newConversation) {
+          body.targetUserId = newConversation.userId;
+        } else if (connectionId) {
+          body.connectionId = connectionId;
+        }
+
+        const response = await fetch("/api/messages", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          setMessages((prev) => [...prev, result.data.message]);
+          setNewMessage("");
+          onMessageSent?.();
+        }
+      } catch (error) {
+        console.error("Failed to send message:", error);
+      } finally {
+        setIsSending(false);
       }
+    }
+  }
 
-      const response = await fetch("/api/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+  function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setNewMessage(e.target.value);
+
+    // Emit typing indicator via Socket.io
+    if (socket && connectionId) {
+      socket.emit("message:typing", {
+        connectionId,
+        userId: "",
+        userName: "",
+        isTyping: e.target.value.length > 0,
       });
-
-      const result = await response.json();
-
-      if (result.success) {
-        setMessages((prev) => [...prev, result.data.message]);
-        setNewMessage("");
-        onMessageSent?.();
-      }
-    } catch (error) {
-      console.error("Failed to send message:", error);
-    } finally {
-      setIsSending(false);
     }
   }
 
@@ -157,8 +270,14 @@ export function ChatWindow({
             {otherUser?.name || "Unknown"}
           </h3>
           <p className="text-sm text-white/60 truncate">
-            {otherUser?.position}
-            {otherUser?.company && ` at ${otherUser.company}`}
+            {isOtherTyping ? (
+              <span className="text-cyan-400">typing...</span>
+            ) : (
+              <>
+                {otherUser?.position}
+                {otherUser?.company && ` at ${otherUser.company}`}
+              </>
+            )}
           </p>
         </div>
       </div>
@@ -229,12 +348,19 @@ export function ChatWindow({
         )}
       </div>
 
+      {/* Typing indicator */}
+      {isOtherTyping && (
+        <div className="px-4 py-1 text-xs text-white/50">
+          {otherUser?.name} is typing...
+        </div>
+      )}
+
       {/* Message input */}
       <form onSubmit={handleSend} className="p-4 border-t border-white/10">
         <div className="flex gap-2">
           <Input
             value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
+            onChange={handleInputChange}
             placeholder="Type a message..."
             className="flex-1 bg-white/5 border-white/20 text-white placeholder:text-white/40 focus:border-cyan-500 focus:ring-cyan-500/20"
             disabled={isSending}
@@ -256,4 +382,3 @@ export function ChatWindow({
     </div>
   );
 }
-

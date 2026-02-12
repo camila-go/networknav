@@ -157,6 +157,10 @@ export const CACHE_KEYS = {
   USER_PROFILE: (userId: string) => `user_profile:${userId}`,
   MATCHES: (userId: string) => `matches:${userId}`,
   NETWORK_DATA: (userId: string) => `network:${userId}`,
+  CALENDAR_EVENTS: (userId: string, platform: string, timeMin: string, timeMax: string) =>
+    `calendar_events:${userId}:${platform}:${timeMin}:${timeMax}`,
+  CALENDAR_FREEBUSY: (userId: string, timeMin: string, timeMax: string) =>
+    `calendar_freebusy:${userId}:${timeMin}:${timeMax}`,
 } as const;
 
 // ============================================
@@ -169,6 +173,7 @@ export const CACHE_TTLS = {
   USER_PROFILE: 5 * 60 * 1000, // 5 minutes - user data
   MATCHES: 10 * 60 * 1000, // 10 minutes - match data
   NETWORK_DATA: 10 * 60 * 1000, // 10 minutes - network graph
+  CALENDAR_EVENTS: 3 * 60 * 1000, // 3 minutes - external calendar data
 } as const;
 
 /**

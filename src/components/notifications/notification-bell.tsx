@@ -9,18 +9,39 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { NotificationList } from "./notification-list";
+import { useSocket } from "@/lib/socket/client";
 import { cn } from "@/lib/utils";
 
 export function NotificationBell() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
+  const { socket, isConnected } = useSocket();
 
+  // Fetch initial count on mount
   useEffect(() => {
     fetchUnreadCount();
-    // Poll for new notifications every 30 seconds
+  }, []);
+
+  // Listen for real-time notifications via Socket.io
+  useEffect(() => {
+    if (!socket) return;
+
+    function handleNewNotification() {
+      setUnreadCount((prev) => prev + 1);
+    }
+
+    socket.on("notification:new", handleNewNotification);
+    return () => {
+      socket.off("notification:new", handleNewNotification);
+    };
+  }, [socket]);
+
+  // Fallback polling only when Socket.io is disconnected
+  useEffect(() => {
+    if (isConnected) return;
     const interval = setInterval(fetchUnreadCount, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [isConnected]);
 
   async function fetchUnreadCount() {
     try {
@@ -37,7 +58,6 @@ export function NotificationBell() {
   function handleOpenChange(open: boolean) {
     setIsOpen(open);
     if (!open) {
-      // Refresh count when popover closes
       fetchUnreadCount();
     }
   }
@@ -75,4 +95,3 @@ export function NotificationBell() {
     </Popover>
   );
 }
-

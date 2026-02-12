@@ -6,6 +6,7 @@
 
 import type { Notification, NotificationType } from "@/types";
 import { notifications, notificationPreferences, getDefaultPreferences } from "@/lib/stores";
+import { getSocketInstance } from "@/lib/socket";
 
 // ============================================
 // Notification Templates
@@ -98,6 +99,19 @@ export function createNotification(
   }
   
   notifications.set(userId, userNotifications);
+
+  // Emit real-time notification via Socket.io
+  const io = getSocketInstance();
+  if (io) {
+    io.to(`user:${userId}`).emit("notification:new", {
+      id: notification.id,
+      userId: notification.userId,
+      type: notification.type,
+      title: notification.title,
+      body: notification.body,
+      createdAt: notification.createdAt.toISOString(),
+    });
+  }
 
   return notification;
 }

@@ -1,36 +1,26 @@
-import OpenAI from 'openai';
+import { getEmbeddingProvider } from './provider-factory';
 
-// Initialize OpenAI client
-const openaiApiKey = process.env.OPENAI_API_KEY;
+// Check if the active AI provider is configured
+export const isAIConfigured = getEmbeddingProvider().isConfigured;
 
-// Check if OpenAI is configured
-export const isOpenAIConfigured = !!openaiApiKey;
-
-// Create OpenAI client only if configured
-const openai = isOpenAIConfigured 
-  ? new OpenAI({ apiKey: openaiApiKey })
-  : null;
+/** @deprecated Use isAIConfigured instead */
+export const isOpenAIConfigured = isAIConfigured;
 
 /**
- * Generate embedding vector from text using OpenAI
- * Returns a 1536-dimensional vector for text-embedding-3-small model
+ * Generate embedding vector from text using the active AI provider
  */
 export async function generateEmbedding(text: string): Promise<number[]> {
-  if (!openai) {
+  const provider = getEmbeddingProvider();
+  if (!provider.isConfigured) {
     throw new Error(
-      'OpenAI not configured. Please set OPENAI_API_KEY in .env.local'
+      `AI provider "${provider.name}" not configured. Check environment variables.`
     );
   }
 
   try {
-    const response = await openai.embeddings.create({
-      model: 'text-embedding-3-small',
-      input: text,
-    });
-
-    return response.data[0].embedding;
+    return await provider.generateEmbedding(text);
   } catch (error) {
-    console.error('Error generating embedding:', error);
+    console.error(`Error generating embedding via ${provider.name}:`, error);
     throw new Error('Failed to generate embedding');
   }
 }
@@ -60,7 +50,7 @@ export function createProfileText(profile: {
   if (profile.company) parts.push(`Company: ${profile.company}`);
   if (profile.location) parts.push(`Location: ${profile.location}`);
   if (profile.age) parts.push(`Age: ${profile.age}`);
-  
+
   if (profile.interests?.length) {
     parts.push(`Interests: ${profile.interests.join(', ')}`);
   }
@@ -68,13 +58,13 @@ export function createProfileText(profile: {
   // Include questionnaire data for richer matching
   if (profile.questionnaireData) {
     const q = profile.questionnaireData;
-    
+
     // Leadership context
     if (q.industry) parts.push(`Industry: ${q.industry}`);
     if (q.leadershipLevel) parts.push(`Leadership Level: ${q.leadershipLevel}`);
     if (q.organizationSize) parts.push(`Organization Size: ${q.organizationSize}`);
     if (q.yearsExperience) parts.push(`Years Experience: ${q.yearsExperience}`);
-    
+
     // Leadership priorities and challenges
     if (Array.isArray(q.leadershipPriorities) && q.leadershipPriorities.length) {
       parts.push(`Leadership Priorities: ${q.leadershipPriorities.join(', ')}`);
@@ -88,7 +78,7 @@ export function createProfileText(profile: {
     if (Array.isArray(q.networkingGoals) && q.networkingGoals.length) {
       parts.push(`Networking Goals: ${q.networkingGoals.join(', ')}`);
     }
-    
+
     // Personal interests
     if (Array.isArray(q.rechargeActivities) && q.rechargeActivities.length) {
       parts.push(`Recharge Activities: ${q.rechargeActivities.join(', ')}`);
@@ -99,7 +89,7 @@ export function createProfileText(profile: {
     if (Array.isArray(q.fitnessActivities) && q.fitnessActivities.length) {
       parts.push(`Fitness Activities: ${q.fitnessActivities.join(', ')}`);
     }
-    
+
     // Leadership style
     if (Array.isArray(q.leadershipPhilosophy) && q.leadershipPhilosophy.length) {
       parts.push(`Leadership Philosophy: ${q.leadershipPhilosophy.join(', ')}`);
@@ -116,21 +106,17 @@ export function createProfileText(profile: {
  * More efficient than generating one at a time
  */
 export async function generateBatchEmbeddings(texts: string[]): Promise<number[][]> {
-  if (!openai) {
+  const provider = getEmbeddingProvider();
+  if (!provider.isConfigured) {
     throw new Error(
-      'OpenAI not configured. Please set OPENAI_API_KEY in .env.local'
+      `AI provider "${provider.name}" not configured. Check environment variables.`
     );
   }
 
   try {
-    const response = await openai.embeddings.create({
-      model: 'text-embedding-3-small',
-      input: texts,
-    });
-
-    return response.data.map((item) => item.embedding);
+    return await provider.generateBatchEmbeddings(texts);
   } catch (error) {
-    console.error('Error generating batch embeddings:', error);
+    console.error(`Error generating batch embeddings via ${provider.name}:`, error);
     throw new Error('Failed to generate batch embeddings');
   }
 }
@@ -158,4 +144,3 @@ export function cosineSimilarity(vecA: number[], vecB: number[]): number {
 
   return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
 }
-

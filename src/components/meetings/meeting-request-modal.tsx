@@ -36,7 +36,9 @@ import {
   CheckCircle2,
   X,
 } from "lucide-react";
-import type { PublicUser, MeetingType, Commonality } from "@/types";
+import type { PublicUser, MeetingType, Commonality, CalendarEvent, FreeBusySlot } from "@/types";
+import { AvailabilityView } from "./availability-view";
+import { ConflictBadge } from "./conflict-badge";
 
 // Confetti particle component
 function ConfettiParticle({ delay, color }: { delay: number; color: string }) {
@@ -154,12 +156,26 @@ export function MeetingRequestModal({
   const [duration, setDuration] = useState("30");
   const [contextMessage, setContextMessage] = useState("");
   const [proposedTimes, setProposedTimes] = useState<string[]>(["", "", ""]);
+  const [myEvents, setMyEvents] = useState<CalendarEvent[]>([]);
+  const [recipientBusy, setRecipientBusy] = useState<FreeBusySlot[]>([]);
 
   const handleCelebrationClose = useCallback(() => {
     setShowCelebration(false);
     onOpenChange(false);
     onSuccess?.();
   }, [onOpenChange, onSuccess]);
+
+  const handleAvailabilityData = useCallback(
+    (events: CalendarEvent[], busy: FreeBusySlot[]) => {
+      setMyEvents(events);
+      setRecipientBusy(busy);
+    },
+    []
+  );
+
+  // Derive the date for the availability view from the first proposed time
+  const firstProposedTime = proposedTimes.find((t) => t);
+  const selectedDate = firstProposedTime ? new Date(firstProposedTime) : null;
 
   const initials = recipient.profile.name
     .split(" ")
@@ -234,6 +250,8 @@ export function MeetingRequestModal({
         setDuration("30");
         setContextMessage("");
         setProposedTimes(["", "", ""]);
+        setMyEvents([]);
+        setRecipientBusy([]);
       } else {
         toast({
           variant: "destructive",
@@ -351,27 +369,37 @@ export function MeetingRequestModal({
             </div>
             <div className="space-y-2">
               {proposedTimes.map((time, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <div className="flex-1 relative">
-                    <input
-                      type="datetime-local"
-                      value={time}
-                      onChange={(e) => handleTimeChange(index, e.target.value)}
-                      className="w-full h-10 px-3 py-2 rounded-lg bg-white/5 border border-white/20 text-white text-sm focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/50 [color-scheme:dark]"
-                      placeholder={`Option ${index + 1}`}
-                    />
+                <div key={index} className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 relative">
+                      <input
+                        type="datetime-local"
+                        value={time}
+                        onChange={(e) => handleTimeChange(index, e.target.value)}
+                        className="w-full h-10 px-3 py-2 rounded-lg bg-white/5 border border-white/20 text-white text-sm focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/50 [color-scheme:dark]"
+                        placeholder={`Option ${index + 1}`}
+                      />
+                    </div>
+                    {time && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleTimeChange(index, "")}
+                        className="h-10 w-10 text-white/40 hover:text-red-400 hover:bg-red-500/10 shrink-0"
+                        title="Clear time"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                   {time && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleTimeChange(index, "")}
-                      className="h-10 w-10 text-white/40 hover:text-red-400 hover:bg-red-500/10 shrink-0"
-                      title="Clear time"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
+                    <ConflictBadge
+                      proposedTime={new Date(time)}
+                      duration={parseInt(duration)}
+                      myEvents={myEvents}
+                      recipientBusy={recipientBusy}
+                    />
                   )}
                 </div>
               ))}
@@ -379,6 +407,14 @@ export function MeetingRequestModal({
             <p className="text-xs text-white/50">
               Propose up to 3 times. {recipient.profile.name.split(" ")[0]} will choose one.
             </p>
+
+            {/* Calendar availability view */}
+            <AvailabilityView
+              recipientId={recipient.id}
+              selectedDate={selectedDate}
+              duration={parseInt(duration)}
+              onDataLoaded={handleAvailabilityData}
+            />
           </div>
 
           {/* Context Message */}

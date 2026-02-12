@@ -81,7 +81,7 @@ describe("Questionnaire Store", () => {
     it("should move to the next section when at the last question", () => {
       const store = useQuestionnaireStore.getState();
 
-      // Move to the last question of the first section
+      // Move to the last question of the first section (3 questions, so advance 2 times)
       const firstSectionQuestions = QUESTIONNAIRE_SECTIONS[0].questions.length;
       for (let i = 0; i < firstSectionQuestions - 1; i++) {
         store.nextQuestion();
@@ -181,23 +181,24 @@ describe("Questionnaire Store", () => {
       const progress = store.getProgress();
 
       expect(progress.currentQuestion).toBe(1);
-      expect(progress.totalQuestions).toBe(20);
-      expect(progress.percentage).toBe(5);
-      expect(progress.sectionProgress).toBe("Section 1 of 4");
+      expect(progress.totalQuestions).toBe(10);
+      expect(progress.percentage).toBe(10);
+      expect(progress.sectionProgress).toBe("Section 1 of 3");
     });
 
     it("should return correct progress after moving", () => {
       const store = useQuestionnaireStore.getState();
 
-      // Move to question 5 (second section, first question)
-      for (let i = 0; i < 4; i++) {
+      // Move to question 4 (second section, first question)
+      // Section 1 has 3 questions, so advance 3 times
+      for (let i = 0; i < 3; i++) {
         store.nextQuestion();
       }
 
       const progress = store.getProgress();
-      expect(progress.currentQuestion).toBe(5);
-      expect(progress.percentage).toBe(25);
-      expect(progress.sectionProgress).toBe("Section 2 of 4");
+      expect(progress.currentQuestion).toBe(4);
+      expect(progress.percentage).toBe(40);
+      expect(progress.sectionProgress).toBe("Section 2 of 3");
     });
   });
 
@@ -217,32 +218,26 @@ describe("Questionnaire Store", () => {
       expect(canProceed).toBe(true);
     });
 
-    it("should return true for optional question without response", () => {
+    it("should require responses for all questions since all are required", () => {
       const store = useQuestionnaireStore.getState();
 
-      // Navigate to an optional question (fitnessActivities in section 3)
-      // Section 1: 4 questions, Section 2: 4 questions, Section 3: question 3 is fitnessActivities (optional)
-      for (let i = 0; i < 10; i++) {
-        store.nextQuestion();
+      // All 10 questions are required, so without a response canProceed should be false
+      for (const section of QUESTIONNAIRE_SECTIONS) {
+        for (const question of section.questions) {
+          expect(question.required).toBe(true);
+        }
       }
 
-      const currentQuestion =
-        QUESTIONNAIRE_SECTIONS[
-          useQuestionnaireStore.getState().currentSectionIndex
-        ].questions[useQuestionnaireStore.getState().currentQuestionIndex];
-
-      // If we found an optional question, it should allow proceeding without response
-      if (!currentQuestion.required) {
-        const canProceed = store.canProceed();
-        expect(canProceed).toBe(true);
-      }
+      // Without setting a response, canProceed should be false at start
+      expect(store.canProceed()).toBe(false);
     });
 
     it("should check minimum selections for multi-select questions", () => {
       const store = useQuestionnaireStore.getState();
 
-      // Move to a multi-select question (leadershipPriorities in section 2)
-      for (let i = 0; i < 4; i++) {
+      // Move to leadershipPriorities (first question of section 2)
+      // Section 1 has 3 questions, so advance 3 times
+      for (let i = 0; i < 3; i++) {
         store.nextQuestion();
       }
 
@@ -250,11 +245,15 @@ describe("Questionnaire Store", () => {
       store.setResponse("leadershipPriorities", []);
       expect(store.canProceed()).toBe(false);
 
-      // With 2 selections (less than min of 3), should not proceed
-      store.setResponse("leadershipPriorities", ["scaling", "innovation"]);
+      // With 1 selection (less than min of 2), should not proceed
+      store.setResponse("leadershipPriorities", ["scaling"]);
       expect(store.canProceed()).toBe(false);
 
-      // With 3 selections (meets minimum), should be able to proceed
+      // With 2 selections (meets minimum of 2), should be able to proceed
+      store.setResponse("leadershipPriorities", ["scaling", "innovation"]);
+      expect(store.canProceed()).toBe(true);
+
+      // With 3 selections, should also proceed
       store.setResponse("leadershipPriorities", [
         "scaling",
         "innovation",
@@ -297,4 +296,3 @@ describe("Questionnaire Store", () => {
     });
   });
 });
-

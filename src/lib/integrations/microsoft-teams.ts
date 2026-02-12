@@ -1,6 +1,7 @@
 import { Client } from '@microsoft/microsoft-graph-client';
 import { ConfidentialClientApplication } from '@azure/msal-node';
 import { requireSupabaseAdmin } from '@/lib/supabase/client';
+import type { CalendarEvent, CalendarEventStatus, FreeBusySlot } from '@/types';
 
 // Microsoft OAuth configuration
 const clientId = process.env.MICROSOFT_CLIENT_ID;
@@ -256,6 +257,110 @@ export async function disconnectMicrosoft(profileId: string): Promise<void> {
   if (error) {
     console.error('Error disconnecting Microsoft:', error);
     throw new Error('Failed to disconnect Microsoft account');
+  }
+}
+
+// ============================================
+// Calendar Read Functions
+// ============================================
+
+interface MsGraphEvent {
+  id: string;
+  subject: string;
+  start: { dateTime: string; timeZone: string };
+  end: { dateTime: string; timeZone: string };
+  isAllDay: boolean;
+  showAs: string;
+}
+
+interface MsScheduleItem {
+  status: string;
+  start: { dateTime: string; timeZone: string };
+  end: { dateTime: string; timeZone: string };
+}
+
+function mapOutlookStatus(showAs?: string): CalendarEventStatus {
+  switch (showAs) {
+    case 'tentative': return 'tentative';
+    case 'free':
+    case 'workingElsewhere': return 'confirmed';
+    default: return 'confirmed';
+  }
+}
+
+/**
+ * Fetch calendar events from Outlook Calendar for a date range.
+ * Returns the user's own events with titles.
+ */
+export async function getOutlookCalendarEvents(
+  profileId: string,
+  timeMin: Date,
+  timeMax: Date
+): Promise<CalendarEvent[]> {
+  const client = await getGraphClient(profileId);
+
+  try {
+    const response = await client
+      .api('/me/calendarView')
+      .query({
+        startDateTime: timeMin.toISOString(),
+        endDateTime: timeMax.toISOString(),
+        $select: 'id,subject,start,end,isAllDay,showAs',
+        $orderby: 'start/dateTime',
+        $top: 250,
+      })
+      .get();
+
+    return (response.value || []).map((event: MsGraphEvent) => ({
+      id: event.id,
+      title: event.subject || '(No title)',
+      startTime: new Date(event.start.dateTime + 'Z'),
+      endTime: new Date(event.end.dateTime + 'Z'),
+      isAllDay: event.isAllDay || false,
+      status: mapOutlookStatus(event.showAs),
+      source: 'teams' as const,
+    }));
+  } catch (error) {
+    console.error('Error fetching Outlook Calendar events:', error);
+    throw new Error('Failed to fetch Outlook Calendar events');
+  }
+}
+
+/**
+ * Check free/busy for an Outlook user via Microsoft Graph schedule API.
+ * Used to check availability without exposing event details.
+ */
+export async function getOutlookFreeBusy(
+  profileId: string,
+  userEmail: string,
+  timeMin: Date,
+  timeMax: Date
+): Promise<FreeBusySlot[]> {
+  const client = await getGraphClient(profileId);
+
+  try {
+    const response = await client
+      .api('/me/calendar/getSchedule')
+      .post({
+        schedules: [userEmail],
+        startTime: { dateTime: timeMin.toISOString(), timeZone: 'UTC' },
+        endTime: { dateTime: timeMax.toISOString(), timeZone: 'UTC' },
+        availabilityViewInterval: 15,
+      });
+
+    const schedule = response.value?.[0];
+    if (!schedule?.scheduleItems) return [];
+
+    return schedule.scheduleItems
+      .filter((item: MsScheduleItem) => item.status !== 'free')
+      .map((item: MsScheduleItem) => ({
+        startTime: new Date(item.start.dateTime + 'Z'),
+        endTime: new Date(item.end.dateTime + 'Z'),
+        status: item.status === 'tentative' ? 'tentative' as const : 'busy' as const,
+      }));
+  } catch (error) {
+    console.error('Error fetching Outlook free/busy:', error);
+    throw new Error('Failed to fetch Outlook availability');
   }
 }
 

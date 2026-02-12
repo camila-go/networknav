@@ -240,6 +240,28 @@ export type MeetingType = "video" | "coffee" | "conference" | "phone";
 
 export type CalendarPlatform = "teams" | "google";
 
+// ============================================
+// Calendar Read Types
+// ============================================
+
+export type CalendarEventStatus = "confirmed" | "tentative" | "cancelled";
+
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  startTime: Date;
+  endTime: Date;
+  isAllDay: boolean;
+  status: CalendarEventStatus;
+  source: CalendarPlatform;
+}
+
+export interface FreeBusySlot {
+  startTime: Date;
+  endTime: Date;
+  status: "busy" | "tentative";
+}
+
 export interface Meeting {
   id: string;
   requesterId: string;

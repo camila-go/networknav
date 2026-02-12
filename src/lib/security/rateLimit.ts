@@ -31,6 +31,9 @@ export const RATE_LIMITS = {
   // Meetings & connections
   'schedule-meeting': { maxRequests: 20, windowMs: 60 * 60 * 1000 }, // 20 per hour
   'send-message': { maxRequests: 50, windowMs: 60 * 60 * 1000 }, // 50 per hour
+
+  // Calendar reads
+  'calendar-read': { maxRequests: 60, windowMs: 60 * 60 * 1000 }, // 60 per hour
   
   // Moderation actions
   'report-user': { maxRequests: 5, windowMs: 24 * 60 * 60 * 1000 }, // 5 per day

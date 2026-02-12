@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth";
 import { generateMatches, calculateMatchQualityMetrics } from "@/lib/matching";
 import { users, questionnaireResponses, userMatches } from "@/lib/stores";
 import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
+import { generateConversationStartersAI } from "@/lib/ai/generative";
 import type { Match } from "@/types";
 
 /**
@@ -353,6 +354,30 @@ async function generateMatchesFromSupabase(currentUserId: string, currentUserEma
         passed: false,
       };
     });
+
+    // Try AI-generated conversation starters (runs in parallel for all matches)
+    try {
+      const aiStarterResults = await Promise.all(
+        matches.map((match) =>
+          generateConversationStartersAI({
+            userName: 'you',
+            matchName: match.matchedUser.profile.name.split(' ')[0] || 'them',
+            matchType: match.type,
+            commonalities: match.commonalities.map((c) => c.description),
+            matchPosition: match.matchedUser.profile.position,
+            matchCompany: match.matchedUser.profile.company,
+          })
+        )
+      );
+      for (let i = 0; i < matches.length; i++) {
+        const aiStarters = aiStarterResults[i];
+        if (aiStarters) {
+          matches[i].conversationStarters = aiStarters;
+        }
+      }
+    } catch {
+      // AI starters failed — algorithmic ones already in place
+    }
 
     // Sort by score descending
     return matches.sort((a, b) => b.score - a.score);

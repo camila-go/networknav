@@ -26,6 +26,7 @@ coverage
 # OS
 .DS_Store
 Thumbs.db
+nul
 
 # Logs
 npm-debug.log*
@@ -40,3 +41,6 @@ next-env.d.ts
 # Drizzle
 drizzle/
 
+# GCP credentials
+*.json.key
+service-account*.json

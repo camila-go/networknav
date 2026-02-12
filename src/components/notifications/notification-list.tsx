@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { formatRelativeTime } from "@/lib/utils";
+import { useSocket } from "@/lib/socket/client";
+import type { NotificationPayload } from "@/lib/socket/types";
 import type { Notification, NotificationType } from "@/types";
 
 interface NotificationListProps {
@@ -27,10 +29,36 @@ const NOTIFICATION_ICONS: Record<NotificationType, React.ReactNode> = {
 export function NotificationList({ onClose }: NotificationListProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { socket } = useSocket();
 
   useEffect(() => {
     fetchNotifications();
   }, []);
+
+  // Prepend real-time notifications
+  useEffect(() => {
+    if (!socket) return;
+
+    function handleNewNotification(data: NotificationPayload) {
+      setNotifications((prev) => [
+        {
+          id: data.id,
+          userId: data.userId,
+          type: data.type as NotificationType,
+          title: data.title,
+          body: data.body,
+          read: false,
+          createdAt: new Date(data.createdAt),
+        },
+        ...prev,
+      ]);
+    }
+
+    socket.on("notification:new", handleNewNotification);
+    return () => {
+      socket.off("notification:new", handleNewNotification);
+    };
+  }, [socket]);
 
   async function fetchNotifications() {
     try {

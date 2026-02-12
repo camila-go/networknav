@@ -1,5 +1,6 @@
 import { google } from 'googleapis';
 import { requireSupabaseAdmin } from '@/lib/supabase/client';
+import type { CalendarEvent, CalendarEventStatus, FreeBusySlot } from '@/types';
 
 // OAuth2 client configuration
 const clientId = process.env.GOOGLE_CLIENT_ID;
@@ -245,6 +246,90 @@ export async function disconnectGoogle(profileId: string): Promise<void> {
   if (error) {
     console.error('Error disconnecting Google:', error);
     throw new Error('Failed to disconnect Google account');
+  }
+}
+
+// ============================================
+// Calendar Read Functions
+// ============================================
+
+function mapGoogleStatus(status?: string | null): CalendarEventStatus {
+  switch (status) {
+    case 'confirmed': return 'confirmed';
+    case 'tentative': return 'tentative';
+    case 'cancelled': return 'cancelled';
+    default: return 'confirmed';
+  }
+}
+
+/**
+ * Fetch calendar events from Google Calendar for a date range.
+ * Returns the user's own events with titles.
+ */
+export async function getGoogleCalendarEvents(
+  profileId: string,
+  timeMin: Date,
+  timeMax: Date
+): Promise<CalendarEvent[]> {
+  const client = await getAuthenticatedClient(profileId);
+  const calendar = google.calendar({ version: 'v3', auth: client });
+
+  try {
+    const response = await calendar.events.list({
+      calendarId: 'primary',
+      timeMin: timeMin.toISOString(),
+      timeMax: timeMax.toISOString(),
+      singleEvents: true,
+      orderBy: 'startTime',
+      maxResults: 250,
+      fields: 'items(id,summary,start,end,status)',
+    });
+
+    return (response.data.items || []).map(event => ({
+      id: event.id!,
+      title: event.summary || '(No title)',
+      startTime: new Date(event.start?.dateTime || event.start?.date || ''),
+      endTime: new Date(event.end?.dateTime || event.end?.date || ''),
+      isAllDay: !event.start?.dateTime,
+      status: mapGoogleStatus(event.status),
+      source: 'google' as const,
+    }));
+  } catch (error) {
+    console.error('Error fetching Google Calendar events:', error);
+    throw new Error('Failed to fetch Google Calendar events');
+  }
+}
+
+/**
+ * Check free/busy status for a Google Calendar user.
+ * Used to check availability without exposing event details.
+ */
+export async function getGoogleFreeBusy(
+  profileId: string,
+  timeMin: Date,
+  timeMax: Date
+): Promise<FreeBusySlot[]> {
+  const client = await getAuthenticatedClient(profileId);
+  const calendar = google.calendar({ version: 'v3', auth: client });
+
+  try {
+    const response = await calendar.freebusy.query({
+      requestBody: {
+        timeMin: timeMin.toISOString(),
+        timeMax: timeMax.toISOString(),
+        items: [{ id: 'primary' }],
+      },
+    });
+
+    const busy = response.data.calendars?.primary?.busy || [];
+    return busy.map(slot => ({
+      startTime: new Date(slot.start!),
+      endTime: new Date(slot.end!),
+      status: 'busy' as const,
+    }));
+  } catch (error) {
+    console.error('Error fetching Google free/busy:', error);
+    throw new Error('Failed to fetch Google availability');
   }
 }
 

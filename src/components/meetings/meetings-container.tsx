@@ -25,7 +25,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { format, formatDistanceToNow, isFuture, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, addMonths, subMonths } from "date-fns";
-import type { MeetingWithUsers, MeetingType } from "@/types";
+import type { MeetingWithUsers, MeetingType, CalendarEvent } from "@/types";
 import Link from "next/link";
 
 const MEETING_TYPE_ICONS: Record<MeetingType, typeof Video> = {
@@ -46,6 +46,9 @@ export function MeetingsContainer() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
   const [calendarDate, setCalendarDate] = useState(new Date());
+  const [showExternalCalendar, setShowExternalCalendar] = useState(false);
+  const [externalEvents, setExternalEvents] = useState<CalendarEvent[]>([]);
+  const [externalLoading, setExternalLoading] = useState(false);
 
   useEffect(() => {
     fetchMeetings();
@@ -54,6 +57,32 @@ export function MeetingsContainer() {
   useEffect(() => {
     fetchAllMeetings();
   }, []);
+
+  useEffect(() => {
+    if (!showExternalCalendar) {
+      setExternalEvents([]);
+      return;
+    }
+    async function fetchExternalEvents() {
+      setExternalLoading(true);
+      try {
+        const monthStart = startOfMonth(calendarDate);
+        const monthEnd = endOfMonth(calendarDate);
+        const res = await fetch(
+          `/api/calendar?mode=events&timeMin=${monthStart.toISOString()}&timeMax=${monthEnd.toISOString()}`
+        );
+        const data = await res.json();
+        if (data.success && Array.isArray(data.data)) {
+          setExternalEvents(data.data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch external calendar:", error);
+      } finally {
+        setExternalLoading(false);
+      }
+    }
+    fetchExternalEvents();
+  }, [showExternalCalendar, calendarDate]);
 
   async function fetchMeetings() {
     setIsLoading(true);
@@ -103,6 +132,16 @@ export function MeetingsContainer() {
     });
     return map;
   }, [allMeetings]);
+
+  const externalEventsByDate = useMemo(() => {
+    const map = new Map<string, CalendarEvent[]>();
+    externalEvents.forEach(event => {
+      const dateKey = format(new Date(event.startTime), "yyyy-MM-dd");
+      const existing = map.get(dateKey) || [];
+      map.set(dateKey, [...existing, event]);
+    });
+    return map;
+  }, [externalEvents]);
 
   async function handleMeetingAction(meetingId: string, action: string, data?: object) {
     setActionLoading(meetingId);
@@ -216,6 +255,20 @@ export function MeetingsContainer() {
             <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
+                size="sm"
+                onClick={() => setShowExternalCalendar(!showExternalCalendar)}
+                className={cn(
+                  "text-xs gap-1 transition-colors",
+                  showExternalCalendar
+                    ? "text-purple-400 bg-purple-500/10 hover:bg-purple-500/20"
+                    : "text-white/50 hover:text-white hover:bg-white/5"
+                )}
+              >
+                <Calendar className="h-3 w-3" />
+                {externalLoading ? "Loading..." : "My Calendar"}
+              </Button>
+              <Button
+                variant="ghost"
                 size="icon"
                 onClick={() => setCalendarDate(subMonths(calendarDate, 1))}
                 className="h-8 w-8 text-white/60 hover:text-white hover:bg-white/10"
@@ -259,17 +312,19 @@ export function MeetingsContainer() {
             {calendarDays.map(day => {
               const dateKey = format(day, "yyyy-MM-dd");
               const dayMeetings = meetingsByDate.get(dateKey) || [];
+              const dayExternalEvents = showExternalCalendar ? (externalEventsByDate.get(dateKey) || []) : [];
               const isToday = isSameDay(day, new Date());
               const hasScheduledMeetings = dayMeetings.some(m => m.status === "scheduled");
-              
+              const hasExternalEvents = dayExternalEvents.length > 0;
+
               return (
                 <div
                   key={dateKey}
                   className={cn(
                     "aspect-square p-1 rounded-lg relative transition-colors",
                     isToday && "bg-cyan-500/20 border border-cyan-500/50",
-                    !isToday && hasScheduledMeetings && "bg-white/5 hover:bg-white/10",
-                    !isToday && !hasScheduledMeetings && "hover:bg-white/5"
+                    !isToday && (hasScheduledMeetings || hasExternalEvents) && "bg-white/5 hover:bg-white/10",
+                    !isToday && !hasScheduledMeetings && !hasExternalEvents && "hover:bg-white/5"
                   )}
                 >
                   <span className={cn(
@@ -278,25 +333,28 @@ export function MeetingsContainer() {
                   )}>
                     {format(day, "d")}
                   </span>
-                  
-                  {/* Meeting indicators */}
-                  {dayMeetings.length > 0 && (
+
+                  {/* Meeting + external event indicators */}
+                  {(dayMeetings.length > 0 || hasExternalEvents) && (
                     <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex gap-0.5">
-                      {dayMeetings.slice(0, 3).map((meeting, i) => {
-                        const MeetingIcon = MEETING_TYPE_ICONS[meeting.meetingType];
-                        return (
-                          <div
-                            key={meeting.id}
-                            className={cn(
-                              "w-1.5 h-1.5 rounded-full",
-                              meeting.status === "scheduled" && "bg-cyan-400",
-                              meeting.status === "pending" && "bg-amber-400",
-                              meeting.status === "completed" && "bg-teal-400"
-                            )}
-                            title={`${meeting.requester.profile.name} - ${meeting.meetingType}`}
-                          />
-                        );
-                      })}
+                      {dayMeetings.slice(0, 3).map((meeting) => (
+                        <div
+                          key={meeting.id}
+                          className={cn(
+                            "w-1.5 h-1.5 rounded-full",
+                            meeting.status === "scheduled" && "bg-cyan-400",
+                            meeting.status === "pending" && "bg-amber-400",
+                            meeting.status === "completed" && "bg-teal-400"
+                          )}
+                          title={`${meeting.requester.profile.name} - ${meeting.meetingType}`}
+                        />
+                      ))}
+                      {hasExternalEvents && (
+                        <div
+                          className="w-1.5 h-1.5 rounded-full bg-purple-400"
+                          title={`${dayExternalEvents.length} calendar event${dayExternalEvents.length > 1 ? "s" : ""}`}
+                        />
+                      )}
                       {dayMeetings.length > 3 && (
                         <span className="text-[10px] text-white/50">+{dayMeetings.length - 3}</span>
                       )}
@@ -321,6 +379,12 @@ export function MeetingsContainer() {
               <div className="w-2 h-2 rounded-full bg-teal-400" />
               <span>Completed</span>
             </div>
+            {showExternalCalendar && (
+              <div className="flex items-center gap-1.5">
+                <div className="w-2 h-2 rounded-full bg-purple-400" />
+                <span>Calendar</span>
+              </div>
+            )}
           </div>
         </div>
       ) : (
