@@ -270,6 +270,8 @@ CREATE INDEX idx_reports_reported_user ON reports(reported_user_id);
 
 ```sql
 -- Function to find similar profiles using vector similarity
+-- SET search_path = '' prevents search_path injection attacks (Supabase best practice)
+-- All object references are fully schema-qualified; <=> operator uses explicit schema
 CREATE OR REPLACE FUNCTION match_profiles(
   query_embedding VECTOR(1536),
   match_threshold FLOAT,
@@ -286,49 +288,56 @@ RETURNS TABLE (
   similarity FLOAT
 )
 LANGUAGE plpgsql
+SET search_path = ''
 AS $$
 BEGIN
   RETURN QUERY
   SELECT
-    user_profiles.id,
-    user_profiles.name,
-    user_profiles.bio,
-    user_profiles.interests,
-    user_profiles.location,
-    user_profiles.age,
-    1 - (user_profiles.profile_embedding <=> query_embedding) AS similarity
-  FROM user_profiles
-  WHERE user_profiles.id != excluded_user_id
-    AND user_profiles.profile_embedding IS NOT NULL
-    AND user_profiles.is_active = true
-    AND user_profiles.is_visible = true
-    AND 1 - (user_profiles.profile_embedding <=> query_embedding) > match_threshold
-    AND NOT (excluded_user_id = ANY(user_profiles.blocked_users))
-  ORDER BY user_profiles.profile_embedding <=> query_embedding
+    up.id,
+    up.name,
+    up.bio,
+    up.interests,
+    up.location,
+    up.age,
+    1 - (up.profile_embedding operator(extensions.<=>) query_embedding) AS similarity
+  FROM public.user_profiles AS up
+  WHERE up.id != excluded_user_id
+    AND up.profile_embedding IS NOT NULL
+    AND up.is_active = true
+    AND up.is_visible = true
+    AND 1 - (up.profile_embedding operator(extensions.<=>) query_embedding) > match_threshold
+    AND NOT (excluded_user_id = ANY(up.blocked_users))
+  ORDER BY up.profile_embedding operator(extensions.<=>) query_embedding
   LIMIT match_count;
 END;
 $$;
 
 -- Function to block a user
 CREATE OR REPLACE FUNCTION block_user(blocker_id UUID, blocked_id UUID)
-RETURNS VOID AS $$
+RETURNS VOID
+LANGUAGE plpgsql
+SET search_path = ''
+AS $$
 BEGIN
-  UPDATE user_profiles
+  UPDATE public.user_profiles
   SET blocked_users = array_append(blocked_users, blocked_id)
   WHERE id = blocker_id
   AND NOT (blocked_id = ANY(blocked_users));
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 -- Function to unblock a user
 CREATE OR REPLACE FUNCTION unblock_user(blocker_id UUID, blocked_id UUID)
-RETURNS VOID AS $$
+RETURNS VOID
+LANGUAGE plpgsql
+SET search_path = ''
+AS $$
 BEGIN
-  UPDATE user_profiles
+  UPDATE public.user_profiles
   SET blocked_users = array_remove(blocked_users, blocked_id)
   WHERE id = blocker_id;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 ```
 
 ### I. Enable Row Level Security (RLS)
