@@ -13,6 +13,8 @@ All notable changes to NetworkNav (Jynx) will be documented in this file.
 
 ### Fixed
 
+- **StatsCards polling continues after session expiry** — `fetchOtherStats` now checks HTTP status before parsing JSON; clears the 30-second interval on a 401 response so unauthenticated requests stop immediately (`src/components/dashboard/stats-cards.tsx`)
+- **MeetingsContainer eager double-fetch on mount** — `fetchAllMeetings` (used for calendar dots) deferred to first calendar-view open instead of firing unconditionally on mount, reducing page-load API calls (`src/components/meetings/meetings-container.tsx`)
 - **`connections` and `meeting_requests` tables missing from Supabase** — `SUPABASE_SETUP.md` Section C corrected (`id` changed from `TEXT` to `UUID`, `expires_at` column added, status CHECK fixed from `'rejected'` → `'declined'`); new Section G added for `meeting_requests` (was absent entirely); troubleshooting entry added for PGRST205 errors with instructions to run the migration script
 - **pgvector extension schema** — moved `vector` extension from `public` to `extensions` schema, resolving the Supabase "Extension in Public" lint advisory; migration backed up `profile_embedding` as TEXT, dropped extension with CASCADE, reinstalled with `WITH SCHEMA extensions`, restored the column/index/`match_profiles` function; updated `SUPABASE_SETUP.md` with corrected install command and working migration script
 - **Function search path hardened** — added `SET search_path = ''` to `match_profiles`, `block_user`, and `unblock_user` functions and fully qualified all object references (`public.user_profiles`, `operator(extensions.<=>)`) to prevent search_path injection, resolving Supabase "Function Search Path Mutable" lint advisory (`SUPABASE_SETUP.md`)

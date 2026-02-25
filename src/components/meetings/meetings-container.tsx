@@ -54,9 +54,12 @@ export function MeetingsContainer() {
     fetchMeetings();
   }, [activeTab]);
 
+  // Only load all meetings (needed for calendar dots) when the calendar view is opened
   useEffect(() => {
-    fetchAllMeetings();
-  }, []);
+    if (viewMode === "calendar") {
+      fetchAllMeetings();
+    }
+  }, [viewMode]);
 
   useEffect(() => {
     if (!showExternalCalendar) {

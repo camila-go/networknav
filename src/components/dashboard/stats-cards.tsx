@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { Users, Clock, Sparkles, TrendingUp } from "lucide-react";
 
 interface Stats {
@@ -25,6 +25,7 @@ export function StatsCards({ matchCount, matchScore }: StatsCardsProps = {}) {
     totalMatches: matchCount || 0,
   });
   const [isLoading, setIsLoading] = useState(true);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Update stats when props change
   useEffect(() => {
@@ -39,9 +40,24 @@ export function StatsCards({ matchCount, matchScore }: StatsCardsProps = {}) {
   const fetchOtherStats = useCallback(async () => {
     try {
       // Fetch connections and meetings (matches handled by props now)
+      const [connectionsRaw, meetingsRaw] = await Promise.all([
+        fetch("/api/connections"),
+        fetch("/api/meetings"),
+      ]);
+
+      // Stop polling if the session has expired
+      if (connectionsRaw.status === 401 || meetingsRaw.status === 401) {
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
+        setIsLoading(false);
+        return;
+      }
+
       const [connectionsRes, meetingsRes] = await Promise.all([
-        fetch("/api/connections").then(r => r.json()).catch(() => ({ success: false })),
-        fetch("/api/meetings").then(r => r.json()).catch(() => ({ success: false })),
+        connectionsRaw.json().catch(() => ({ success: false })),
+        meetingsRaw.json().catch(() => ({ success: false })),
       ]);
 
       // Process connections
@@ -71,11 +87,13 @@ export function StatsCards({ matchCount, matchScore }: StatsCardsProps = {}) {
 
   useEffect(() => {
     fetchOtherStats();
-    
-    // Refresh stats every 30 seconds
-    const interval = setInterval(fetchOtherStats, 30000);
-    
-    return () => clearInterval(interval);
+
+    // Refresh stats every 30 seconds; stopped automatically on 401
+    intervalRef.current = setInterval(fetchOtherStats, 30000);
+
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
   }, [fetchOtherStats]);
 
   return (
