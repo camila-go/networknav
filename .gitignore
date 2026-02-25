@@ -44,3 +44,6 @@ drizzle/
 # GCP credentials
 *.json.key
 service-account*.json
+
+# Claude Code local settings
+.claude/settings.local.json

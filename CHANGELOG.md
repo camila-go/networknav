@@ -6,12 +6,14 @@ All notable changes to NetworkNav (Jynx) will be documented in this file.
 
 ### Added
 
+- `supabase/migrations/20260225_add_missing_tables.sql` — idempotent SQL script that creates the `connections` and `meeting_requests` tables; safe to re-run via `IF NOT EXISTS`
 - Dev seed endpoint (`POST /api/dev/seed`) — populates in-memory stores with 6 users, questionnaires, matches, connections, messages, meetings, and notifications for local testing
 - `.env.example` template with all environment variables grouped by category
 - Component tests for ProfileForm, NetworkContainer, ExploreContainer, MeetingRequestModal, MeetingsContainer, and NetworkGraph (564 total tests across 33 test files)
 
 ### Fixed
 
+- **`connections` and `meeting_requests` tables missing from Supabase** — `SUPABASE_SETUP.md` Section C corrected (`id` changed from `TEXT` to `UUID`, `expires_at` column added, status CHECK fixed from `'rejected'` → `'declined'`); new Section G added for `meeting_requests` (was absent entirely); troubleshooting entry added for PGRST205 errors with instructions to run the migration script
 - **pgvector extension schema** — moved `vector` extension from `public` to `extensions` schema, resolving the Supabase "Extension in Public" lint advisory; migration backed up `profile_embedding` as TEXT, dropped extension with CASCADE, reinstalled with `WITH SCHEMA extensions`, restored the column/index/`match_profiles` function; updated `SUPABASE_SETUP.md` with corrected install command and working migration script
 - **Function search path hardened** — added `SET search_path = ''` to `match_profiles`, `block_user`, and `unblock_user` functions and fully qualified all object references (`public.user_profiles`, `operator(extensions.<=>)`) to prevent search_path injection, resolving Supabase "Function Search Path Mutable" lint advisory (`SUPABASE_SETUP.md`)
 - **Connections Supabase persistence** — connections now dual-write to Supabase on create/accept/decline/withdraw/delete, with Supabase fallback reads when in-memory store is empty; connection IDs switched to `crypto.randomUUID()` for DB uuid column compatibility (`src/app/api/connections/`)

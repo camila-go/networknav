@@ -158,21 +158,23 @@ CREATE INDEX idx_user_profiles_active ON user_profiles(is_active) WHERE is_activ
 ### C. Create Connections Table
 
 ```sql
--- Stores connections between users
+-- Stores connection requests between attendees.
+-- id is a UUID; expires_at is set on pending requests (14-day expiry).
 CREATE TABLE IF NOT EXISTS connections (
-  id TEXT PRIMARY KEY,
-  requester_id UUID NOT NULL,
-  recipient_id UUID NOT NULL,
-  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'rejected')),
-  message TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  requester_id    UUID NOT NULL,
+  recipient_id    UUID NOT NULL,
+  status          TEXT NOT NULL DEFAULT 'pending'
+                    CHECK (status IN ('pending', 'accepted', 'declined')),
+  expires_at      TIMESTAMP WITH TIME ZONE,
+  created_at      TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at      TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Indexes for fast connection lookups
 CREATE INDEX idx_connections_requester ON connections(requester_id);
 CREATE INDEX idx_connections_recipient ON connections(recipient_id);
-CREATE INDEX idx_connections_status ON connections(status);
+CREATE INDEX idx_connections_status    ON connections(status);
 ```
 
 ### D. Create Messages Table
@@ -248,7 +250,40 @@ CREATE INDEX idx_scheduled_meetings_guest ON scheduled_meetings(guest_user_id);
 CREATE INDEX idx_scheduled_meetings_time ON scheduled_meetings(start_time);
 ```
 
-### G. Create Reports Table
+### G. Create Meeting Requests Table
+
+```sql
+-- Stores meeting requests between attendees.
+-- id uses a custom text format: mtg_<timestamp>_<random>
+-- proposed_times is a JSONB array of ISO 8601 timestamp strings.
+CREATE TABLE IF NOT EXISTS meeting_requests (
+  id               TEXT PRIMARY KEY,
+  requester_id     UUID NOT NULL,
+  recipient_id     UUID NOT NULL,
+  status           TEXT NOT NULL DEFAULT 'pending'
+                     CHECK (status IN ('pending', 'scheduled', 'declined', 'cancelled', 'completed')),
+  meeting_type     TEXT NOT NULL
+                     CHECK (meeting_type IN ('video', 'coffee', 'conference', 'phone')),
+  duration         INTEGER NOT NULL,
+  context_message  TEXT,
+  proposed_times   JSONB NOT NULL DEFAULT '[]',
+  accepted_time    TIMESTAMP WITH TIME ZONE,
+  calendar_platform TEXT
+                     CHECK (calendar_platform IN ('google', 'microsoft')),
+  meeting_link     TEXT,
+  calendar_event_id TEXT,
+  reminders_sent   JSONB NOT NULL DEFAULT '{"day_before": false, "hour_before": false}',
+  created_at       TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at       TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_meeting_requests_requester     ON meeting_requests(requester_id);
+CREATE INDEX idx_meeting_requests_recipient     ON meeting_requests(recipient_id);
+CREATE INDEX idx_meeting_requests_status        ON meeting_requests(status);
+CREATE INDEX idx_meeting_requests_accepted_time ON meeting_requests(accepted_time);
+```
+
+### H. Create Reports Table
 
 ```sql
 -- User reporting system
@@ -266,7 +301,7 @@ CREATE INDEX idx_reports_status ON reports(status);
 CREATE INDEX idx_reports_reported_user ON reports(reported_user_id);
 ```
 
-### H. Create Database Functions
+### I. Create Database Functions
 
 ```sql
 -- Function to find similar profiles using vector similarity
@@ -340,7 +375,7 @@ END;
 $$;
 ```
 
-### I. Enable Row Level Security (RLS)
+### J. Enable Row Level Security (RLS)
 
 ```sql
 -- Enable RLS on all tables
@@ -470,6 +505,18 @@ Once configured, these endpoints are available:
 - `GET /api/users/report` - List submitted reports
 
 ## Troubleshooting
+
+### PGRST205 "Could not find the table … in the schema cache"
+
+This means one or more tables are missing from your Supabase project (the database schema is behind the application code).
+
+Run the migration script to create the missing tables:
+
+1. Open **Supabase Dashboard → SQL Editor → New Query**
+2. Paste the contents of `supabase/migrations/20260225_add_missing_tables.sql`
+3. Click **Run**
+
+The script is idempotent (`IF NOT EXISTS`) so it is safe to run even if some tables already exist.
 
 ### "Supabase not configured"
 - Ensure `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are set in `.env.local`
