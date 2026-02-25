@@ -60,3 +60,13 @@ CREATE INDEX IF NOT EXISTS idx_meeting_requests_requester     ON meeting_request
 CREATE INDEX IF NOT EXISTS idx_meeting_requests_recipient     ON meeting_requests(recipient_id);
 CREATE INDEX IF NOT EXISTS idx_meeting_requests_status        ON meeting_requests(status);
 CREATE INDEX IF NOT EXISTS idx_meeting_requests_accepted_time ON meeting_requests(accepted_time);
+
+-- ============================================================
+-- Row Level Security
+-- ============================================================
+-- The app uses the service-role key (supabaseAdmin) for all queries,
+-- which bypasses RLS. Enabling RLS without policies blocks direct
+-- anon/authenticated access while leaving the service role unaffected.
+
+ALTER TABLE connections ENABLE ROW LEVEL SECURITY;
+ALTER TABLE meeting_requests ENABLE ROW LEVEL SECURITY;
