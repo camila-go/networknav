@@ -43,8 +43,75 @@ Run these SQL commands in order:
 
 ```sql
 -- Enable vector extension for AI embeddings
-CREATE EXTENSION IF NOT EXISTS vector;
+-- Install in the 'extensions' schema (Supabase best practice — keeps public schema clean)
+CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA extensions;
 ```
+
+> **Migrate an existing installation?**
+> If you previously ran `CREATE EXTENSION IF NOT EXISTS vector;` (without `WITH SCHEMA extensions`),
+> Supabase will flag it as "Extension in Public". The Dashboard toggle and a plain `DROP EXTENSION`
+> both fail because `user_profiles.profile_embedding` depends on the `vector` type.
+> Run this migration script in the **SQL Editor** instead — it backs up embedding data as TEXT,
+> drops everything with CASCADE, reinstalls in the correct schema, and restores your data:
+>
+> ```sql
+> -- Step 1: Back up embedding data as plain TEXT (survives the extension drop)
+> ALTER TABLE user_profiles ADD COLUMN profile_embedding_backup TEXT;
+> UPDATE user_profiles
+>   SET profile_embedding_backup = profile_embedding::text
+>   WHERE profile_embedding IS NOT NULL;
+>
+> -- Step 2: Drop extension + all dependents (column, index, match_profiles function)
+> DROP EXTENSION vector CASCADE;
+>
+> -- Step 3: Reinstall in the correct schema
+> CREATE EXTENSION vector WITH SCHEMA extensions;
+>
+> -- Step 4: Restore the vector column and data
+> ALTER TABLE user_profiles ADD COLUMN profile_embedding VECTOR(1536);
+> UPDATE user_profiles
+>   SET profile_embedding = profile_embedding_backup::vector
+>   WHERE profile_embedding_backup IS NOT NULL;
+> ALTER TABLE user_profiles DROP COLUMN profile_embedding_backup;
+>
+> -- Step 5: Recreate the ivfflat index
+> CREATE INDEX idx_profile_embedding ON user_profiles
+>   USING ivfflat (profile_embedding vector_cosine_ops)
+>   WITH (lists = 100);
+>
+> -- Step 6: Recreate the match_profiles function
+> CREATE OR REPLACE FUNCTION match_profiles(
+>   query_embedding VECTOR(1536),
+>   match_threshold FLOAT,
+>   match_count INT,
+>   excluded_user_id UUID
+> )
+> RETURNS TABLE (
+>   id UUID, name TEXT, bio TEXT, interests TEXT[],
+>   location TEXT, age INTEGER, similarity FLOAT
+> )
+> LANGUAGE plpgsql AS $$
+> BEGIN
+>   RETURN QUERY
+>   SELECT
+>     user_profiles.id, user_profiles.name, user_profiles.bio,
+>     user_profiles.interests, user_profiles.location, user_profiles.age,
+>     1 - (user_profiles.profile_embedding <=> query_embedding) AS similarity
+>   FROM user_profiles
+>   WHERE user_profiles.id != excluded_user_id
+>     AND user_profiles.profile_embedding IS NOT NULL
+>     AND user_profiles.is_active = true
+>     AND user_profiles.is_visible = true
+>     AND 1 - (user_profiles.profile_embedding <=> query_embedding) > match_threshold
+>     AND NOT (excluded_user_id = ANY(user_profiles.blocked_users))
+>   ORDER BY user_profiles.profile_embedding <=> query_embedding
+>   LIMIT match_count;
+> END;
+> $$;
+> ```
+>
+> **No application code changes are needed.** Supabase's default `search_path` includes `extensions`,
+> so `VECTOR(1536)` in table definitions and the `match_profiles` function continues to resolve correctly.
 
 ### B. Create User Profiles Table
 
@@ -408,6 +475,7 @@ Once configured, these endpoints are available:
 - Rate limits: 5 profile updates/hour, 10 match computations/hour
 
 ### Vector search not working
-- Ensure pgvector extension is enabled: `CREATE EXTENSION IF NOT EXISTS vector;`
+- Ensure pgvector extension is enabled in the `extensions` schema: `CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA extensions;`
 - Verify the `idx_profile_embedding` index was created
+- If Supabase lints warn "Extension in Public", see the migration options in Section A above
 

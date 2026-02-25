@@ -6,6 +6,28 @@ All notable changes to NetworkNav (Jynx) will be documented in this file.
 
 ### Added
 
+- Dev seed endpoint (`POST /api/dev/seed`) — populates in-memory stores with 6 users, questionnaires, matches, connections, messages, meetings, and notifications for local testing
+- `.env.example` template with all environment variables grouped by category
+- Component tests for ProfileForm, NetworkContainer, ExploreContainer, MeetingRequestModal, MeetingsContainer, and NetworkGraph (564 total tests across 33 test files)
+
+### Fixed
+
+- **pgvector extension schema** — moved `vector` extension from `public` to `extensions` schema, resolving the Supabase "Extension in Public" lint advisory; migration backed up `profile_embedding` as TEXT, dropped extension with CASCADE, reinstalled with `WITH SCHEMA extensions`, restored the column/index/`match_profiles` function; updated `SUPABASE_SETUP.md` with corrected install command and working migration script
+- **Connections Supabase persistence** — connections now dual-write to Supabase on create/accept/decline/withdraw/delete, with Supabase fallback reads when in-memory store is empty; connection IDs switched to `crypto.randomUUID()` for DB uuid column compatibility (`src/app/api/connections/`)
+- **Notifications Supabase persistence** — all notification operations (create, read, mark-read, delete) now dual-write to Supabase; preferences also persist via `notification_preferences` table with correct `in_app` ↔ `inApp` column mapping (`src/lib/notifications/notification-service.ts`)
+- **Real matchmaking algorithm on Supabase path** — replaced `Math.random()` scoring in `generateMatchesFromSupabase` with real Market Basket Analysis calls (`calculateMatchScore`, `determineMatchType`, `generateConversationStarters`); current user's questionnaire data is fetched from Supabase before scoring (`src/app/api/matches/route.ts`)
+- Fix auto-created connection ID format in messages route to use `crypto.randomUUID()` (`src/app/api/messages/route.ts`)
+- Add missing meeting notification exports (`notifyMeetingRequest`, `notifyMeetingAccepted`, `notifyMeetingDeclined`) to notifications barrel (`src/lib/notifications/index.ts`)
+- Update notification service test suite to `await` now-async `getNotifications`, `getPreferences`, and `updatePreferences` calls
+- Load `.env.local` early in custom server startup (`server-env.ts`) so JWT secrets are available before module initialization — eliminates dev warning spam
+- Add `ADMIN_EMAILS` env var guard to batch match computation endpoint (`/api/matchmaking/compute-matches`) — previously any authenticated user could trigger `forAllUsers`
+- Persist `location` and `photoUrl` fields in profile update route (`/api/profile`) — both in-memory and Supabase
+- Align embedding dimensions default to 1536 across OpenAI and Vertex providers to match `VECTOR(1536)` in Supabase schema; switch OpenAI model to `text-embedding-3-large`
+
+### Changed
+
+- Default embedding model changed from `text-embedding-3-small` (768 dims) to `text-embedding-3-large` (1536 dims) for higher matching quality
+- Upgraded Vitest from 1.6.1 to 4.0.18 (fix React hooks under pnpm on Windows)
 - **AI provider abstraction** with factory pattern supporting swappable backends (`src/lib/ai/`)
   - OpenAI provider for text embeddings
   - Google Vertex AI provider for embeddings and generative AI
@@ -28,18 +50,6 @@ All notable changes to NetworkNav (Jynx) will be documented in this file.
   - `AvailabilityView` day timeline visualization (7am–9pm) in meeting request modal
   - `ConflictBadge` component for meeting conflict warnings
   - "My Calendar" overlay toggle in meetings calendar view
-- **Comprehensive test suite** — 483 tests across 27 files
-  - Integration tests for auth, messages, notifications, meetings, and matches APIs (`src/__tests__/api/`)
-  - Component tests: login form, register form, match card, chat window, notification bell
-  - Unit tests: AI embeddings, provider factory, cache, matching service, rate limiting, CSRF, content moderation, validation schemas
-  - Test factories (`src/test/factories.ts`) and shared mocks (`src/test/mocks/`)
-  - Class-based IntersectionObserver and ResizeObserver mocks for Next.js compatibility
-- `CHANGELOG.md` with full project history
-- Changelog maintenance rule in `.claude/CLAUDE.md`
-
-### Changed
-
-- Upgraded Vitest from 1.6.1 to 4.0.18 (fix React hooks under pnpm on Windows)
 - Refactored `src/lib/ai/embeddings.ts` to use provider-factory pattern instead of direct OpenAI calls
 - Enhanced `MemoryCache` (`src/lib/cache.ts`) with TTL support, stats tracking, and `getOrSet()` method
 - Expanded rate limiter (`src/lib/security/rateLimit.ts`) with per-action configurable limits and `resetRateLimit()` for test isolation
@@ -57,6 +67,7 @@ All notable changes to NetworkNav (Jynx) will be documented in this file.
 - Added `meeting_integrations`, `scheduled_meetings`, and `reports` tables to Drizzle schema
 - Updated `README.md` with current features, tech stack, project structure, and environment variables
 - Updated `.gitignore` with GCP credential patterns and OS artifact (`nul`) exclusion
+- `CHANGELOG.md` with full project history; changelog maintenance rule in `.claude/CLAUDE.md`
 
 ## [2026-01-26]
 

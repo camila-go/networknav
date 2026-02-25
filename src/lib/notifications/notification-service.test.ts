@@ -42,45 +42,45 @@ describe("Notification Service", () => {
       expect(notification.createdAt).toBeInstanceOf(Date);
     });
 
-    it("should add notification to user's list", () => {
+    it("should add notification to user's list", async () => {
       createNotification(testUserId, "new_matches");
-      const userNotifications = getNotifications(testUserId);
+      const userNotifications = await getNotifications(testUserId);
 
       expect(userNotifications).toHaveLength(1);
     });
 
-    it("should add new notifications at the beginning", () => {
+    it("should add new notifications at the beginning", async () => {
       createNotification(testUserId, "new_matches");
       createNotification(testUserId, "connection_request", { senderName: "Jane" });
 
-      const userNotifications = getNotifications(testUserId);
+      const userNotifications = await getNotifications(testUserId);
 
       expect(userNotifications[0].type).toBe("connection_request");
       expect(userNotifications[1].type).toBe("new_matches");
     });
 
-    it("should limit to 50 notifications per user", () => {
+    it("should limit to 50 notifications per user", async () => {
       for (let i = 0; i < 55; i++) {
         createNotification(testUserId, "new_matches");
       }
 
-      const userNotifications = getNotifications(testUserId);
+      const userNotifications = await getNotifications(testUserId);
       expect(userNotifications).toHaveLength(50);
     });
   });
 
   describe("getNotifications", () => {
-    it("should return empty array for user with no notifications", () => {
-      const notifications = getNotifications("non-existent-user");
-      expect(notifications).toEqual([]);
+    it("should return empty array for user with no notifications", async () => {
+      const result = await getNotifications("non-existent-user");
+      expect(result).toEqual([]);
     });
 
-    it("should return all notifications for user", () => {
+    it("should return all notifications for user", async () => {
       createNotification(testUserId, "new_matches");
       createNotification(testUserId, "connection_request", { senderName: "John" });
       createNotification(testUserId, "new_message", { senderName: "Jane" });
 
-      const userNotifications = getNotifications(testUserId);
+      const userNotifications = await getNotifications(testUserId);
       expect(userNotifications).toHaveLength(3);
     });
   });
@@ -91,11 +91,11 @@ describe("Notification Service", () => {
       expect(count).toBe(0);
     });
 
-    it("should count only unread notifications", () => {
+    it("should count only unread notifications", async () => {
       createNotification(testUserId, "new_matches");
       createNotification(testUserId, "connection_request", { senderName: "John" });
 
-      const userNotifications = getNotifications(testUserId);
+      const userNotifications = await getNotifications(testUserId);
       userNotifications[0].read = true;
       notifications.set(testUserId, userNotifications);
 
@@ -105,14 +105,14 @@ describe("Notification Service", () => {
   });
 
   describe("markAsRead", () => {
-    it("should mark a notification as read", () => {
+    it("should mark a notification as read", async () => {
       const notification = createNotification(testUserId, "new_matches");
       expect(notification.read).toBe(false);
 
       const success = markAsRead(testUserId, notification.id);
       expect(success).toBe(true);
 
-      const userNotifications = getNotifications(testUserId);
+      const userNotifications = await getNotifications(testUserId);
       expect(userNotifications[0].read).toBe(true);
     });
 
@@ -157,13 +157,13 @@ describe("Notification Service", () => {
   });
 
   describe("deleteNotification", () => {
-    it("should delete a notification", () => {
+    it("should delete a notification", async () => {
       const notification = createNotification(testUserId, "new_matches");
-      expect(getNotifications(testUserId)).toHaveLength(1);
+      expect(await getNotifications(testUserId)).toHaveLength(1);
 
       const success = deleteNotification(testUserId, notification.id);
       expect(success).toBe(true);
-      expect(getNotifications(testUserId)).toHaveLength(0);
+      expect(await getNotifications(testUserId)).toHaveLength(0);
     });
 
     it("should return false for non-existent notification", () => {
@@ -174,8 +174,8 @@ describe("Notification Service", () => {
   });
 
   describe("Notification Preferences", () => {
-    it("should return default preferences for new user", () => {
-      const prefs = getPreferences(testUserId);
+    it("should return default preferences for new user", async () => {
+      const prefs = await getPreferences(testUserId);
 
       expect(prefs).toEqual({
         userId: testUserId,
@@ -185,20 +185,20 @@ describe("Notification Service", () => {
       });
     });
 
-    it("should update preferences", () => {
-      updatePreferences(testUserId, { email: false });
-      const prefs = getPreferences(testUserId);
+    it("should update preferences", async () => {
+      await updatePreferences(testUserId, { email: false });
+      const prefs = await getPreferences(testUserId);
 
       expect(prefs.email).toBe(false);
       expect(prefs.inApp).toBe(true);
       expect(prefs.push).toBe(true);
     });
 
-    it("should preserve existing preferences when updating", () => {
-      updatePreferences(testUserId, { email: false });
-      updatePreferences(testUserId, { push: false });
+    it("should preserve existing preferences when updating", async () => {
+      await updatePreferences(testUserId, { email: false });
+      await updatePreferences(testUserId, { push: false });
 
-      const prefs = getPreferences(testUserId);
+      const prefs = await getPreferences(testUserId);
 
       expect(prefs.email).toBe(false);
       expect(prefs.push).toBe(false);
@@ -254,4 +254,3 @@ describe("Notification Service", () => {
     });
   });
 });
-

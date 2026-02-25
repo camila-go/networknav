@@ -24,7 +24,7 @@ Intelligent networking platform for leadership conferences. Uses market basket a
 | AI                 | OpenAI or GCP Vertex AI (configurable via AI_PROVIDER env var) |
 | AI - Generative    | Gemini 2.0 Flash via @google/genai (conversation starters, summaries) |
 | Utilities          | date-fns 3.6 (dates), nuqs (URL state)              |
-| Testing            | Vitest 1.3 + Testing Library 14                     |
+| Testing            | Vitest 4.0.18 + Testing Library 14                  |
 | Icons              | Lucide React                                       |
 | Fonts              | DM Sans (body) + Fraunces (display headings)        |
 
@@ -96,7 +96,9 @@ src/
 ## Architecture Patterns
 
 ### Data Persistence (Hybrid)
-The app uses a **dual-storage model**: in-memory Maps for fast demo/dev mode, with Supabase PostgreSQL for production persistence. API routes try in-memory first, then fall back to Supabase. This lets the app work without a database configured.
+The app uses a **dual-storage model**: in-memory Maps for fast access + Supabase PostgreSQL for persistence. **Writes** go to both in-memory and Supabase (non-blocking, fire-and-forget). **Reads** try in-memory first, falling back to Supabase when the store is empty. This lets the app work without a database configured.
+
+Fully persisted subsystems: auth, messages, questionnaire, connections, notifications, notification preferences. Calendar OAuth tokens stored in `meeting_integrations` table. Embedding-based match pre-computation writes to the `matches` table via `/api/matchmaking/compute-matches`.
 
 All database queries use the raw Supabase client (`supabaseAdmin.from()`). Drizzle ORM is installed and has a complete schema at `src/db/schema.ts`, but the Drizzle query client is **not used** — the schema serves as documentation of the database structure.
 
@@ -111,7 +113,7 @@ All database queries use the raw Supabase client (`supabaseAdmin.from()`). Drizz
 `src/lib/ai/` uses a provider pattern for swappable AI backends:
 - `AI_PROVIDER` env var selects `"openai"` (default) or `"vertex"`
 - `getEmbeddingProvider()` and `getGenerativeProvider()` factory functions in `provider-factory.ts`
-- Both providers target the same embedding dimensions (configurable via `EMBEDDING_DIMENSIONS`, default 768)
+- Both providers target the same embedding dimensions (configurable via `EMBEDDING_DIMENSIONS`, default 1536)
 - Generative AI (Gemini) is only available with Vertex provider; falls back to algorithmic generation with OpenAI
 
 ### Matching Engine
@@ -120,6 +122,8 @@ Two match types computed by market basket analysis in `src/lib/matching/`:
 - **Strategic** — complementary expertise for growth (40% weight)
 - Conversation starters: AI-generated via Gemini when available, algorithmic fallback otherwise
 - Enforces diversity (prevents echo chambers)
+- Both the in-memory path and the Supabase path use `calculateMatchScore()` / `determineMatchType()` from `market-basket-analysis.ts` — scores are deterministic, not random
+- The pgvector embedding path (`/api/matchmaking/compute-matches`) is a separate pre-computation step using cosine similarity on `user_profiles.profile_embedding`; requires `ADMIN_EMAILS` guard
 
 ### Calendar Integrations
 `src/lib/integrations/` provides read/write access to Google Calendar and Outlook Calendar:
@@ -200,10 +204,11 @@ SUPABASE_SERVICE_ROLE_KEY=
 # App
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 NODE_ENV=development
+ADMIN_EMAILS=                          # comma-separated; gates batch match computation at /api/matchmaking/compute-matches
 
 # AI Provider (defaults to "openai" if unset)
 AI_PROVIDER=openai                 # or "vertex"
-EMBEDDING_DIMENSIONS=768           # shared between providers
+EMBEDDING_DIMENSIONS=1536          # shared between providers; must match Supabase VECTOR() column
 OPENAI_API_KEY=                    # required when AI_PROVIDER=openai
 GOOGLE_CLOUD_PROJECT=              # required when AI_PROVIDER=vertex
 GOOGLE_CLOUD_LOCATION=us-central1  # GCP region for Vertex AI
@@ -232,7 +237,7 @@ MICROSOFT_REDIRECT_URI=http://localhost:3000/api/integrations/microsoft/callback
 - **Framework:** Vitest with jsdom environment
 - **Utilities:** @testing-library/react, @testing-library/jest-dom
 - **Config:** `vitest.config.ts` (globals: true, `@` alias)
-- **Tests:** `src/__tests__/` and co-located `*.test.ts` files in `src/lib/`
+- **Tests:** `src/__tests__/` and co-located `*.test.ts` files in `src/lib/` (564 tests across 33 files)
 - **Coverage:** V8 provider, HTML reports
 
 ## ESLint

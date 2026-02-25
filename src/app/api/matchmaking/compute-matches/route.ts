@@ -70,7 +70,18 @@ export async function POST(req: NextRequest) {
 
     // Compute matches for all users (admin/background job)
     if (forAllUsers) {
-      // TODO: Add admin role check here
+      const adminEmails = (process.env.ADMIN_EMAILS || '')
+        .split(',')
+        .map(e => e.trim().toLowerCase())
+        .filter(Boolean);
+
+      if (!user.email || !adminEmails.includes(user.email.toLowerCase())) {
+        return NextResponse.json(
+          { error: 'Forbidden. Admin access required.' },
+          { status: 403 }
+        );
+      }
+
       const result = await computeAllMatches();
 
       return NextResponse.json({

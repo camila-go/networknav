@@ -2,8 +2,8 @@ import { GoogleGenAI } from '@google/genai';
 import type { EmbeddingProvider, GenerativeProvider } from './types';
 
 const EMBEDDING_MODEL = 'text-embedding-005';
-const GENERATIVE_MODEL = 'gemini-2.0-flash';
-const DEFAULT_DIMENSIONS = parseInt(process.env.EMBEDDING_DIMENSIONS || '768', 10);
+const GENERATIVE_MODEL = 'gemini-3.0-flash-preview';
+const DEFAULT_DIMENSIONS = parseInt(process.env.EMBEDDING_DIMENSIONS || '1536', 10);
 
 export class VertexAIProvider implements EmbeddingProvider, GenerativeProvider {
   readonly name = 'vertex';

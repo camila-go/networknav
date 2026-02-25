@@ -343,7 +343,7 @@ export async function POST(request: NextRequest) {
         }
       } else {
         // Create new connection (auto-accepted)
-        const newConnectionId = `conn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const newConnectionId = crypto.randomUUID();
         const newConnection: Connection = {
           id: newConnectionId,
           requesterId: userId,

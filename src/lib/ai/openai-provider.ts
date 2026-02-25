@@ -1,8 +1,8 @@
 import OpenAI from 'openai';
 import type { EmbeddingProvider } from './types';
 
-const OPENAI_MODEL = 'text-embedding-3-small';
-const DEFAULT_DIMENSIONS = parseInt(process.env.EMBEDDING_DIMENSIONS || '768', 10);
+const OPENAI_MODEL = 'text-embedding-3-large';
+const DEFAULT_DIMENSIONS = parseInt(process.env.EMBEDDING_DIMENSIONS || '1536', 10);
 
 export class OpenAIEmbeddingProvider implements EmbeddingProvider {
   readonly name = 'openai';

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { profileSchema } from "@/lib/validations";
 import { users } from "@/lib/stores";
+import { supabaseAdmin } from "@/lib/supabase/client";
 
 export async function PATCH(request: NextRequest) {
   try {
@@ -44,10 +45,32 @@ export async function PATCH(request: NextRequest) {
     user.position = position;
     user.title = title;
     user.company = company;
-    // Note: location and photoUrl would need to be added to the user schema
+    if (location !== undefined) user.location = location;
+    if (photoUrl !== undefined) user.photoUrl = photoUrl;
     user.updatedAt = new Date();
 
     users.set(session.email, user);
+
+    // Persist to Supabase if configured
+    if (supabaseAdmin) {
+      try {
+        await supabaseAdmin
+          .from("user_profiles")
+          .update({
+            name,
+            position,
+            title,
+            company,
+            location: location ?? null,
+            photo_url: photoUrl ?? null,
+            updated_at: user.updatedAt.toISOString(),
+          })
+          .eq("user_id", user.id);
+      } catch (err) {
+        console.error("Supabase profile sync error:", err);
+        // Non-blocking — in-memory update already succeeded
+      }
+    }
 
     return NextResponse.json({
       success: true,
@@ -60,6 +83,8 @@ export async function PATCH(request: NextRequest) {
             position: user.position,
             title: user.title,
             company: user.company,
+            location: user.location,
+            photoUrl: user.photoUrl,
           },
         },
       },

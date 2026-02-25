@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     const type = searchParams.get("type");
 
     if (type === "preferences") {
-      const preferences = getPreferences(session.userId);
+      const preferences = await getPreferences(session.userId);
       return NextResponse.json({
         success: true,
         data: { preferences },
@@ -39,13 +39,13 @@ export async function GET(request: NextRequest) {
     }
 
     // Default: return all notifications
-    const notifications = getNotifications(session.userId);
+    const userNotifications = await getNotifications(session.userId);
     const unreadCount = getUnreadCount(session.userId);
 
     return NextResponse.json({
       success: true,
       data: {
-        notifications,
+        notifications: userNotifications,
         unreadCount,
       },
     });
@@ -82,7 +82,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     if (action === "updatePreferences" && preferences) {
-      const updated = updatePreferences(session.userId, preferences);
+      const updated = await updatePreferences(session.userId, preferences);
       return NextResponse.json({
         success: true,
         data: { preferences: updated },
@@ -102,4 +102,3 @@ export async function PATCH(request: NextRequest) {
     );
   }
 }
-

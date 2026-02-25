@@ -1,5 +1,8 @@
 /**
  * In-memory user store (replace with database in production)
+ *
+ * Uses globalThis so the Map is shared across Next.js route compilations
+ * (each API route is bundled separately in App Router).
  */
 
 export interface StoredUser {
@@ -17,5 +20,5 @@ export interface StoredUser {
   updatedAt: Date;
 }
 
-export const users = new Map<string, StoredUser>();
-
+const g = globalThis as unknown as { __netnav_users?: Map<string, StoredUser> };
+export const users = (g.__netnav_users ??= new Map<string, StoredUser>());

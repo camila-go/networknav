@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { generateMatches, calculateMatchQualityMetrics } from "@/lib/matching";
+import { calculateMatchScore, determineMatchType, generateConversationStarters } from "@/lib/matching/market-basket-analysis";
 import { users, questionnaireResponses, userMatches } from "@/lib/stores";
 import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
 import { generateConversationStartersAI } from "@/lib/ai/generative";
-import type { Match } from "@/types";
+import type { Match, QuestionnaireData } from "@/types";
 
 /**
  * Generate personable, natural-sounding conversation starters for meeting invites
@@ -234,6 +235,19 @@ async function generateMatchesFromSupabase(currentUserId: string, currentUserEma
       if (emailMatch) currentUserSupabaseId = (emailMatch as { id: string; email: string }).id;
     }
     
+    // Fetch current user's questionnaire data for real MBA scoring
+    let currentUserQuestionnaire: Partial<QuestionnaireData> | null = null;
+    if (currentUserSupabaseId) {
+      const { data: currentProfile } = await supabaseAdmin
+        .from('user_profiles')
+        .select('questionnaire_data')
+        .eq('id', currentUserSupabaseId)
+        .single();
+      if (currentProfile) {
+        currentUserQuestionnaire = (currentProfile as { questionnaire_data?: Record<string, unknown> }).questionnaire_data as Partial<QuestionnaireData> ?? null;
+      }
+    }
+
     // Fetch all users from Supabase
     const { data: profiles, error } = await supabaseAdmin
       .from('user_profiles')
@@ -271,59 +285,39 @@ async function generateMatchesFromSupabase(currentUserId: string, currentUserEma
     }
 
     const now = new Date();
-    const matches: Match[] = filteredProfiles.map((profile, index) => {
-      // Calculate a simulated score based on questionnaire completion
+    const matches: Match[] = filteredProfiles.map((profile) => {
       const hasQuestionnaire = !!profile.questionnaire_data;
-      const baseScore = hasQuestionnaire ? 0.75 : 0.6;
-      const score = Math.min(0.95, baseScore + (Math.random() * 0.2));
-      
-      // Determine match type based on score
-      const type = score > 0.8 ? 'high-affinity' : 'strategic';
-      
-      // Generate commonalities based on available data
-      const commonalities = [];
-      const qData = profile.questionnaire_data as Record<string, unknown> | null;
-      
-      if (qData?.industry) {
-        commonalities.push({
-          category: 'professional' as const,
-          description: `Works in ${qData.industry}`,
-          weight: 0.85,
-        });
-      }
-      
-      if (profile.position) {
-        commonalities.push({
-          category: 'professional' as const,
-          description: `${profile.position} at ${profile.company || 'their organization'}`,
-          weight: 0.8,
-        });
-      }
-      
-      if (profile.interests && Array.isArray(profile.interests) && profile.interests.length > 0) {
-        commonalities.push({
-          category: 'hobby' as const,
-          description: `Interested in ${profile.interests.slice(0, 2).join(' and ')}`,
-          weight: 0.7,
-        });
+      const candidateResponses = (profile.questionnaire_data ?? {}) as Partial<QuestionnaireData>;
+
+      let score: number;
+      let type: 'high-affinity' | 'strategic';
+      let commonalities: Match['commonalities'];
+
+      if (currentUserQuestionnaire && hasQuestionnaire) {
+        // Use real Market Basket Analysis algorithm
+        const matchScore = calculateMatchScore(currentUserQuestionnaire, candidateResponses);
+        type = determineMatchType(matchScore);
+        score = Math.min(0.95, matchScore.totalScore);
+        commonalities = matchScore.commonalities;
+      } else {
+        // Fallback when questionnaire data unavailable for one or both users
+        score = hasQuestionnaire ? 0.65 : 0.50;
+        type = 'strategic';
+        commonalities = [];
       }
 
-      if (qData?.leadershipPhilosophy && Array.isArray(qData.leadershipPhilosophy)) {
-        commonalities.push({
-          category: 'values' as const,
-          description: `Shares leadership values`,
-          weight: 0.75,
-        });
-      }
-
-      // Ensure at least some commonalities
+      // Ensure at least one commonality for display
       if (commonalities.length === 0) {
-        commonalities.push({
+        commonalities = [{
           category: 'professional' as const,
-          description: 'Fellow conference attendee',
+          description: profile.position
+            ? `${profile.position} at ${profile.company || 'their organization'}`
+            : 'Fellow conference attendee',
           weight: 0.6,
-        });
+        }];
       }
+
+      const firstName = profile.name?.split(' ')[0];
 
       return {
         id: `supabase-match-${profile.id}`,
@@ -342,12 +336,7 @@ async function generateMatchesFromSupabase(currentUserId: string, currentUserEma
         },
         type,
         commonalities,
-        conversationStarters: generatePersonableStarters(
-          profile.name?.split(' ')[0],
-          profile.company,
-          profile.position,
-          type
-        ),
+        conversationStarters: generateConversationStarters(commonalities, type, firstName),
         score,
         generatedAt: now,
         viewed: false,
