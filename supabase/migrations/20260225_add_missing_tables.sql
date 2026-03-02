@@ -16,10 +16,22 @@ CREATE TABLE IF NOT EXISTS connections (
   recipient_id    UUID NOT NULL,
   status          TEXT NOT NULL DEFAULT 'pending'
                     CHECK (status IN ('pending', 'accepted', 'declined')),
+  message         TEXT,
   expires_at      TIMESTAMP WITH TIME ZONE,
   created_at      TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at      TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Add message column if it doesn't exist (for existing tables)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'connections' AND column_name = 'message'
+  ) THEN
+    ALTER TABLE connections ADD COLUMN message TEXT;
+  END IF;
+END $$;
 
 CREATE INDEX IF NOT EXISTS idx_connections_requester ON connections(requester_id);
 CREATE INDEX IF NOT EXISTS idx_connections_recipient ON connections(recipient_id);

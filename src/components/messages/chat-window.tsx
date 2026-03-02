@@ -165,43 +165,17 @@ export function ChatWindow({
 
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
+    
     if (!newMessage.trim() || isSending) return;
 
+    const messageContent = newMessage.trim();
     setIsSending(true);
 
-    // Try Socket.io first, fall back to HTTP
-    if (socket && isConnected) {
-      socket.emit(
-        "message:send",
-        {
-          connectionId: connectionId || undefined,
-          targetUserId: isNewConversation ? newConversation?.userId : undefined,
-          content: newMessage.trim(),
-        },
-        (response) => {
-          if (response.success) {
-            setNewMessage("");
-            onMessageSent?.();
-            // Emit stop typing
-            if (connectionId) {
-              socket.emit("message:typing", {
-                connectionId,
-                userId: "",
-                userName: "",
-                isTyping: false,
-              });
-            }
-          } else {
-            console.error("Socket send failed:", response.error);
-          }
-          setIsSending(false);
-        }
-      );
-    } else {
-      // HTTP fallback
+    // Helper function to send via HTTP
+    const sendViaHttp = async (): Promise<boolean> => {
       try {
         const body: Record<string, string> = {
-          content: newMessage.trim(),
+          content: messageContent,
         };
 
         if (isNewConversation && newConversation) {
@@ -214,6 +188,7 @@ export function ChatWindow({
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
+          credentials: "include",
         });
 
         const result = await response.json();
@@ -222,12 +197,83 @@ export function ChatWindow({
           setMessages((prev) => [...prev, result.data.message]);
           setNewMessage("");
           onMessageSent?.();
+          return true;
+        } else {
+          console.error("[ChatWindow] HTTP send failed:", result.error);
+          return false;
         }
       } catch (error) {
-        console.error("Failed to send message:", error);
-      } finally {
-        setIsSending(false);
+        console.error("[ChatWindow] HTTP error:", error);
+        return false;
       }
+    };
+
+    // Helper function to send via Socket.io with timeout
+    const sendViaSocket = (): Promise<boolean> => {
+      return new Promise((resolve) => {
+        if (!socket || !isConnected) {
+          resolve(false);
+          return;
+        }
+
+        // Set timeout for socket response
+        const timeout = setTimeout(() => {
+          console.log("[ChatWindow] Socket timeout, falling back to HTTP");
+          resolve(false);
+        }, 5000);
+
+        socket.emit(
+          "message:send",
+          {
+            connectionId: connectionId || undefined,
+            targetUserId: isNewConversation ? newConversation?.userId : undefined,
+            content: messageContent,
+          },
+          (response) => {
+            clearTimeout(timeout);
+            
+            if (response.success && response.data?.message) {
+              setMessages((prev) => [...prev, response.data.message]);
+              setNewMessage("");
+              onMessageSent?.();
+              
+              // Emit stop typing
+              if (connectionId) {
+                socket.emit("message:typing", {
+                  connectionId,
+                  userId: "",
+                  userName: "",
+                  isTyping: false,
+                });
+              }
+              resolve(true);
+            } else {
+              console.error("[ChatWindow] Socket send failed:", response.error);
+              resolve(false);
+            }
+          }
+        );
+      });
+    };
+
+    try {
+      // Try Socket.io first if connected, with HTTP fallback
+      let success = false;
+      
+      if (socket && isConnected) {
+        success = await sendViaSocket();
+      }
+      
+      // Fall back to HTTP if socket failed or not connected
+      if (!success) {
+        success = await sendViaHttp();
+      }
+      
+      if (!success) {
+        alert("Failed to send message. Please try again.");
+      }
+    } finally {
+      setIsSending(false);
     }
   }
 
