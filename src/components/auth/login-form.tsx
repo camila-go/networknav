@@ -50,12 +50,8 @@ export function LoginForm() {
         description: "Redirecting to your dashboard...",
       });
 
-      // Redirect based on questionnaire completion
-      if (result.data.user.questionnaireCompleted) {
-        router.push("/dashboard");
-      } else {
-        router.push("/onboarding");
-      }
+      // Always redirect to dashboard (matches page)
+      router.push("/dashboard");
       router.refresh();
     } catch {
       toast({

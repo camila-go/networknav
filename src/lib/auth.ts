@@ -131,31 +131,43 @@ export async function setAuthCookies(
   accessToken: string,
   refreshToken: string
 ): Promise<void> {
-  const cookieStore = await cookies();
+  try {
+    const cookieStore = await cookies();
 
-  // Access token cookie (httpOnly, secure, short-lived)
-  cookieStore.set(ACCESS_TOKEN_COOKIE, accessToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: 15 * 60, // 15 minutes
-  });
+    // Access token cookie (httpOnly, secure, short-lived)
+    cookieStore.set(ACCESS_TOKEN_COOKIE, accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 15 * 60, // 15 minutes
+    });
 
-  // Refresh token cookie (httpOnly, secure, longer-lived)
-  cookieStore.set(REFRESH_TOKEN_COOKIE, refreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: 7 * 24 * 60 * 60, // 7 days
-  });
+    // Refresh token cookie (httpOnly, secure, longer-lived)
+    cookieStore.set(REFRESH_TOKEN_COOKIE, refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 7 * 24 * 60 * 60, // 7 days
+    });
+  } catch (error) {
+    // In Next.js 14, cookies can only be modified in Server Actions or Route Handlers
+    // If called from a Server Component, this will fail - we silently ignore
+    console.debug("[Auth] Could not set cookies (likely called from Server Component)");
+  }
 }
 
 export async function clearAuthCookies(): Promise<void> {
-  const cookieStore = await cookies();
-  cookieStore.delete(ACCESS_TOKEN_COOKIE);
-  cookieStore.delete(REFRESH_TOKEN_COOKIE);
+  try {
+    const cookieStore = await cookies();
+    cookieStore.delete(ACCESS_TOKEN_COOKIE);
+    cookieStore.delete(REFRESH_TOKEN_COOKIE);
+  } catch (error) {
+    // In Next.js 14, cookies can only be modified in Server Actions or Route Handlers
+    // If called from a Server Component, this will fail - we silently ignore
+    console.debug("[Auth] Could not clear cookies (likely called from Server Component)");
+  }
 }
 
 export async function getAuthCookies(): Promise<{

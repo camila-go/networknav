@@ -30,24 +30,24 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        // Primary - cyan/teal gradient (Summit style) - works in both dark and light
+        // Primary - cyan/teal gradient (Summit style)
         default:
           "bg-gradient-to-r from-cyan-500 to-teal-500 text-black hover:from-cyan-400 hover:to-teal-400 shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40",
         // Destructive - coral red
         destructive:
           "bg-gradient-to-r from-rose-500 to-pink-500 text-white hover:from-rose-400 hover:to-pink-400 shadow-lg shadow-rose-500/25",
-        // Outline - adaptive for dark/light contexts
+        // Outline - dark mode
         outline:
-          "border-2 border-gray-200 bg-transparent text-gray-700 hover:bg-gray-100 hover:border-gray-300 dark:border-white/20 dark:text-white dark:hover:bg-white/10 dark:hover:border-white/40",
-        // Secondary - adaptive for dark/light contexts
+          "border-2 border-white/20 bg-transparent text-white hover:bg-white/10 hover:border-white/40",
+        // Secondary - dark mode
         secondary:
-          "bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300 dark:bg-white/10 dark:text-white dark:hover:bg-white/20",
-        // Ghost - adaptive for dark/light contexts
+          "bg-white/10 text-white hover:bg-white/20",
+        // Ghost - dark mode
         ghost: 
-          "text-gray-600 hover:bg-gray-100 hover:text-gray-900 active:bg-gray-200 dark:text-white/70 dark:hover:bg-white/10 dark:hover:text-white",
+          "text-white/70 hover:bg-white/10 hover:text-white",
         // Link - text-only with underline
         link: 
-          "text-cyan-600 underline-offset-4 hover:underline hover:text-cyan-700 dark:text-cyan-400 dark:hover:text-cyan-300 focus-visible:ring-offset-0",
+          "text-cyan-400 underline-offset-4 hover:underline hover:text-cyan-300 focus-visible:ring-offset-0",
         // Success - for confirmations
         success:
           "bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:from-emerald-400 hover:to-teal-400 shadow-lg shadow-emerald-500/25",

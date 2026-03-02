@@ -4,6 +4,7 @@ import { connections, messages, users } from "@/lib/stores";
 import { messageSchema } from "@/lib/validations";
 import type { Message, Connection } from "@/types";
 import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
+import { updateStreaks } from "@/lib/gamification/streaks";
 
 type SimpleUser = { id: string; name: string; position: string; company?: string };
 
@@ -186,6 +187,61 @@ async function markMessagesReadInSupabase(connectionId: string, userId: string):
     .eq('read', false);
 }
 
+// Log message activity for gamification (fire and forget)
+async function logMessageActivity(userId: string, messageId: string, recipientId: string): Promise<void> {
+  try {
+    if (!isSupabaseConfigured || !supabaseAdmin) return;
+    
+    // Insert activity
+    await supabaseAdmin
+      .from('user_activity')
+      .insert({
+        user_id: userId,
+        activity_type: 'message_sent',
+        points_earned: 5,
+        metadata: { message_id: messageId, recipient_id: recipientId },
+      });
+    
+    // Update stats
+    const { data: existingStats } = await supabaseAdmin
+      .from('user_gamification_stats')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
+    
+    if (existingStats) {
+      await supabaseAdmin
+        .from('user_gamification_stats')
+        .update({
+          total_points: (existingStats.total_points || 0) + 5,
+          points_this_week: (existingStats.points_this_week || 0) + 5,
+          points_this_month: (existingStats.points_this_month || 0) + 5,
+          messages_sent: (existingStats.messages_sent || 0) + 1,
+          last_active_at: new Date().toISOString(),
+        })
+        .eq('user_id', userId);
+    } else {
+      await supabaseAdmin
+        .from('user_gamification_stats')
+        .insert({
+          user_id: userId,
+          total_points: 5,
+          points_this_week: 5,
+          points_this_month: 5,
+          messages_sent: 1,
+          last_active_at: new Date().toISOString(),
+        });
+    }
+    
+    // Update daily and weekly streaks
+    await updateStreaks(userId);
+    
+    console.log('[Messages API] Activity logged for user:', userId);
+  } catch (error) {
+    console.error('[Messages API] Failed to log activity:', error);
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getSession();
@@ -304,6 +360,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Prevent messaging yourself
+    if (targetUserId && targetUserId === userId) {
+      return NextResponse.json(
+        { success: false, error: "Cannot message yourself" },
+        { status: 400 }
+      );
+    }
+
     let actualConnectionId = connectionId;
 
     // For new conversations with targetUserId, create or find a connection
@@ -405,6 +469,9 @@ export async function POST(request: NextRequest) {
     // Save to Supabase
     const savedToSupabase = await saveMessageToSupabase(message);
     console.log('[Messages API] Message created:', { id: message.id, savedToSupabase });
+
+    // Log activity for gamification (fire and forget)
+    logMessageActivity(userId, message.id, connection.recipientId === userId ? connection.requesterId : connection.recipientId);
 
     return NextResponse.json(
       {

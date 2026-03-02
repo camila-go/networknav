@@ -49,6 +49,7 @@ export function MeetingsContainer() {
   const [showExternalCalendar, setShowExternalCalendar] = useState(false);
   const [externalEvents, setExternalEvents] = useState<CalendarEvent[]>([]);
   const [externalLoading, setExternalLoading] = useState(false);
+  const [selectedDay, setSelectedDay] = useState<Date | null>(null);
 
   useEffect(() => {
     fetchMeetings();
@@ -127,10 +128,22 @@ export function MeetingsContainer() {
   const meetingsByDate = useMemo(() => {
     const map = new Map<string, MeetingWithUsers[]>();
     allMeetings.forEach(meeting => {
+      // Show scheduled meetings by their accepted time
       if (meeting.acceptedTime) {
         const dateKey = format(new Date(meeting.acceptedTime), "yyyy-MM-dd");
         const existing = map.get(dateKey) || [];
         map.set(dateKey, [...existing, meeting]);
+      }
+      // Also show pending meetings by their proposed times
+      else if (meeting.status === "pending" && meeting.proposedTimes?.length > 0) {
+        meeting.proposedTimes.forEach(proposedTime => {
+          const dateKey = format(new Date(proposedTime), "yyyy-MM-dd");
+          const existing = map.get(dateKey) || [];
+          // Avoid duplicates
+          if (!existing.find(m => m.id === meeting.id)) {
+            map.set(dateKey, [...existing, meeting]);
+          }
+        });
       }
     });
     return map;
@@ -184,21 +197,21 @@ export function MeetingsContainer() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-white font-display">My Meetings</h1>
-          <p className="text-white/60">
-            Manage your scheduled meetings and requests
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-white font-display">My Meetings</h1>
+          <p className="text-sm sm:text-base text-white/60 truncate">
+            Manage your scheduled meetings
           </p>
         </div>
         {/* View Toggle */}
-        <div className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-lg p-1">
+        <div className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-lg p-1 shrink-0">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setViewMode("list")}
             className={cn(
-              "h-8 px-3 transition-colors",
+              "h-8 px-2 sm:px-3 transition-colors",
               viewMode === "list" 
                 ? "bg-cyan-500/20 text-cyan-400" 
                 : "text-white/50 hover:text-white hover:bg-white/5"
@@ -211,7 +224,7 @@ export function MeetingsContainer() {
             size="sm"
             onClick={() => setViewMode("calendar")}
             className={cn(
-              "h-8 px-3 transition-colors",
+              "h-8 px-2 sm:px-3 transition-colors",
               viewMode === "calendar" 
                 ? "bg-cyan-500/20 text-cyan-400" 
                 : "text-white/50 hover:text-white hover:bg-white/5"
@@ -223,23 +236,23 @@ export function MeetingsContainer() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-2 sm:gap-4">
         <StatCard
-          icon={<CalendarClock className="h-5 w-5" />}
+          icon={<CalendarClock className="h-4 w-4 sm:h-5 sm:w-5" />}
           label="Upcoming"
           value={stats.upcoming}
           color="text-cyan-400"
           bgColor="bg-cyan-500/20"
         />
         <StatCard
-          icon={<Clock className="h-5 w-5" />}
+          icon={<Clock className="h-4 w-4 sm:h-5 sm:w-5" />}
           label="Pending"
           value={stats.pending}
           color="text-amber-400"
           bgColor="bg-amber-500/20"
         />
         <StatCard
-          icon={<Check className="h-5 w-5" />}
+          icon={<Check className="h-4 w-4 sm:h-5 sm:w-5" />}
           label="Completed"
           value={stats.completed}
           color="text-teal-400"
@@ -251,24 +264,24 @@ export function MeetingsContainer() {
       {viewMode === "calendar" ? (
         <div className="rounded-xl bg-white/5 border border-white/10 p-4">
           {/* Calendar Header */}
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-white">
-              {format(calendarDate, "MMMM yyyy")}
+          <div className="flex items-center justify-between gap-2 mb-4 flex-wrap">
+            <h2 className="text-base sm:text-lg font-semibold text-white">
+              {format(calendarDate, "MMM yyyy")}
             </h2>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowExternalCalendar(!showExternalCalendar)}
                 className={cn(
-                  "text-xs gap-1 transition-colors",
+                  "text-xs gap-1 transition-colors hidden sm:flex",
                   showExternalCalendar
                     ? "text-purple-400 bg-purple-500/10 hover:bg-purple-500/20"
                     : "text-white/50 hover:text-white hover:bg-white/5"
                 )}
               >
                 <Calendar className="h-3 w-3" />
-                {externalLoading ? "Loading..." : "My Calendar"}
+                {externalLoading ? "..." : "Calendar"}
               </Button>
               <Button
                 variant="ghost"
@@ -282,7 +295,7 @@ export function MeetingsContainer() {
                 variant="ghost"
                 size="sm"
                 onClick={() => setCalendarDate(new Date())}
-                className="text-cyan-400 hover:bg-cyan-500/10"
+                className="text-cyan-400 hover:bg-cyan-500/10 px-2"
               >
                 Today
               </Button>
@@ -318,16 +331,22 @@ export function MeetingsContainer() {
               const dayExternalEvents = showExternalCalendar ? (externalEventsByDate.get(dateKey) || []) : [];
               const isToday = isSameDay(day, new Date());
               const hasScheduledMeetings = dayMeetings.some(m => m.status === "scheduled");
+              const hasPendingMeetings = dayMeetings.some(m => m.status === "pending");
+              const hasMeetings = dayMeetings.length > 0;
               const hasExternalEvents = dayExternalEvents.length > 0;
 
               return (
-                <div
+                <button
                   key={dateKey}
+                  onClick={() => (hasMeetings || hasExternalEvents) && setSelectedDay(day)}
                   className={cn(
-                    "aspect-square p-1 rounded-lg relative transition-colors",
+                    "aspect-square p-1 rounded-lg relative transition-colors cursor-pointer",
                     isToday && "bg-cyan-500/20 border border-cyan-500/50",
-                    !isToday && (hasScheduledMeetings || hasExternalEvents) && "bg-white/5 hover:bg-white/10",
-                    !isToday && !hasScheduledMeetings && !hasExternalEvents && "hover:bg-white/5"
+                    !isToday && hasScheduledMeetings && "bg-cyan-500/10 hover:bg-cyan-500/20",
+                    !isToday && hasPendingMeetings && !hasScheduledMeetings && "bg-amber-500/10 hover:bg-amber-500/20",
+                    !isToday && (hasMeetings || hasExternalEvents) && "hover:bg-white/10",
+                    !isToday && !hasMeetings && !hasExternalEvents && "hover:bg-white/5 cursor-default",
+                    selectedDay && isSameDay(day, selectedDay) && "ring-2 ring-cyan-400"
                   )}
                 >
                   <span className={cn(
@@ -363,32 +382,177 @@ export function MeetingsContainer() {
                       )}
                     </div>
                   )}
-                </div>
+                </button>
               );
             })}
           </div>
 
           {/* Legend */}
-          <div className="flex items-center gap-4 mt-4 pt-4 border-t border-white/10 text-xs text-white/50">
-            <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2 sm:gap-4 mt-4 pt-4 border-t border-white/10 text-[10px] sm:text-xs text-white/50 flex-wrap">
+            <div className="flex items-center gap-1">
               <div className="w-2 h-2 rounded-full bg-cyan-400" />
               <span>Scheduled</span>
             </div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1">
               <div className="w-2 h-2 rounded-full bg-amber-400" />
               <span>Pending</span>
             </div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1">
               <div className="w-2 h-2 rounded-full bg-teal-400" />
-              <span>Completed</span>
+              <span>Done</span>
             </div>
             {showExternalCalendar && (
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1">
                 <div className="w-2 h-2 rounded-full bg-purple-400" />
                 <span>Calendar</span>
               </div>
             )}
           </div>
+
+          {/* Selected Day Detail Panel */}
+          {selectedDay && (
+            <div className="mt-4 pt-4 border-t border-white/10">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-white">
+                  {format(selectedDay, "EEEE, MMMM d, yyyy")}
+                </h3>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setSelectedDay(null)}
+                  className="h-6 w-6 text-white/50 hover:text-white hover:bg-white/10"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              
+              {(() => {
+                const dateKey = format(selectedDay, "yyyy-MM-dd");
+                const dayMeetings = meetingsByDate.get(dateKey) || [];
+                const dayExternalEvents = showExternalCalendar ? (externalEventsByDate.get(dateKey) || []) : [];
+                
+                if (dayMeetings.length === 0 && dayExternalEvents.length === 0) {
+                  return (
+                    <p className="text-sm text-white/50">No meetings on this day.</p>
+                  );
+                }
+                
+                return (
+                  <div className="space-y-3">
+                    {dayMeetings.map((meeting) => {
+                      const isSent = meeting.isSentByMe;
+                      const otherPerson = isSent ? meeting.recipient : meeting.requester;
+                      const MeetingIcon = MEETING_TYPE_ICONS[meeting.meetingType];
+                      
+                      return (
+                        <div
+                          key={meeting.id}
+                          className={cn(
+                            "p-3 rounded-lg border",
+                            meeting.status === "scheduled" && "bg-cyan-500/10 border-cyan-500/30",
+                            meeting.status === "pending" && "bg-amber-500/10 border-amber-500/30",
+                            meeting.status === "completed" && "bg-teal-500/10 border-teal-500/30"
+                          )}
+                        >
+                          <div className="flex items-start gap-3">
+                            <Link href={`/user/${otherPerson.id}`}>
+                              <Avatar className="h-10 w-10 border-2 border-white/20">
+                                <AvatarImage src={otherPerson.profile.photoUrl} />
+                                <AvatarFallback className="bg-gradient-to-br from-violet-500 to-purple-500 text-white text-sm font-semibold">
+                                  {otherPerson.profile.name.split(" ").map(n => n[0]).join("").toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                            </Link>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <Link href={`/user/${otherPerson.id}`}>
+                                  <span className="font-medium text-white hover:text-cyan-400 transition-colors">
+                                    {otherPerson.profile.name}
+                                  </span>
+                                </Link>
+                                <Badge 
+                                  variant="outline" 
+                                  className={cn(
+                                    "text-[10px] px-1.5 py-0",
+                                    meeting.status === "scheduled" && "text-cyan-400 border-cyan-500/30",
+                                    meeting.status === "pending" && "text-amber-400 border-amber-500/30",
+                                    meeting.status === "completed" && "text-teal-400 border-teal-500/30"
+                                  )}
+                                >
+                                  {meeting.status === "pending" 
+                                    ? (isSent ? "Awaiting Response" : "Needs Response")
+                                    : meeting.status.charAt(0).toUpperCase() + meeting.status.slice(1)
+                                  }
+                                </Badge>
+                              </div>
+                              <p className="text-xs text-white/60 mt-0.5">
+                                {otherPerson.profile.position}
+                                {otherPerson.profile.company && ` at ${otherPerson.profile.company}`}
+                              </p>
+                              
+                              <div className="flex items-center gap-3 mt-2 text-xs text-white/50">
+                                <span className="flex items-center gap-1">
+                                  <MeetingIcon className="h-3.5 w-3.5" />
+                                  {meeting.meetingType.charAt(0).toUpperCase() + meeting.meetingType.slice(1)}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <Clock className="h-3.5 w-3.5" />
+                                  {meeting.duration} min
+                                </span>
+                              </div>
+                              
+                              {meeting.contextMessage && (
+                                <p className="text-xs text-white/70 mt-2 italic">
+                                  "{meeting.contextMessage}"
+                                </p>
+                              )}
+                              
+                              {meeting.acceptedTime && (
+                                <p className="text-xs text-cyan-400 mt-2 font-medium">
+                                  {format(new Date(meeting.acceptedTime), "h:mm a")}
+                                </p>
+                              )}
+                              
+                              {meeting.status === "pending" && meeting.proposedTimes?.length > 0 && (
+                                <div className="mt-2">
+                                  <p className="text-[10px] text-white/40 mb-1">Proposed times:</p>
+                                  <div className="flex flex-wrap gap-1">
+                                    {meeting.proposedTimes.map((time, i) => (
+                                      <span 
+                                        key={i}
+                                        className="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70"
+                                      >
+                                        {format(new Date(time), "MMM d, h:mm a")}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    
+                    {dayExternalEvents.map((event, i) => (
+                      <div
+                        key={`ext-${i}`}
+                        className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/30"
+                      >
+                        <div className="flex items-center gap-2">
+                          <CalendarDays className="h-4 w-4 text-purple-400" />
+                          <span className="font-medium text-white">{event.title}</span>
+                        </div>
+                        <p className="text-xs text-white/60 mt-1">
+                          {format(new Date(event.startTime), "h:mm a")} - {format(new Date(event.endTime), "h:mm a")}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
+          )}
         </div>
       ) : (
         /* List View - Tabs */
@@ -459,7 +623,7 @@ export function MeetingsContainer() {
           ) : meetings.length === 0 ? (
             <EmptyState
               title="No pending requests"
-              description="Meeting requests you send or receive will appear here."
+              description="Meeting requests from others will appear here."
             />
           ) : (
             <div className="space-y-4">
@@ -511,11 +675,11 @@ function StatCard({
   bgColor: string;
 }) {
   return (
-    <div className="rounded-xl bg-white/5 border border-white/10 p-4 flex items-center gap-3">
-      <div className={cn("p-2 rounded-lg", bgColor, color)}>{icon}</div>
-      <div>
-        <p className="text-2xl font-bold text-white">{value}</p>
-        <p className="text-sm text-white/60">{label}</p>
+    <div className="rounded-xl bg-white/5 border border-white/10 p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
+      <div className={cn("p-1.5 sm:p-2 rounded-lg shrink-0", bgColor, color)}>{icon}</div>
+      <div className="min-w-0">
+        <p className="text-lg sm:text-2xl font-bold text-white">{value}</p>
+        <p className="text-xs sm:text-sm text-white/60 truncate">{label}</p>
       </div>
     </div>
   );
@@ -652,14 +816,24 @@ function RequestCard({
   onAction,
   isLoading,
 }: {
-  meeting: MeetingWithUsers;
+  meeting: MeetingWithUsers & { isSentByMe?: boolean };
   onAction: (id: string, action: string, data?: object) => void;
   isLoading: boolean;
 }) {
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
 
-  const otherPerson = meeting.requester;
-  const isRecipient = true;
+  // If I sent the meeting, show the recipient. If someone sent it to me, show the requester.
+  const isSentByMe = meeting.isSentByMe ?? false;
+  
+  console.log("[RequestCard] Meeting data:", {
+    meetingId: meeting.id,
+    requesterId: meeting.requesterId,
+    recipientId: meeting.recipientId,
+    isSentByMeFromApi: meeting.isSentByMe,
+    isSentByMe,
+  });
+  
+  const otherPerson = isSentByMe ? meeting.recipient : meeting.requester;
 
   const initials = otherPerson.profile.name
     .split(" ")
@@ -670,12 +844,23 @@ function RequestCard({
   const MeetingIcon = MEETING_TYPE_ICONS[meeting.meetingType];
 
   return (
-    <div className="rounded-xl bg-white/5 border border-white/10 p-4">
+    <div className={cn(
+      "rounded-xl bg-white/5 border p-4",
+      isSentByMe ? "border-violet-500/20" : "border-white/10"
+    )}>
       <div className="flex items-start gap-4">
         <Link href={`/user/${otherPerson.id}`}>
-          <Avatar className="h-12 w-12 border-2 border-white/20">
+          <Avatar className={cn(
+            "h-12 w-12 border-2",
+            isSentByMe ? "border-violet-400/30" : "border-white/20"
+          )}>
             <AvatarImage src={otherPerson.profile.photoUrl} />
-            <AvatarFallback className="bg-gradient-to-br from-cyan-500 to-teal-500 text-black font-semibold">
+            <AvatarFallback className={cn(
+              "font-semibold",
+              isSentByMe 
+                ? "bg-gradient-to-br from-violet-500 to-purple-500 text-white"
+                : "bg-gradient-to-br from-cyan-500 to-teal-500 text-black"
+            )}>
               {initials}
             </AvatarFallback>
           </Avatar>
@@ -693,8 +878,12 @@ function RequestCard({
                 {otherPerson.profile.position}
               </p>
             </div>
-            <Badge variant="outline" className="text-amber-400 border-amber-500/30 bg-amber-500/10">
-              Pending
+            <Badge variant="outline" className={cn(
+              isSentByMe 
+                ? "text-violet-400 border-violet-500/30 bg-violet-500/10"
+                : "text-amber-400 border-amber-500/30 bg-amber-500/10"
+            )}>
+              {isSentByMe ? "Awaiting Response" : "Needs Response"}
             </Badge>
           </div>
 
@@ -714,11 +903,12 @@ function RequestCard({
               {meeting.duration} min
             </span>
             <span>
-              Sent {formatDistanceToNow(new Date(meeting.createdAt))} ago
+              {isSentByMe ? "Sent" : "Received"} {formatDistanceToNow(new Date(meeting.createdAt))} ago
             </span>
           </div>
 
-          {isRecipient && meeting.proposedTimes.length > 0 && (
+          {/* If I received this request - show time selection and accept/decline */}
+          {!isSentByMe && meeting.proposedTimes.length > 0 && (
             <div className="mt-4 space-y-2">
               <p className="text-xs font-medium text-white/50">Select a time:</p>
               <div className="flex flex-wrap gap-2">
@@ -744,7 +934,28 @@ function RequestCard({
             </div>
           )}
 
-          {isRecipient && (
+          {/* If I sent this request - show proposed times (read-only) and cancel button */}
+          {isSentByMe && meeting.proposedTimes.length > 0 && (
+            <div className="mt-3">
+              <p className="text-xs font-medium text-white/50 mb-2">Proposed times:</p>
+              <div className="flex flex-wrap gap-2">
+                {meeting.proposedTimes.map((time, index) => {
+                  const timeDate = new Date(time);
+                  return (
+                    <span
+                      key={index}
+                      className="px-2 py-1 rounded-md border border-white/10 bg-white/5 text-xs text-white/70"
+                    >
+                      {format(timeDate, "EEE, MMM d")} at {format(timeDate, "h:mm a")}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Actions based on whether I sent or received */}
+          {!isSentByMe ? (
             <div className="flex items-center gap-2 mt-4">
               <Button
                 size="sm"
@@ -768,6 +979,23 @@ function RequestCard({
               >
                 <X className="h-4 w-4" />
                 Decline
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 mt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onAction(meeting.id, "decline")}
+                disabled={isLoading}
+                className="gap-1 border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300"
+              >
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <X className="h-4 w-4" />
+                )}
+                Cancel Request
               </Button>
             </div>
           )}

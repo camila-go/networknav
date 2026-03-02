@@ -48,6 +48,11 @@ export function ConversationList({
     return name.includes(query) || company.includes(query);
   });
 
+  // Don't show "new conversation" if user already has a conversation
+  const shouldShowNewConversation = newConversationUser && !conversations.some(
+    (conv) => conv.otherUser?.id === newConversationUser.id || conv.connectionId === newConversationUser.id
+  );
+
   return (
     <div className="h-full flex flex-col bg-black">
       {/* Header */}
@@ -66,8 +71,8 @@ export function ConversationList({
 
       {/* Conversation list */}
       <div className="flex-1 overflow-y-auto">
-        {/* New conversation at top if present */}
-        {newConversationUser && (
+        {/* New conversation at top if present and user doesn't already have a conversation */}
+        {shouldShowNewConversation && newConversationUser && (
           <button
             onClick={onSelectNewConversation}
             className={cn(
@@ -94,7 +99,7 @@ export function ConversationList({
           </button>
         )}
 
-        {filteredConversations.length === 0 && !newConversationUser ? (
+        {filteredConversations.length === 0 && !shouldShowNewConversation ? (
           <div className="p-4 text-center text-white/50 text-sm">
             No conversations found
           </div>

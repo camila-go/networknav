@@ -36,27 +36,30 @@ export function DashboardNav() {
         </Link>
 
         <nav className="flex items-center gap-1">
-          {navItems.map((item) => {
-            const isActive =
-              pathname === item.href ||
-              (item.href !== "/dashboard" && pathname.startsWith(item.href));
+          {/* Desktop navigation - hidden on mobile since we have bottom nav */}
+          <div className="hidden md:flex items-center gap-1">
+            {navItems.map((item) => {
+              const isActive =
+                pathname === item.href ||
+                (item.href !== "/dashboard" && pathname.startsWith(item.href));
 
-            return (
-              <Link key={item.href} href={item.href}>
-                <button
-                  className={cn(
-                    "inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all",
-                    isActive 
-                      ? "bg-cyan-500/20 text-cyan-400" 
-                      : "text-white/70 hover:bg-white/10 hover:text-white"
-                  )}
-                >
-                  <item.icon className="h-4 w-4" />
-                  <span className="hidden sm:inline">{item.label}</span>
-                </button>
-              </Link>
-            );
-          })}
+              return (
+                <Link key={item.href} href={item.href}>
+                  <button
+                    className={cn(
+                      "inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all",
+                      isActive 
+                        ? "bg-cyan-500/20 text-cyan-400" 
+                        : "text-white/70 hover:bg-white/10 hover:text-white"
+                    )}
+                  >
+                    <item.icon className="h-4 w-4" />
+                    <span>{item.label}</span>
+                  </button>
+                </Link>
+              );
+            })}
+          </div>
 
           <div className="mx-1">
             <NotificationBell />
@@ -67,7 +70,7 @@ export function DashboardNav() {
             className="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-white/60 hover:bg-white/10 hover:text-white transition-all ml-1"
           >
             <LogOut className="h-4 w-4" />
-            <span className="hidden sm:inline">Log out</span>
+            <span className="hidden md:inline">Log out</span>
           </button>
         </nav>
       </div>

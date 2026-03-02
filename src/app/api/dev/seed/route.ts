@@ -23,6 +23,7 @@ import {
   getDefaultPreferences,
 } from "@/lib/stores";
 import { generateMatches } from "@/lib/matching/matching-service";
+import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
 import type { QuestionnaireData, Connection, Message, Meeting, Notification } from "@/types";
 
 // ============================================
@@ -285,6 +286,46 @@ export async function POST() {
       });
 
       notificationPreferences.set(id, getDefaultPreferences(id));
+
+      // Save to Supabase for persistence across server restarts
+      if (isSupabaseConfigured && supabaseAdmin) {
+        try {
+          // First try to delete existing user with same email (for re-seeding)
+          await supabaseAdmin
+            .from('user_profiles')
+            .delete()
+            .eq('email', seed.email.toLowerCase());
+
+          // Insert the user with password hash
+          const { error } = await supabaseAdmin
+            .from('user_profiles')
+            .insert({
+              id,
+              user_id: id,
+              email: seed.email.toLowerCase(),
+              password_hash: passwordHash,
+              name: seed.name,
+              position: seed.position,
+              title: seed.title,
+              company: seed.company,
+              location: seed.location,
+              questionnaire_completed: true,
+              questionnaire_data: seed.responses,
+              is_active: true,
+              is_visible: true,
+              created_at: now.toISOString(),
+              updated_at: now.toISOString(),
+            } as never);
+
+          if (error) {
+            console.error(`Failed to save ${seed.email} to Supabase:`, error.message);
+          } else {
+            console.log(`✅ Saved ${seed.email} to Supabase with password hash`);
+          }
+        } catch (err) {
+          console.error(`Supabase error for ${seed.email}:`, err);
+        }
+      }
     }
 
     // ---- 2. Compute matches for every user ----

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -258,17 +259,21 @@ export function ChatWindow({
           </Button>
         )}
 
-        <Avatar className="h-10 w-10 border-2 border-white/20">
-          <AvatarImage src={undefined} />
-          <AvatarFallback className="bg-gradient-to-br from-cyan-500 to-teal-500 text-black font-semibold">
-            {initials}
-          </AvatarFallback>
-        </Avatar>
+        <Link href={otherUser?.id ? `/user/${otherUser.id}` : "#"} className="flex-shrink-0">
+          <Avatar className="h-10 w-10 border-2 border-white/20 hover:ring-2 hover:ring-cyan-500 hover:ring-offset-2 hover:ring-offset-black transition-all cursor-pointer">
+            <AvatarImage src={undefined} />
+            <AvatarFallback className="bg-gradient-to-br from-cyan-500 to-teal-500 text-black font-semibold">
+              {initials}
+            </AvatarFallback>
+          </Avatar>
+        </Link>
 
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-white truncate">
-            {otherUser?.name || "Unknown"}
-          </h3>
+          <Link href={otherUser?.id ? `/user/${otherUser.id}` : "#"}>
+            <h3 className="font-semibold text-white truncate hover:text-cyan-400 transition-colors cursor-pointer">
+              {otherUser?.name || "Unknown"}
+            </h3>
+          </Link>
           <p className="text-sm text-white/60 truncate">
             {isOtherTyping ? (
               <span className="text-cyan-400">typing...</span>

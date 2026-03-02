@@ -96,16 +96,30 @@ export async function POST(request: NextRequest) {
       updatedAt: now,
     };
 
-    // Save to in-memory store (for demo compatibility)
-    users.set(email.toLowerCase(), user);
-
-    // Save to Supabase if configured - await to ensure data is persisted
+    // Save to Supabase - REQUIRED for production (credentials must persist)
     if (isSupabaseConfigured && supabaseAdmin) {
+      // Check if user already exists in Supabase
+      const { data: existingUser } = await supabaseAdmin
+        .from('user_profiles')
+        .select('id, email')
+        .eq('email', email.toLowerCase())
+        .single();
+
+      if (existingUser) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "An account with this email already exists",
+          },
+          { status: 409 }
+        );
+      }
+
       const profileData = {
         id: userId,
         user_id: userId,
         email: email.toLowerCase(),
-        password_hash: passwordHash, // Store password hash for login persistence
+        password_hash: passwordHash,
         name,
         position,
         title,
@@ -117,25 +131,38 @@ export async function POST(request: NextRequest) {
         updated_at: now.toISOString(),
       };
       
-      try {
-        const { error } = await supabaseAdmin
-          .from('user_profiles')
-          .insert(profileData as never);
-        
-        if (error) {
-          console.error('❌ Supabase save error:', error);
-          // If it's a duplicate key error, that's okay - user already exists
-          if (!error.message?.includes('duplicate')) {
-            throw error;
-          }
-        } else {
-          console.log('✅ User profile saved to Supabase:', userId, 'Name:', name);
-        }
-      } catch (err) {
-        console.error('Supabase save error:', err);
-        // Don't fail registration if Supabase save fails - user is in memory
+      const { error } = await supabaseAdmin
+        .from('user_profiles')
+        .insert(profileData as never);
+      
+      if (error) {
+        console.error('❌ Supabase save error:', error);
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Failed to create account. Please try again.",
+          },
+          { status: 500 }
+        );
+      }
+      
+      console.log('✅ User registered in Supabase:', email, 'ID:', userId);
+    } else {
+      // Supabase not configured - fail in production
+      if (process.env.NODE_ENV === 'production') {
+        console.error('❌ Supabase not configured - cannot register users in production');
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Registration is currently unavailable. Please try again later.",
+          },
+          { status: 503 }
+        );
       }
     }
+
+    // Also save to in-memory store (for session caching)
+    users.set(email.toLowerCase(), user);
 
     // Create tokens
     const accessToken = await createAccessToken({ userId, email: user.email });

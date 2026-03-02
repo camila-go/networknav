@@ -4,8 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { MatchWithUser } from "@/types";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -23,10 +21,9 @@ import { MeetingRequestModal } from "@/components/meetings/meeting-request-modal
 interface MatchCardProps {
   match: MatchWithUser;
   onPass: (id: string) => void;
-  onConnect: (id: string) => void;
 }
 
-export function MatchCard({ match, onPass, onConnect }: MatchCardProps) {
+export function MatchCard({ match, onPass }: MatchCardProps) {
   const router = useRouter();
   const [showAllCommonalities, setShowAllCommonalities] = useState(false);
   const [showMeetingModal, setShowMeetingModal] = useState(false);
@@ -44,16 +41,12 @@ export function MatchCard({ match, onPass, onConnect }: MatchCardProps) {
 
   const profileUrl = `/user/${match.matchedUserId}`;
 
-  function handleRequestMeeting() {
-    setShowMeetingModal(true);
-  }
-
-  function handleMeetingSuccess() {
-    onConnect(match.id);
-  }
-
   function handleMessage() {
     router.push(`/messages?userId=${match.matchedUserId}&name=${encodeURIComponent(matchedUser.profile.name)}`);
+  }
+
+  function handleRequestMeeting() {
+    setShowMeetingModal(true);
   }
 
   return (
@@ -62,12 +55,11 @@ export function MatchCard({ match, onPass, onConnect }: MatchCardProps) {
       <div className="relative">
         <div className="absolute top-3 right-3 z-10">
           <Badge
-            variant={type === "high-affinity" ? "default" : "secondary"}
             className={cn(
-              "gap-1",
+              "gap-1 font-medium border-0",
               type === "high-affinity"
-                ? "bg-gradient-to-r from-fuchsia-500 to-pink-500 text-white border-0 shadow-lg shadow-fuchsia-500/30"
-                : "bg-amber-500/20 text-amber-400 border-amber-500/30"
+                ? "bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg shadow-teal-500/25"
+                : "bg-gradient-to-r from-amber-600 to-orange-500 text-white shadow-lg shadow-amber-500/25"
             )}
           >
             {type === "high-affinity" ? (
@@ -95,17 +87,17 @@ export function MatchCard({ match, onPass, onConnect }: MatchCardProps) {
                 </AvatarFallback>
               </Avatar>
             </Link>
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 pr-24">
               <Link href={profileUrl} className="hover:text-cyan-400 transition-colors">
-                <h3 className="font-semibold text-lg text-white truncate hover:text-cyan-400">
+                <h3 className="font-semibold text-lg text-white hover:text-cyan-400">
                   {matchedUser.profile.name}
                 </h3>
               </Link>
-              <p className="text-sm text-white/70 truncate">
+              <p className="text-sm text-white/70">
                 {matchedUser.profile.position}
               </p>
               {matchedUser.profile.company && (
-                <p className="text-sm text-cyan-400 truncate">
+                <p className="text-sm text-cyan-400">
                   {matchedUser.profile.company}
                 </p>
               )}
@@ -211,7 +203,6 @@ export function MatchCard({ match, onPass, onConnect }: MatchCardProps) {
         recipient={matchedUser}
         commonalities={commonalities}
         conversationStarters={conversationStarters}
-        onSuccess={handleMeetingSuccess}
       />
     </div>
   );

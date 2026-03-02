@@ -48,14 +48,27 @@ export function MessagesContainer() {
 
   // Handle incoming new conversation from URL params
   useEffect(() => {
-    if (newUserId && newUserName) {
-      setNewConversationUser({
-        id: newUserId,
-        name: decodeURIComponent(newUserName),
-      });
-      setShowNewConversation(true);
+    if (newUserId && newUserName && !isLoading) {
+      // Check if conversation already exists with this user
+      const existingConversation = conversations.find(
+        (conv) => conv.otherUser?.id === newUserId || conv.connectionId === newUserId
+      );
+
+      if (existingConversation) {
+        // Open existing conversation instead of creating new
+        setSelectedConversation(existingConversation);
+        setShowNewConversation(false);
+        setNewConversationUser(null);
+      } else {
+        // No existing conversation, show new conversation UI
+        setNewConversationUser({
+          id: newUserId,
+          name: decodeURIComponent(newUserName),
+        });
+        setShowNewConversation(true);
+      }
     }
-  }, [newUserId, newUserName]);
+  }, [newUserId, newUserName, conversations, isLoading]);
 
   async function fetchConversations() {
     try {

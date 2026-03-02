@@ -15,15 +15,15 @@ interface NotificationListProps {
 }
 
 const NOTIFICATION_ICONS: Record<NotificationType, React.ReactNode> = {
-  new_matches: <Sparkles className="h-4 w-4 text-primary" />,
-  connection_request: <Users className="h-4 w-4 text-teal-500" />,
-  connection_accepted: <Check className="h-4 w-4 text-green-500" />,
-  meeting_request: <Calendar className="h-4 w-4 text-cyan-500" />,
-  meeting_accepted: <CalendarCheck className="h-4 w-4 text-green-500" />,
-  meeting_declined: <CalendarX className="h-4 w-4 text-red-500" />,
-  new_message: <MessageCircle className="h-4 w-4 text-blue-500" />,
-  request_reminder: <AlertCircle className="h-4 w-4 text-amber-500" />,
-  questionnaire_reminder: <Bell className="h-4 w-4 text-coral-500" />,
+  new_matches: <Sparkles className="h-4 w-4 text-fuchsia-400" />,
+  connection_request: <Users className="h-4 w-4 text-teal-400" />,
+  connection_accepted: <Check className="h-4 w-4 text-green-400" />,
+  meeting_request: <Calendar className="h-4 w-4 text-cyan-400" />,
+  meeting_accepted: <CalendarCheck className="h-4 w-4 text-green-400" />,
+  meeting_declined: <CalendarX className="h-4 w-4 text-red-400" />,
+  new_message: <MessageCircle className="h-4 w-4 text-blue-400" />,
+  request_reminder: <AlertCircle className="h-4 w-4 text-amber-400" />,
+  questionnaire_reminder: <Bell className="h-4 w-4 text-orange-400" />,
 };
 
 export function NotificationList({ onClose }: NotificationListProps) {
@@ -120,16 +120,16 @@ export function NotificationList({ onClose }: NotificationListProps) {
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   return (
-    <div className="flex flex-col max-h-[400px]">
+    <div className="flex flex-col max-h-[400px] bg-[#0a1628] border border-white/10 rounded-xl overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b">
-        <h3 className="font-semibold text-navy-900">Notifications</h3>
+      <div className="flex items-center justify-between p-4 border-b border-white/10">
+        <h3 className="font-semibold text-white">Notifications</h3>
         {unreadCount > 0 && (
           <Button
             variant="ghost"
             size="sm"
             onClick={handleMarkAllRead}
-            className="text-xs text-primary"
+            className="text-xs text-cyan-400 hover:text-cyan-300 hover:bg-white/5"
           >
             Mark all read
           </Button>
@@ -140,19 +140,19 @@ export function NotificationList({ onClose }: NotificationListProps) {
       <ScrollArea className="flex-1">
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            <Loader2 className="h-6 w-6 animate-spin text-cyan-400" />
           </div>
         ) : notifications.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-center">
-            <div className="w-12 h-12 rounded-full bg-navy-100 flex items-center justify-center mb-3">
-              <Bell className="h-6 w-6 text-navy-400" />
+            <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-3">
+              <Bell className="h-6 w-6 text-white/40" />
             </div>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-white/50">
               No notifications yet
             </p>
           </div>
         ) : (
-          <div className="divide-y">
+          <div className="divide-y divide-white/5">
             {notifications.map((notification) => (
               <NotificationItem
                 key={notification.id}
@@ -184,12 +184,12 @@ function NotificationItem({
   return (
     <div
       className={cn(
-        "flex items-start gap-3 p-4 hover:bg-navy-50 transition-colors group",
-        !notification.read && "bg-primary/5"
+        "flex items-start gap-3 p-4 hover:bg-white/5 transition-colors group",
+        !notification.read && "bg-cyan-500/5"
       )}
     >
       {/* Icon */}
-      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-white border flex items-center justify-center">
+      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-white/10 border border-white/10 flex items-center justify-center">
         {icon}
       </div>
 
@@ -198,15 +198,15 @@ function NotificationItem({
         <p
           className={cn(
             "text-sm",
-            notification.read ? "text-navy-600" : "text-navy-900 font-medium"
+            notification.read ? "text-white/70" : "text-white font-medium"
           )}
         >
           {notification.title}
         </p>
-        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+        <p className="text-xs text-white/50 mt-0.5 line-clamp-2">
           {notification.body}
         </p>
-        <p className="text-xs text-muted-foreground mt-1">
+        <p className="text-xs text-white/40 mt-1">
           {formatRelativeTime(notification.createdAt)}
         </p>
       </div>
@@ -217,7 +217,7 @@ function NotificationItem({
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7"
+            className="h-7 w-7 text-white/60 hover:text-white hover:bg-white/10"
             onClick={() => onMarkRead(notification.id)}
             title="Mark as read"
           >
@@ -227,7 +227,7 @@ function NotificationItem({
         <Button
           variant="ghost"
           size="icon"
-          className="h-7 w-7 text-muted-foreground hover:text-destructive"
+          className="h-7 w-7 text-white/60 hover:text-red-400 hover:bg-white/10"
           onClick={() => onDelete(notification.id)}
           title="Delete"
         >
@@ -237,7 +237,7 @@ function NotificationItem({
 
       {/* Unread indicator */}
       {!notification.read && (
-        <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0" />
+        <div className="w-2 h-2 rounded-full bg-cyan-400 flex-shrink-0" />
       )}
     </div>
   );

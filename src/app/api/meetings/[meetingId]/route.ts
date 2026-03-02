@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth";
 import { meetings, users } from "@/lib/stores";
 import { cookies } from "next/headers";
 import type { PublicUser, MeetingStatus } from "@/types";
+import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
 
 // Helper to get user profile by ID
 function getUserById(userId: string): PublicUser | null {
@@ -37,6 +38,58 @@ function getDemoUser(userId: string): PublicUser | null {
     "demo-michael": { id: "demo-michael", profile: { name: "Michael Brown", position: "SVP Sales", title: "Sales Executive", company: "EnterpriseNow" }, questionnaireCompleted: true },
   };
   return demoUsers[userId] || null;
+}
+
+// Log meeting activity for gamification (fire and forget)
+async function logMeetingActivity(userId: string, meetingId: string, otherUserId: string): Promise<void> {
+  try {
+    if (!isSupabaseConfigured || !supabaseAdmin) return;
+    
+    // Insert activity
+    await supabaseAdmin
+      .from('user_activity')
+      .insert({
+        user_id: userId,
+        activity_type: 'meeting_scheduled',
+        points_earned: 25,
+        metadata: { meeting_id: meetingId, other_user_id: otherUserId },
+      });
+    
+    // Update stats
+    const { data: existingStats } = await supabaseAdmin
+      .from('user_gamification_stats')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
+    
+    if (existingStats) {
+      await supabaseAdmin
+        .from('user_gamification_stats')
+        .update({
+          total_points: (existingStats.total_points || 0) + 25,
+          points_this_week: (existingStats.points_this_week || 0) + 25,
+          points_this_month: (existingStats.points_this_month || 0) + 25,
+          meetings_scheduled: (existingStats.meetings_scheduled || 0) + 1,
+          last_active_at: new Date().toISOString(),
+        })
+        .eq('user_id', userId);
+    } else {
+      await supabaseAdmin
+        .from('user_gamification_stats')
+        .insert({
+          user_id: userId,
+          total_points: 25,
+          points_this_week: 25,
+          points_this_month: 25,
+          meetings_scheduled: 1,
+          last_active_at: new Date().toISOString(),
+        });
+    }
+    
+    console.log('[Meetings API] Activity logged for user:', userId);
+  } catch (error) {
+    console.error('[Meetings API] Failed to log activity:', error);
+  }
 }
 
 // GET - Get single meeting details
@@ -244,6 +297,13 @@ export async function PATCH(
     meeting.status = newStatus;
     meeting.updatedAt = new Date();
     meetings.set(params.meetingId, meeting);
+
+    // Log activity for gamification when meeting is scheduled
+    if (action === "accept") {
+      // Both users get credit for the scheduled meeting
+      logMeetingActivity(meeting.recipientId, params.meetingId, meeting.requesterId);
+      logMeetingActivity(meeting.requesterId, params.meetingId, meeting.recipientId);
+    }
 
     const requester = getUserById(meeting.requesterId);
     const recipient = getUserById(meeting.recipientId);

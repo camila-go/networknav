@@ -267,14 +267,17 @@ async function generateMatchesFromSupabase(currentUserId: string, currentUserEma
     // Cast to typed array
     const typedProfiles = profiles as unknown as SupabaseProfile[];
     
-    // Filter out the current user by ID or email
+    // Filter out the current user by ID or email - be aggressive about excluding self
     const filteredProfiles = typedProfiles.filter(profile => {
       // Don't show if Supabase ID matches
       if (currentUserSupabaseId && profile.id === currentUserSupabaseId) return false;
-      // Don't show if local ID matches
+      // Don't show if local ID matches (with or without demo_ prefix)
       if (profile.id === currentUserId) return false;
+      if (currentUserId.startsWith('demo_') && profile.id === currentUserId.replace('demo_', '')) return false;
       // Don't show if email matches (case-insensitive)
       if (currentUserEmail && profile.email?.toLowerCase() === currentUserEmail.toLowerCase()) return false;
+      // Also check if profile email is in the currentUserId (for demo users)
+      if (profile.email && currentUserId.includes(profile.email.split('@')[0])) return false;
       // Don't show users without names
       if (!profile.name || profile.name.trim() === '') return false;
       return true;
@@ -283,6 +286,10 @@ async function generateMatchesFromSupabase(currentUserId: string, currentUserEma
     if (filteredProfiles.length === 0) {
       return [];
     }
+
+    // Log for debugging
+    console.log(`Generating matches for user: ${currentUserId} (email: ${currentUserEmail})`);
+    console.log(`Filtered ${typedProfiles.length} profiles down to ${filteredProfiles.length}`);
 
     const now = new Date();
     const matches: Match[] = filteredProfiles.map((profile) => {
@@ -368,8 +375,20 @@ async function generateMatchesFromSupabase(currentUserId: string, currentUserEma
       // AI starters failed — algorithmic ones already in place
     }
 
+    // Final safety filter - remove any matches where the matched user is the current user
+    const safeMatches = matches.filter(match => {
+      // Check various ways the user might appear
+      if (match.matchedUserId === currentUserId) return false;
+      if (currentUserSupabaseId && match.matchedUserId === currentUserSupabaseId) return false;
+      if (currentUserEmail && match.matchedUser.profile.name?.toLowerCase().includes(currentUserEmail.split('@')[0].toLowerCase())) {
+        // Extra check: if name contains email prefix, might be self
+        console.log(`Filtering out potential self-match: ${match.matchedUser.profile.name}`);
+      }
+      return true;
+    });
+
     // Sort by score descending
-    return matches.sort((a, b) => b.score - a.score);
+    return safeMatches.sort((a, b) => b.score - a.score);
   } catch (error) {
     console.error('Error fetching matches from Supabase:', error);
     return [];

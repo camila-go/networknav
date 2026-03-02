@@ -197,7 +197,7 @@ export async function GET(request: NextRequest) {
 
     console.log("[Meetings API] Total meetings found:", allMeetings.length);
 
-    const userMeetings: MeetingWithUsers[] = [];
+    const userMeetings: (MeetingWithUsers & { isSentByMe: boolean })[] = [];
     const now = new Date();
 
     for (const meeting of allMeetings) {
@@ -214,10 +214,21 @@ export async function GET(request: NextRequest) {
         continue;
       }
 
-      const meetingWithUsers: MeetingWithUsers = {
+      const isSentByMe = meeting.requesterId === currentUserId;
+      
+      console.log("[Meetings API] Processing meeting:", {
+        meetingId: meeting.id,
+        requesterId: meeting.requesterId,
+        recipientId: meeting.recipientId,
+        currentUserId,
+        isSentByMe,
+      });
+      
+      const meetingWithUsers: MeetingWithUsers & { isSentByMe: boolean } = {
         ...meeting,
         requester,
         recipient,
+        isSentByMe,
       };
 
       // Apply filter
@@ -233,6 +244,7 @@ export async function GET(request: NextRequest) {
           }
           break;
         case "requests":
+          // Show ALL pending meetings (both sent and received)
           if (meeting.status === "pending") {
             userMeetings.push(meetingWithUsers);
           }

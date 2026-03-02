@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { users, questionnaireResponses, connections, userMatches } from "@/lib/stores";
+import { users, questionnaireResponses, userMatches } from "@/lib/stores";
 import { cookies } from "next/headers";
+import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
 import type { NetworkGraphData, NetworkNode, NetworkEdge, NetworkCluster, MatchType } from "@/types";
 
 // Demo user data for the network
@@ -45,6 +46,121 @@ const DEMO_COMMONALITIES: Record<string, Record<string, string[]>> = {
     "demo-david": ["Both interested in product-market fit"],
   },
 };
+
+// Extended network - people each demo user knows (for discovery)
+const DEMO_EXTENDED_NETWORK: Record<string, Array<{ id: string; name: string; title: string; company: string; reason: string }>> = {
+  "demo-sarah": [
+    { id: "ext-rachel", name: "Rachel Kim", title: "VP Engineering", company: "DataFlow", reason: "Former colleague at TechCorp" },
+    { id: "ext-alex", name: "Alex Rivera", title: "CTO", company: "CloudFirst", reason: "Met at Tech Leadership Summit" },
+    { id: "ext-jordan", name: "Jordan Lee", title: "Director of Platform", company: "StreamTech", reason: "Industry peer group member" },
+  ],
+  "demo-marcus": [
+    { id: "ext-taylor", name: "Taylor Morgan", title: "CHRO", company: "GlobalTech", reason: "HR Leadership Network" },
+    { id: "ext-casey", name: "Casey Chen", title: "VP People Ops", company: "ScaleUp", reason: "Conference speaker connection" },
+    { id: "ext-sam", name: "Sam Williams", title: "Chief People Officer", company: "FinServe", reason: "Executive coaching group" },
+  ],
+  "demo-elena": [
+    { id: "ext-morgan", name: "Morgan Davis", title: "Founder", company: "HealthAI", reason: "Y Combinator batchmate" },
+    { id: "ext-jamie", name: "Jamie Patel", title: "CEO", company: "MedTech Pro", reason: "Healthcare founders circle" },
+    { id: "ext-drew", name: "Drew Santos", title: "Partner", company: "Health Ventures", reason: "Investor relationship" },
+  ],
+  "demo-david": [
+    { id: "ext-riley", name: "Riley Thompson", title: "Strategy Director", company: "BCG", reason: "Former BCG colleague" },
+    { id: "ext-avery", name: "Avery Johnson", title: "VP Strategy", company: "Fortune 100", reason: "Client relationship" },
+    { id: "ext-quinn", name: "Quinn Martinez", title: "Chief Strategy Officer", company: "GrowthCo", reason: "McKinsey alumni network" },
+  ],
+  "demo-aisha": [
+    { id: "ext-blake", name: "Blake Anderson", title: "CTO", company: "FinTech Hub", reason: "Fintech founders group" },
+    { id: "ext-skyler", name: "Skyler Nguyen", title: "VP Engineering", company: "PayScale", reason: "Tech leadership community" },
+    { id: "ext-charlie", name: "Charlie Brown", title: "Chief Architect", company: "BankTech", reason: "Industry conference speaker" },
+  ],
+  "demo-james": [
+    { id: "ext-parker", name: "Parker White", title: "COO", company: "ManufactureCo", reason: "Operations leadership forum" },
+    { id: "ext-reese", name: "Reese Taylor", title: "VP Operations", company: "LogiPro", reason: "Supply chain network" },
+    { id: "ext-dakota", name: "Dakota Chen", title: "Director of Ops", company: "TechManufacture", reason: "Industry peer group" },
+  ],
+  "demo-lisa": [
+    { id: "ext-peyton", name: "Peyton Garcia", title: "VP Marketing", company: "MediaNow", reason: "Marketing leadership circle" },
+    { id: "ext-rowan", name: "Rowan Kim", title: "CMO", company: "BrandPro", reason: "Industry conference connection" },
+    { id: "ext-sage", name: "Sage Miller", title: "Creative Director", company: "AdCraft", reason: "Creative leaders network" },
+  ],
+  "demo-michael": [
+    { id: "ext-hayden", name: "Hayden Scott", title: "Managing Partner", company: "Consulting Group", reason: "Professional services network" },
+    { id: "ext-emery", name: "Emery Davis", title: "VP Sales", company: "EnterprisePro", reason: "Sales leadership forum" },
+    { id: "ext-finley", name: "Finley Ross", title: "Chief Revenue Officer", company: "SaaSCo", reason: "Revenue leaders community" },
+  ],
+};
+
+// Fallback discoverable users when Supabase doesn't have enough
+const FALLBACK_DISCOVERABLE_USERS = [
+  { id: "disc-001", name: "Sophia Martinez", position: "VP of Operations", company: "TechFlow Inc" },
+  { id: "disc-002", name: "Benjamin Lee", position: "Chief Strategy Officer", company: "InnovateLabs" },
+  { id: "disc-003", name: "Olivia Chen", position: "Director of Engineering", company: "CloudScale" },
+  { id: "disc-004", name: "Ethan Williams", position: "Head of Product", company: "DataDriven Co" },
+  { id: "disc-005", name: "Ava Johnson", position: "VP of Marketing", company: "GrowthPro" },
+  { id: "disc-006", name: "Noah Brown", position: "CTO", company: "StartupXYZ" },
+  { id: "disc-007", name: "Isabella Davis", position: "Director of Sales", company: "EnterprisePlus" },
+  { id: "disc-008", name: "Liam Wilson", position: "Chief People Officer", company: "TalentFirst" },
+  { id: "disc-009", name: "Mia Garcia", position: "VP of Finance", company: "CapitalWorks" },
+  { id: "disc-010", name: "Lucas Anderson", position: "Head of Partnerships", company: "ConnectHub" },
+  { id: "disc-011", name: "Emma Thomas", position: "Director of Innovation", company: "FutureTech" },
+  { id: "disc-012", name: "Mason Taylor", position: "VP of Customer Success", company: "ClientFirst" },
+  { id: "disc-013", name: "Charlotte Moore", position: "Chief Revenue Officer", company: "SalesForce Pro" },
+  { id: "disc-014", name: "James Jackson", position: "Director of Data Science", company: "AnalyticsCo" },
+  { id: "disc-015", name: "Amelia White", position: "VP of Design", company: "CreativeStudio" },
+  { id: "disc-016", name: "Alexander Harris", position: "Head of Growth", company: "ScaleUp Inc" },
+  { id: "disc-017", name: "Harper Martin", position: "Director of BD", company: "PartnerPro" },
+  { id: "disc-018", name: "Daniel Thompson", position: "CIO", company: "InfoTech Systems" },
+  { id: "disc-019", name: "Evelyn Robinson", position: "VP of Talent", company: "PeopleFirst" },
+  { id: "disc-020", name: "Henry Clark", position: "Chief Product Officer", company: "ProductLab" },
+];
+
+// Register extended network demo users in the users store so their profiles can be viewed
+function ensureExtendedNetworkUsersExist() {
+  // Register demo extended network users
+  for (const contacts of Object.values(DEMO_EXTENDED_NETWORK)) {
+    for (const contact of contacts) {
+      if (!users.has(contact.id)) {
+        users.set(contact.id, {
+          id: contact.id,
+          email: `${contact.id}@demo.networknav.com`,
+          name: contact.name,
+          position: contact.title,
+          company: contact.company,
+          industry: "Technology",
+          level: "director",
+          goals: ["networking", "learning"],
+          bio: `${contact.name} is a ${contact.title} at ${contact.company}. Discoverable through the network.`,
+          profilePicture: null,
+          isAdmin: false,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+      }
+    }
+  }
+  
+  // Register fallback discoverable users
+  for (const user of FALLBACK_DISCOVERABLE_USERS) {
+    if (!users.has(user.id)) {
+      users.set(user.id, {
+        id: user.id,
+        email: `${user.id}@demo.networknav.com`,
+        name: user.name,
+        position: user.position,
+        company: user.company,
+        industry: "Technology",
+        level: "director",
+        goals: ["networking", "learning"],
+        bio: `${user.name} is a ${user.position} at ${user.company}. Discoverable through the network.`,
+        profilePicture: null,
+        isAdmin: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+    }
+  }
+}
 
 // Generate network graph data
 function generateNetworkData(userId: string): NetworkGraphData {
@@ -243,6 +359,9 @@ export async function GET(request: NextRequest) {
 
     const currentUserId = session?.userId || deviceId || "demo-user";
 
+    // Ensure extended network demo users exist in the users store
+    ensureExtendedNetworkUsersExist();
+
     const networkData = generateNetworkData(currentUserId);
 
     // Calculate insights
@@ -281,11 +400,111 @@ export async function GET(request: NextRequest) {
         : "Great balance! You have strong strategic connections",
     };
 
+    // Build extended network map (people you could meet through each connection)
+    // Show users that are NOT already in the current user's network
+    const extendedNetwork: Record<string, Array<{ id: string; name: string; title: string; company: string; reason: string }>> = {};
+    
+    // Get IDs of people already in the network (including current user)
+    const networkUserIds = new Set(networkData.nodes.map(n => n.id));
+    
+    // Get all non-user nodes
+    const otherNodes = networkData.nodes.filter(n => n.id !== currentUserId && n.matchType !== "neutral");
+    
+    // Try to fetch users from Supabase that are NOT in the network
+    let outsideNetworkUsers: Array<{ id: string; name: string; position: string; company: string }> = [];
+    
+    if (isSupabaseConfigured && supabaseAdmin) {
+      try {
+        const { data: allUsers } = await supabaseAdmin
+          .from("user_profiles")
+          .select("id, name, position, company")
+          .eq("is_active", true)
+          .limit(50);
+        
+        if (allUsers) {
+          // Filter to users NOT in the current network
+          outsideNetworkUsers = (allUsers as Array<{ id: string; name: string; position?: string; company?: string }>)
+            .filter(u => !networkUserIds.has(u.id) && u.name && u.name.trim() !== "")
+            .map(u => ({
+              id: u.id,
+              name: u.name,
+              position: u.position || "Professional",
+              company: u.company || "",
+            }));
+        }
+      } catch (error) {
+        console.error("Failed to fetch outside network users:", error);
+      }
+    }
+    
+    // Track which fallback users have been assigned to avoid duplicates across connections
+    const usedFallbackIds = new Set<string>();
+    
+    for (const node of otherNodes) {
+      // First check if we have predefined demo data
+      if (DEMO_EXTENDED_NETWORK[node.id]) {
+        extendedNetwork[node.id] = DEMO_EXTENDED_NETWORK[node.id];
+      } else {
+        // Combine Supabase users with fallback users to ensure we have enough
+        const availableUsers = [...outsideNetworkUsers];
+        
+        // Add fallback users that haven't been used yet
+        for (const fallbackUser of FALLBACK_DISCOVERABLE_USERS) {
+          if (!networkUserIds.has(fallbackUser.id) && !usedFallbackIds.has(fallbackUser.id)) {
+            availableUsers.push(fallbackUser);
+          }
+        }
+        
+        // Shuffle and pick 3 different ones for each connection
+        const shuffled = availableUsers.sort(() => Math.random() - 0.5);
+        const selectedUsers = shuffled.slice(0, 3);
+        
+        const discoverable = selectedUsers.map(user => {
+          // Track used fallback IDs
+          if (user.id.startsWith("disc-")) {
+            usedFallbackIds.add(user.id);
+          }
+          
+          // Register this user in memory so their profile can be viewed
+          if (!users.has(user.id)) {
+            users.set(user.id, {
+              id: user.id,
+              email: `${user.id}@networknav.com`,
+              name: user.name,
+              position: user.position,
+              company: user.company,
+              industry: "Technology",
+              level: "professional",
+              goals: ["networking"],
+              bio: `${user.name} is a ${user.position}${user.company ? ` at ${user.company}` : ""}. Connect through your network to learn more.`,
+              profilePicture: null,
+              isAdmin: false,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            });
+          }
+          
+          return {
+            id: user.id,
+            name: user.name,
+            title: user.position,
+            company: user.company,
+            reason: `${node.name.split(" ")[0]} can introduce you`,
+          };
+        });
+        
+        if (discoverable.length > 0) {
+          extendedNetwork[node.id] = discoverable;
+        }
+      }
+    }
+
     return NextResponse.json({
       success: true,
       data: {
         network: networkData,
         insights,
+        extendedNetwork,
       },
     });
   } catch (error) {

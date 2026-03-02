@@ -2,7 +2,136 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { profileSchema } from "@/lib/validations";
 import { users } from "@/lib/stores";
-import { supabaseAdmin } from "@/lib/supabase/client";
+import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
+import { cookies } from "next/headers";
+
+export async function GET(request: NextRequest) {
+  try {
+    const session = await getSession();
+    const cookieStore = cookies();
+    const deviceId = cookieStore.get("device_id")?.value;
+    
+    const searchParams = request.nextUrl.searchParams;
+    const targetUserId = searchParams.get("userId");
+    
+    // If no targetUserId, return current user's profile
+    if (!targetUserId) {
+      const currentUserId = session?.userId || deviceId;
+      
+      if (!currentUserId) {
+        return NextResponse.json(
+          { success: false, error: "Not authenticated" },
+          { status: 401 }
+        );
+      }
+      
+      // Find user by ID in the users map
+      let currentUser = null;
+      for (const user of users.values()) {
+        if (user.id === currentUserId) {
+          currentUser = user;
+          break;
+        }
+      }
+      
+      if (!currentUser) {
+        return NextResponse.json(
+          { success: false, error: "User not found" },
+          { status: 404 }
+        );
+      }
+      
+      return NextResponse.json({
+        success: true,
+        data: {
+          user: {
+            id: currentUser.id,
+            email: currentUser.email,
+            profile: {
+              name: currentUser.name,
+              position: currentUser.position,
+              title: currentUser.title || currentUser.position,
+              company: currentUser.company,
+              location: currentUser.location,
+              photoUrl: currentUser.photoUrl,
+              bio: currentUser.bio,
+            },
+          },
+        },
+      });
+    }
+    
+    // Fetch specific user by ID
+    // First check in-memory store
+    let targetUser = null;
+    for (const user of users.values()) {
+      if (user.id === targetUserId) {
+        targetUser = user;
+        break;
+      }
+    }
+    
+    // If not in memory, try Supabase
+    if (!targetUser && isSupabaseConfigured && supabaseAdmin) {
+      try {
+        const { data: supabaseUser, error } = await supabaseAdmin
+          .from("user_profiles")
+          .select("*")
+          .eq("id", targetUserId)
+          .maybeSingle();
+        
+        if (error) {
+          console.error("Supabase query error:", error);
+        } else if (supabaseUser) {
+          targetUser = {
+            id: supabaseUser.id,
+            email: supabaseUser.email,
+            name: supabaseUser.name,
+            position: supabaseUser.position,
+            title: supabaseUser.title || supabaseUser.position,
+            company: supabaseUser.company,
+            location: supabaseUser.location,
+            photoUrl: supabaseUser.photo_url,
+            bio: supabaseUser.bio,
+          };
+        }
+      } catch (err) {
+        console.error("Supabase user fetch error:", err);
+      }
+    }
+    
+    if (!targetUser) {
+      return NextResponse.json(
+        { success: false, error: "User not found" },
+        { status: 404 }
+      );
+    }
+    
+    return NextResponse.json({
+      success: true,
+      data: {
+        user: {
+          id: targetUser.id,
+          profile: {
+            name: targetUser.name,
+            position: targetUser.position,
+            title: targetUser.title || targetUser.position,
+            company: targetUser.company,
+            location: targetUser.location,
+            photoUrl: targetUser.photoUrl,
+            bio: targetUser.bio,
+          },
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Profile fetch error:", error);
+    return NextResponse.json(
+      { success: false, error: "An unexpected error occurred" },
+      { status: 500 }
+    );
+  }
+}
 
 export async function PATCH(request: NextRequest) {
   try {

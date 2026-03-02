@@ -286,6 +286,7 @@ export interface Meeting {
 export interface MeetingWithUsers extends Meeting {
   requester: PublicUser;
   recipient: PublicUser;
+  isSentByMe?: boolean;
 }
 
 // ============================================
@@ -330,7 +331,7 @@ export interface NetworkNode {
   name: string;
   title: string;
   company?: string;
-  matchType: MatchType | "neutral";
+  matchType: MatchType | "neutral" | "discoverable";
   commonalityCount: number;
   commonalities: string[];
 }
@@ -398,4 +399,190 @@ export interface RegisterCredentials {
   title: string;
   company?: string;
 }
+
+// ============================================
+// Gamification Types
+// ============================================
+
+export type ActivityType =
+  | "message_sent"
+  | "meeting_scheduled"
+  | "connection_made"
+  | "intro_requested";
+
+export type BadgeType =
+  | "conversation_starter"
+  | "super_connector"
+  | "meeting_master"
+  | "networking_streak"
+  | "weekly_warrior";
+
+export type BadgeTier = "bronze" | "silver" | "gold";
+
+export type StreakType = "daily" | "weekly";
+
+export interface UserActivity {
+  id: string;
+  userId: string;
+  activityType: ActivityType;
+  pointsEarned: number;
+  metadata?: Record<string, unknown>;
+  createdAt: Date;
+}
+
+export interface UserStreak {
+  id: string;
+  userId: string;
+  streakType: StreakType;
+  currentStreak: number;
+  longestStreak: number;
+  lastActivityDate: string | null;
+  weekStartDate?: string | null;
+  pointsThisWeek: number;
+  streakFrozenUntil?: string | null;
+  freezesUsedThisWeek: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface UserBadge {
+  id: string;
+  userId: string;
+  badgeType: BadgeType;
+  tier: BadgeTier;
+  progress: number;
+  earnedAt: Date;
+  updatedAt: Date;
+}
+
+export interface GamificationStats {
+  id: string;
+  userId: string;
+  totalPoints: number;
+  pointsThisWeek: number;
+  pointsThisMonth: number;
+  messagesSent: number;
+  meetingsScheduled: number;
+  connectionsMade: number;
+  introsRequested: number;
+  currentDailyStreak: number;
+  currentWeeklyStreak: number;
+  longestDailyStreak: number;
+  longestWeeklyStreak: number;
+  lastActiveAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface BadgeDefinition {
+  type: BadgeType;
+  name: string;
+  description: string;
+  icon: string;
+  tiers: {
+    bronze: { requirement: number; description: string };
+    silver: { requirement: number; description: string };
+    gold: { requirement: number; description: string };
+  };
+}
+
+export interface StreakStatus {
+  daily: {
+    current: number;
+    longest: number;
+    lastActivity: string | null;
+    isActive: boolean;
+    hoursUntilExpiry: number | null;
+    freezeAvailable: boolean;
+  };
+  weekly: {
+    current: number;
+    longest: number;
+    pointsThisWeek: number;
+    pointsRequired: number;
+    daysUntilReset: number;
+    isOnTrack: boolean;
+  };
+}
+
+export interface EncouragementMessage {
+  type: "streak_risk" | "streak_broken" | "welcome_back" | "milestone" | "badge_earned";
+  title: string;
+  message: string;
+  actionText?: string;
+  actionUrl?: string;
+}
+
+export interface ActivitySummary {
+  stats: GamificationStats;
+  streaks: StreakStatus;
+  badges: UserBadge[];
+  recentActivity: UserActivity[];
+  encouragement?: EncouragementMessage;
+}
+
+export const POINT_VALUES: Record<ActivityType, number> = {
+  message_sent: 5,
+  meeting_scheduled: 25,
+  connection_made: 15,
+  intro_requested: 10,
+};
+
+export const BADGE_DEFINITIONS: BadgeDefinition[] = [
+  {
+    type: "conversation_starter",
+    name: "Conversation Starter",
+    description: "Send messages to start meaningful conversations",
+    icon: "MessageCircle",
+    tiers: {
+      bronze: { requirement: 10, description: "Send 10 messages" },
+      silver: { requirement: 50, description: "Send 50 messages" },
+      gold: { requirement: 100, description: "Send 100 messages" },
+    },
+  },
+  {
+    type: "super_connector",
+    name: "Super Connector",
+    description: "Build your network by making connections",
+    icon: "Users",
+    tiers: {
+      bronze: { requirement: 5, description: "Make 5 connections" },
+      silver: { requirement: 25, description: "Make 25 connections" },
+      gold: { requirement: 50, description: "Make 50 connections" },
+    },
+  },
+  {
+    type: "meeting_master",
+    name: "Meeting Master",
+    description: "Schedule meetings to deepen relationships",
+    icon: "Calendar",
+    tiers: {
+      bronze: { requirement: 3, description: "Schedule 3 meetings" },
+      silver: { requirement: 10, description: "Schedule 10 meetings" },
+      gold: { requirement: 25, description: "Schedule 25 meetings" },
+    },
+  },
+  {
+    type: "networking_streak",
+    name: "Networking Streak",
+    description: "Stay consistent with daily engagement",
+    icon: "Flame",
+    tiers: {
+      bronze: { requirement: 7, description: "7-day streak" },
+      silver: { requirement: 30, description: "30-day streak" },
+      gold: { requirement: 90, description: "90-day streak" },
+    },
+  },
+  {
+    type: "weekly_warrior",
+    name: "Weekly Warrior",
+    description: "Hit your weekly networking goals",
+    icon: "Trophy",
+    tiers: {
+      bronze: { requirement: 4, description: "4-week streak" },
+      silver: { requirement: 12, description: "12-week streak" },
+      gold: { requirement: 52, description: "52-week streak" },
+    },
+  },
+];
 

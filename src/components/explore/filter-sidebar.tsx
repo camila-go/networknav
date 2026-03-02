@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
@@ -10,7 +9,6 @@ import {
   ChevronDown,
   ChevronUp,
   X,
-  Search,
   Filter,
   Save,
 } from "lucide-react";
@@ -53,7 +51,6 @@ export function FilterSidebar({
     leadershipChallenges: false,
     interests: false,
   });
-  const [searchQueries, setSearchQueries] = useState<Record<string, string>>({});
 
   useEffect(() => {
     fetchFilterOptions();
@@ -167,11 +164,6 @@ export function FilterSidebar({
               options={filterOptions.industries}
               selectedValues={filters.industries || []}
               onToggle={(value) => toggleFilter("industries", value)}
-              searchQuery={searchQueries.industries}
-              onSearchChange={(q) =>
-                setSearchQueries((prev) => ({ ...prev, industries: q }))
-              }
-              showSearch
             />
           </FilterSection>
 
@@ -232,11 +224,6 @@ export function FilterSidebar({
               options={filterOptions.leadershipChallenges}
               selectedValues={filters.leadershipChallenges || []}
               onToggle={(value) => toggleFilter("leadershipChallenges", value)}
-              searchQuery={searchQueries.leadershipChallenges}
-              onSearchChange={(q) =>
-                setSearchQueries((prev) => ({ ...prev, leadershipChallenges: q }))
-              }
-              showSearch
             />
           </FilterSection>
 
@@ -252,11 +239,6 @@ export function FilterSidebar({
               options={filterOptions.leadershipPriorities}
               selectedValues={filters.leadershipPriorities || []}
               onToggle={(value) => toggleFilter("leadershipPriorities", value)}
-              searchQuery={searchQueries.leadershipPriorities}
-              onSearchChange={(q) =>
-                setSearchQueries((prev) => ({ ...prev, leadershipPriorities: q }))
-              }
-              showSearch
             />
           </FilterSection>
 
@@ -272,11 +254,6 @@ export function FilterSidebar({
               options={filterOptions.interests}
               selectedValues={filters.interests || []}
               onToggle={(value) => toggleFilter("interests", value)}
-              searchQuery={searchQueries.interests}
-              onSearchChange={(q) =>
-                setSearchQueries((prev) => ({ ...prev, interests: q }))
-              }
-              showSearch
             />
           </FilterSection>
         </div>
@@ -363,39 +340,17 @@ interface FilterOptionListProps {
   options: FilterOption[];
   selectedValues: string[];
   onToggle: (value: string) => void;
-  searchQuery?: string;
-  onSearchChange?: (query: string) => void;
-  showSearch?: boolean;
 }
 
 function FilterOptionList({
   options,
   selectedValues,
   onToggle,
-  searchQuery = "",
-  onSearchChange,
-  showSearch = false,
 }: FilterOptionListProps) {
-  const filteredOptions = options.filter((option) =>
-    option.label.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
   return (
     <div className="space-y-2">
-      {showSearch && options.length > 6 && (
-        <div className="relative">
-          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-white/50" />
-          <Input
-            type="text"
-            placeholder="Search..."
-            value={searchQuery}
-            onChange={(e) => onSearchChange?.(e.target.value)}
-            className="h-8 pl-7 text-sm bg-white/5 border-white/20 text-white placeholder:text-white/50"
-          />
-        </div>
-      )}
       <div className="max-h-48 overflow-y-auto space-y-1">
-        {filteredOptions.map((option) => {
+        {options.map((option) => {
           const isSelected = selectedValues.includes(option.value);
           return (
             <button
@@ -437,9 +392,9 @@ function FilterOptionList({
             </button>
           );
         })}
-        {filteredOptions.length === 0 && (
+        {options.length === 0 && (
           <p className="text-sm text-white/50 text-center py-2">
-            No options found
+            No options available
           </p>
         )}
       </div>

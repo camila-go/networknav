@@ -68,7 +68,7 @@ export function NotificationBell() {
         <Button
           variant="ghost"
           size="icon"
-          className="relative"
+          className="relative text-white/70 hover:text-white hover:bg-white/10"
           aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ""}`}
         >
           <Bell className="h-5 w-5" />
@@ -76,7 +76,7 @@ export function NotificationBell() {
             <span
               className={cn(
                 "absolute -top-0.5 -right-0.5 flex items-center justify-center",
-                "min-w-[18px] h-[18px] rounded-full bg-coral-500 text-white text-xs font-medium",
+                "min-w-[18px] h-[18px] rounded-full bg-gradient-to-r from-cyan-500 to-teal-500 text-black text-xs font-bold",
                 "animate-pulse-soft"
               )}
             >
@@ -86,7 +86,7 @@ export function NotificationBell() {
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        className="w-80 p-0"
+        className="w-80 p-0 bg-transparent border-0"
         align="end"
         sideOffset={8}
       >

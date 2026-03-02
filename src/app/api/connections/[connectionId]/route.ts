@@ -79,6 +79,58 @@ async function deleteConnectionFromSupabase(connectionId: string): Promise<void>
   }
 }
 
+// Log connection activity for gamification (fire and forget)
+async function logConnectionActivity(userId: string, connectionId: string, otherUserId: string): Promise<void> {
+  try {
+    if (!isSupabaseConfigured || !supabaseAdmin) return;
+    
+    // Insert activity for the user accepting the connection
+    await supabaseAdmin
+      .from('user_activity')
+      .insert({
+        user_id: userId,
+        activity_type: 'connection_made',
+        points_earned: 15,
+        metadata: { connection_id: connectionId, other_user_id: otherUserId },
+      });
+    
+    // Update stats for the accepting user
+    const { data: existingStats } = await supabaseAdmin
+      .from('user_gamification_stats')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
+    
+    if (existingStats) {
+      await supabaseAdmin
+        .from('user_gamification_stats')
+        .update({
+          total_points: (existingStats.total_points || 0) + 15,
+          points_this_week: (existingStats.points_this_week || 0) + 15,
+          points_this_month: (existingStats.points_this_month || 0) + 15,
+          connections_made: (existingStats.connections_made || 0) + 1,
+          last_active_at: new Date().toISOString(),
+        })
+        .eq('user_id', userId);
+    } else {
+      await supabaseAdmin
+        .from('user_gamification_stats')
+        .insert({
+          user_id: userId,
+          total_points: 15,
+          points_this_week: 15,
+          points_this_month: 15,
+          connections_made: 1,
+          last_active_at: new Date().toISOString(),
+        });
+    }
+    
+    console.log('[Connections API] Activity logged for user:', userId);
+  } catch (error) {
+    console.error('[Connections API] Failed to log activity:', error);
+  }
+}
+
 // ============================================
 // Route Handlers
 // ============================================
@@ -189,6 +241,13 @@ export async function PATCH(
 
     // Non-blocking Supabase write
     saveConnectionToSupabase(connection).catch(() => {});
+
+    // Log activity for gamification when connection is accepted
+    if (action === "accept") {
+      // Both users get credit for the connection
+      logConnectionActivity(session.userId, params.connectionId, connection.requesterId);
+      logConnectionActivity(connection.requesterId, params.connectionId, session.userId);
+    }
 
     return NextResponse.json({
       success: true,

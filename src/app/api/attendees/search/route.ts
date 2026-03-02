@@ -240,12 +240,11 @@ function matchesFilters(
     if (!hasMatch) return false;
   }
 
-  // Interests filter (checks recharge activities, content preferences, fitness, and custom interests)
+  // Interests filter (checks recharge activities, energizers, and custom interests)
   if (filters.interests && filters.interests.length > 0) {
     const userInterests = [
       ...((responses.rechargeActivities as string[]) || []),
-      ...((responses.contentPreferences as string[]) || []),
-      ...((responses.fitnessActivities as string[]) || []),
+      ...((responses.energizers as string[]) || []),
       ...((responses.customInterests as string[]) || []).map(i => i.toLowerCase()),
     ];
     const hasMatch = filters.interests.some((i) => userInterests.includes(i));
@@ -283,12 +282,163 @@ function matchesKeywords(
     ...((responses.leadershipPriorities as string[]) || []),
     ...((responses.leadershipChallenges as string[]) || []),
     ...((responses.rechargeActivities as string[]) || []),
+    ...((responses.energizers as string[]) || []),
     ...((responses.leadershipPhilosophy as string[]) || []),
-    ...((responses.customInterests as string[]) || []), // Include custom interests in search
+    ...((responses.customInterests as string[]) || []),
   ].join(" ").toLowerCase();
 
   // Check if all search terms are found
   return searchTerms.every((term) => searchableText.includes(term));
+}
+
+// Fallback demo users when no data is seeded
+function getDemoUsers(currentResponses: Record<string, unknown>): AttendeeSearchResult[] {
+  const demoProfiles = [
+    {
+      id: "demo-sarah",
+      name: "Sarah Chen",
+      position: "VP Engineering",
+      title: "Engineering Leader",
+      company: "TechCorp",
+      location: "San Francisco, CA",
+      responses: {
+        industry: "technology",
+        leadershipLevel: "vp",
+        organizationSize: "1000-5000",
+        leadershipPriorities: ["innovation", "scaling", "talent-development"],
+        leadershipChallenges: ["talent-retention", "technical-debt", "scaling-culture"],
+        rechargeActivities: ["hiking", "reading", "cooking"],
+      },
+    },
+    {
+      id: "demo-marcus",
+      name: "Marcus Johnson",
+      position: "CEO",
+      title: "Chief Executive Officer",
+      company: "FinanceFlow",
+      location: "New York, NY",
+      responses: {
+        industry: "finance",
+        leadershipLevel: "c-suite",
+        organizationSize: "5000+",
+        leadershipPriorities: ["digital-transformation", "culture", "profitability"],
+        leadershipChallenges: ["digital-disruption", "regulatory-compliance"],
+        rechargeActivities: ["golf", "reading", "travel"],
+      },
+    },
+    {
+      id: "demo-elena",
+      name: "Elena Rodriguez",
+      position: "Founder & CEO",
+      title: "Healthcare Tech Innovator",
+      company: "MedConnect AI",
+      location: "Austin, TX",
+      responses: {
+        industry: "healthcare",
+        leadershipLevel: "founder",
+        organizationSize: "startup",
+        leadershipPriorities: ["innovation", "fundraising", "product-market-fit"],
+        leadershipChallenges: ["fundraising", "hiring", "work-life-balance"],
+        rechargeActivities: ["hiking", "painting", "meditation"],
+      },
+    },
+    {
+      id: "demo-david",
+      name: "David Park",
+      position: "Director of Strategy",
+      title: "Strategic Advisor",
+      company: "McKinsey & Company",
+      location: "Chicago, IL",
+      responses: {
+        industry: "consulting",
+        leadershipLevel: "director",
+        organizationSize: "5000+",
+        leadershipPriorities: ["mentoring", "culture", "client-impact"],
+        leadershipChallenges: ["talent-retention", "burnout"],
+        rechargeActivities: ["cooking", "wine-tasting", "photography", "gaming"],
+        customInterests: ["strategy games", "chess"],
+      },
+    },
+    {
+      id: "demo-priya",
+      name: "Priya Sharma",
+      position: "CTO",
+      title: "AI/ML Technology Leader",
+      company: "NeuralScale",
+      location: "Seattle, WA",
+      responses: {
+        industry: "technology",
+        leadershipLevel: "c-suite",
+        organizationSize: "50-200",
+        leadershipPriorities: ["innovation", "talent-development", "technical-excellence"],
+        leadershipChallenges: ["scaling-culture", "technical-debt", "hiring"],
+        rechargeActivities: ["reading", "gaming", "music"],
+        customInterests: ["board games", "VR gaming", "tech meetups"],
+      },
+    },
+    {
+      id: "demo-james",
+      name: "James Wilson",
+      position: "VP Sales",
+      title: "Revenue Leader",
+      company: "CloudScale Enterprise",
+      location: "Denver, CO",
+      responses: {
+        industry: "technology",
+        leadershipLevel: "vp",
+        organizationSize: "1000-5000",
+        leadershipPriorities: ["revenue-growth", "team-building", "customer-success"],
+        leadershipChallenges: ["market-competition", "sales-enablement"],
+        rechargeActivities: ["golf", "travel", "cooking"],
+      },
+    },
+    {
+      id: "demo-alex",
+      name: "Alex Rivera",
+      position: "Head of Product",
+      title: "Product Leader",
+      company: "GameStudio Interactive",
+      location: "Los Angeles, CA",
+      responses: {
+        industry: "media",
+        leadershipLevel: "director",
+        organizationSize: "200-500",
+        leadershipPriorities: ["innovation", "strategy", "culture"],
+        leadershipChallenges: ["hiring", "work-life-balance"],
+        rechargeActivities: ["gaming", "movies", "fitness"],
+        customInterests: ["esports", "game design", "streaming"],
+      },
+    },
+  ];
+
+  return demoProfiles.map((demo) => {
+    const { percentage, commonalities } = calculateMatchData(currentResponses, demo.responses);
+    
+    return {
+      user: {
+        id: demo.id,
+        profile: {
+          name: demo.name,
+          position: demo.position,
+          title: demo.title,
+          company: demo.company,
+          location: demo.location,
+        },
+        questionnaireCompleted: true,
+      },
+      matchPercentage: percentage || Math.floor(Math.random() * 30) + 40,
+      topCommonalities: commonalities.length > 0 ? commonalities : [
+        { category: "professional", description: "Leadership experience", weight: 0.8 },
+      ],
+      questionnaire: {
+        industry: demo.responses.industry,
+        leadershipLevel: demo.responses.leadershipLevel,
+        organizationSize: demo.responses.organizationSize,
+        leadershipPriorities: demo.responses.leadershipPriorities,
+        leadershipChallenges: demo.responses.leadershipChallenges,
+      },
+    };
+  });
 }
 
 export async function POST(request: NextRequest) {
@@ -421,6 +571,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // If still no results and no filters/keywords applied, provide demo users
+    if (results.length === 0 && (!filters || Object.keys(filters).length === 0) && (!keywords || keywords.trim() === "")) {
+      const demoUsers = getDemoUsers(currentResponses);
+      results.push(...demoUsers);
+    }
+
     // Sort results
     switch (sortBy) {
       case "match":
@@ -481,7 +637,7 @@ async function searchSupabaseUsers(
   if (!supabaseAdmin) return [];
 
   try {
-    // Build query
+    // Build query - exclude current user by both id and user_id
     let query = supabaseAdmin
       .from('user_profiles')
       .select('id, user_id, name, email, position, title, company, photo_url, location, questionnaire_data, questionnaire_completed')
@@ -489,9 +645,14 @@ async function searchSupabaseUsers(
       .neq('user_id', currentUserId)
       .not('name', 'is', null);
 
-    // Exclude current user by email too if available
+    // Exclude current user by email if available
     if (currentUserEmail) {
       query = query.neq('email', currentUserEmail.toLowerCase());
+    }
+    
+    // Also exclude by profile id if currentUserId looks like a UUID
+    if (currentUserId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+      query = query.neq('id', currentUserId);
     }
 
     const { data: profiles, error } = await query.limit(100);
@@ -609,12 +770,27 @@ export async function GET() {
       .find((q) => q.id === "leadershipPriorities")
       ?.options?.map((o) => ({ value: o.value, label: o.label, icon: o.icon })) || [],
     interests: [
-      ...(QUESTIONNAIRE_SECTIONS[2].questions
+      // Recharge activities from Section 1 (Goals & Interests)
+      ...(QUESTIONNAIRE_SECTIONS[1].questions
         .find((q) => q.id === "rechargeActivities")
-        ?.options?.map((o) => ({ value: o.value, label: o.label, icon: o.icon, category: "Activities" })) || []),
+        ?.options?.map((o) => ({ value: o.value, label: o.label, icon: o.icon, category: "How I Recharge" })) || []),
+      // Energizers from Section 2 (Your Style)  
       ...(QUESTIONNAIRE_SECTIONS[2].questions
-        .find((q) => q.id === "contentPreferences")
-        ?.options?.map((o) => ({ value: o.value, label: o.label, icon: o.icon, category: "Content" })) || []),
+        .find((q) => q.id === "energizers")
+        ?.options?.map((o) => ({ value: o.value, label: o.label, icon: o.icon, category: "What Energizes Me" })) || []),
+      // Additional common interests not in the questionnaire
+      { value: "golf", label: "Golf", icon: "⛳", category: "Sports" },
+      { value: "tennis", label: "Tennis", icon: "🎾", category: "Sports" },
+      { value: "yoga", label: "Yoga", icon: "🧘", category: "Wellness" },
+      { value: "wine-tasting", label: "Wine Tasting", icon: "🍷", category: "Culinary" },
+      { value: "photography", label: "Photography", icon: "📷", category: "Creative" },
+      { value: "hiking", label: "Hiking", icon: "🥾", category: "Outdoors" },
+      { value: "running", label: "Running", icon: "🏃", category: "Fitness" },
+      { value: "podcasts", label: "Podcasts", icon: "🎧", category: "Learning" },
+      { value: "art", label: "Art & Museums", icon: "🎨", category: "Culture" },
+      { value: "theater", label: "Theater", icon: "🎭", category: "Culture" },
+      { value: "board-games", label: "Board Games", icon: "🎲", category: "Social" },
+      { value: "mentoring", label: "Mentoring Others", icon: "👨‍🏫", category: "Giving Back" },
     ],
   };
 

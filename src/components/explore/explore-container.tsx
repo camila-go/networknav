@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { FilterSidebar } from "./filter-sidebar";
 import { AttendeeCard } from "./attendee-card";
@@ -148,7 +148,7 @@ export function ExploreContainer() {
             className="absolute inset-0 bg-black/70"
             onClick={() => setShowMobileFilters(false)}
           />
-          <aside className="absolute left-0 top-0 bottom-0 w-80 bg-gray-900 shadow-xl border-r border-white/10">
+          <aside className="absolute left-0 top-0 bottom-0 w-80 max-w-[85vw] bg-gray-900 shadow-xl border-r border-white/10">
             <div className="flex items-center justify-between p-4 border-b border-white/10">
               <h2 className="font-semibold text-white">Filters</h2>
               <Button
@@ -210,8 +210,8 @@ export function ExploreContainer() {
 
             {/* Sort select */}
             <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
-              <SelectTrigger className="w-36 flex-shrink-0 bg-white/5 border-white/20 text-white">
-                <SelectValue placeholder="Sort by" />
+              <SelectTrigger className="w-24 sm:w-36 flex-shrink-0 bg-white/5 border-white/20 text-white text-sm">
+                <SelectValue placeholder="Sort" />
               </SelectTrigger>
               <SelectContent className="bg-gray-900 border-white/20">
                 <SelectItem value="relevance" className="text-white hover:bg-white/10">Relevance</SelectItem>
@@ -323,11 +323,18 @@ export function ExploreContainer() {
                 {totalResults !== 1 ? "s" : ""}
               </p>
 
-              {/* Grid/List */}
+              {/* Mobile: Horizontal swipeable cards */}
+              <MobileCardSwiper 
+                results={results} 
+                onRequestMeeting={handleRequestMeeting} 
+              />
+
+              {/* Desktop: Grid/List */}
               <div
                 className={cn(
+                  "hidden sm:block",
                   viewMode === "grid"
-                    ? "grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4"
+                    ? "sm:grid sm:grid-cols-2 xl:grid-cols-3 gap-4"
                     : "space-y-4"
                 )}
               >
@@ -372,6 +379,80 @@ export function ExploreContainer() {
           )}
         </div>
       </main>
+    </div>
+  );
+}
+
+// Mobile swipeable cards component
+function MobileCardSwiper({ 
+  results, 
+  onRequestMeeting 
+}: { 
+  results: AttendeeSearchResult[]; 
+  onRequestMeeting: (userId: string) => void;
+}) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const handleScroll = () => {
+    if (!scrollRef.current) return;
+    const scrollLeft = scrollRef.current.scrollLeft;
+    const cardWidth = scrollRef.current.offsetWidth * 0.85 + 16;
+    const newIndex = Math.round(scrollLeft / cardWidth);
+    setActiveIndex(Math.min(newIndex, results.length - 1));
+  };
+
+  if (results.length === 0) return null;
+
+  return (
+    <div className="sm:hidden -mx-4 px-4">
+      {/* Card counter */}
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-sm font-medium text-white/70">
+          {activeIndex + 1} of {results.length}
+        </span>
+        <span className="text-xs text-white/40">Swipe to browse →</span>
+      </div>
+
+      <div 
+        ref={scrollRef}
+        onScroll={handleScroll}
+        className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-4 scrollbar-hide scroll-smooth"
+      >
+        {results.map((attendee) => (
+          <div
+            key={attendee.user.id}
+            className="flex-shrink-0 w-[85vw] max-w-[340px] snap-start"
+          >
+            <AttendeeCard
+              attendee={attendee}
+              onRequestMeeting={onRequestMeeting}
+            />
+          </div>
+        ))}
+      </div>
+
+      {/* Pagination dots */}
+      {results.length > 1 && results.length <= 10 && (
+        <div className="flex justify-center gap-1.5 mt-3">
+          {results.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => {
+                if (scrollRef.current) {
+                  const cardWidth = scrollRef.current.offsetWidth * 0.85 + 16;
+                  scrollRef.current.scrollTo({ left: cardWidth * index, behavior: 'smooth' });
+                }
+              }}
+              className={`h-1.5 rounded-full transition-all ${
+                index === activeIndex 
+                  ? 'w-6 bg-cyan-400' 
+                  : 'w-1.5 bg-white/30 hover:bg-white/50'
+              }`}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -5,10 +5,11 @@ import * as d3 from "d3";
 import type { NetworkGraphData, NetworkNode, NetworkEdge } from "@/types";
 
 interface NetworkGraphProps {
-  data: NetworkGraphData;
+  data: NetworkGraphData | null;
   onNodeClick?: (node: NetworkNode) => void;
   onNodeHover?: (node: NetworkNode | null) => void;
   filter?: "all" | "high-affinity" | "strategic";
+  selectedNodeId?: string;
   width?: number;
   height?: number;
 }
@@ -17,6 +18,7 @@ interface SimulationNode extends NetworkNode, d3.SimulationNodeDatum {}
 interface SimulationLink extends d3.SimulationLinkDatum<SimulationNode> {
   strength: number;
   commonalities: string[];
+  isDiscoverable?: boolean;
 }
 
 export function NetworkGraph({
@@ -24,13 +26,17 @@ export function NetworkGraph({
   onNodeClick,
   onNodeHover,
   filter = "all",
+  selectedNodeId: externalSelectedNodeId,
   width = 800,
   height = 600,
 }: NetworkGraphProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width, height });
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [internalSelectedNodeId, setInternalSelectedNodeId] = useState<string | null>(null);
+  
+  // Use external selectedNodeId if provided, otherwise use internal state
+  const selectedNodeId = externalSelectedNodeId ?? internalSelectedNodeId;
 
   // Update dimensions on resize
   useEffect(() => {
@@ -48,10 +54,11 @@ export function NetworkGraph({
 
   // Filter nodes and edges based on filter prop
   const filteredData = useCallback(() => {
+    if (!data) return { nodes: [], edges: [] };
     if (filter === "all") return data;
 
     const filteredNodes = data.nodes.filter(
-      (node) => node.matchType === "neutral" || node.matchType === filter
+      (node) => node.matchType === "neutral" || node.matchType === filter || node.matchType === "discoverable"
     );
     const nodeIds = new Set(filteredNodes.map((n) => n.id));
     const filteredEdges = data.edges.filter(
@@ -62,7 +69,7 @@ export function NetworkGraph({
   }, [data, filter]);
 
   useEffect(() => {
-    if (!svgRef.current || !data.nodes.length) return;
+    if (!svgRef.current || !data || !data.nodes.length) return;
 
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
@@ -72,11 +79,16 @@ export function NetworkGraph({
 
     // Clone data for D3 simulation
     const nodes: SimulationNode[] = rawNodes.map((n) => ({ ...n }));
+    
+    // Track which nodes are discoverable
+    const discoverableNodeIds = new Set(rawNodes.filter(n => n.matchType === "discoverable").map(n => n.id));
+    
     const links: SimulationLink[] = rawEdges.map((e) => ({
       source: e.source,
       target: e.target,
       strength: e.strength,
       commonalities: e.commonalities,
+      isDiscoverable: discoverableNodeIds.has(e.target as string) || discoverableNodeIds.has(e.source as string),
     }));
 
     // Create zoom behavior
@@ -118,6 +130,14 @@ export function NetworkGraph({
     neutralGradient.append("stop").attr("offset", "0%").attr("stop-color", "#0891b2");
     neutralGradient.append("stop").attr("offset", "100%").attr("stop-color", "#06b6d4");
 
+    // Discoverable gradient (purple - people you could meet)
+    const discoverableGradient = defs.append("linearGradient")
+      .attr("id", "discoverableGradient")
+      .attr("x1", "0%").attr("y1", "0%")
+      .attr("x2", "100%").attr("y2", "100%");
+    discoverableGradient.append("stop").attr("offset", "0%").attr("stop-color", "#8b5cf6");
+    discoverableGradient.append("stop").attr("offset", "100%").attr("stop-color", "#a78bfa");
+
     // Create force simulation
     const simulation = d3.forceSimulation<SimulationNode>(nodes)
       .force("link", d3.forceLink<SimulationNode, SimulationLink>(links)
@@ -135,8 +155,10 @@ export function NetworkGraph({
       .selectAll("line")
       .data(links)
       .join("line")
-      .attr("stroke", "rgba(255,255,255,0.15)")
-      .attr("stroke-width", (d) => Math.max(1, d.strength * 3));
+      .attr("stroke", (d) => d.isDiscoverable ? "#a78bfa" : "rgba(255,255,255,0.15)")
+      .attr("stroke-width", (d) => d.isDiscoverable ? 2 : Math.max(1, d.strength * 3))
+      .attr("stroke-dasharray", (d) => d.isDiscoverable ? "6,4" : "none")
+      .attr("opacity", (d) => d.isDiscoverable ? 0.7 : 1);
 
     // Draw nodes
     const node = g.append("g")
@@ -198,8 +220,9 @@ export function NetworkGraph({
       if (!clickedNode) {
         // Reset all to default
         link
-          .attr("stroke", "rgba(255,255,255,0.15)")
-          .attr("stroke-width", (d) => Math.max(1, d.strength * 3));
+          .attr("stroke", (d) => d.isDiscoverable ? "#a78bfa" : "rgba(255,255,255,0.15)")
+          .attr("stroke-width", (d) => d.isDiscoverable ? 2 : Math.max(1, d.strength * 3))
+          .attr("opacity", (d) => d.isDiscoverable ? 0.7 : 1);
         
         circles
           .attr("opacity", 1)
@@ -219,7 +242,8 @@ export function NetworkGraph({
           const sourceId = typeof l.source === 'object' ? (l.source as SimulationNode).id : l.source;
           const targetId = typeof l.target === 'object' ? (l.target as SimulationNode).id : l.target;
           if (sourceId === clickedNode.id || targetId === clickedNode.id) {
-            return "#22d3ee";
+            // Use purple for discoverable edges, cyan for regular
+            return l.isDiscoverable ? "#c4b5fd" : "#22d3ee";
           }
           return "rgba(255,255,255,0.05)";
         })
@@ -230,6 +254,14 @@ export function NetworkGraph({
             return Math.max(2, l.strength * 5);
           }
           return 1;
+        })
+        .attr("opacity", (l) => {
+          const sourceId = typeof l.source === 'object' ? (l.source as SimulationNode).id : l.source;
+          const targetId = typeof l.target === 'object' ? (l.target as SimulationNode).id : l.target;
+          if (sourceId === clickedNode.id || targetId === clickedNode.id) {
+            return 1;
+          }
+          return 0.3;
         });
 
       // Fade non-connected nodes
@@ -241,10 +273,12 @@ export function NetworkGraph({
         })
         .attr("stroke", (n) => {
           if (n.id === clickedNode.id) return "#22d3ee";
+          if (n.matchType === "discoverable" && connectedIds.has(n.id)) return "#c4b5fd";
           return "rgba(255,255,255,0.3)";
         })
         .attr("stroke-width", (n) => {
           if (n.id === clickedNode.id) return 3;
+          if (n.matchType === "discoverable" && connectedIds.has(n.id)) return 2;
           return 2;
         });
 
@@ -261,36 +295,17 @@ export function NetworkGraph({
       });
     }
 
-    // Hover effects - subtle scale only, no connection highlighting
+    // Click to select node
     node
-      .on("mouseenter", function (event, d) {
-        // Just slightly enlarge the hovered node
-        d3.select(this).select("circle")
-          .attr("r", getNodeRadius(d) + 3)
-          .attr("stroke", "#22d3ee")
-          .attr("stroke-width", 2.5);
-        
-        onNodeHover?.(d);
-      })
-      .on("mouseleave", function (event, d) {
-        // Reset to normal size (unless it's the selected node)
-        const isSelected = selectedNodeId === d.id;
-        d3.select(this).select("circle")
-          .attr("r", getNodeRadius(d))
-          .attr("stroke", isSelected ? "#22d3ee" : "rgba(255,255,255,0.3)")
-          .attr("stroke-width", isSelected ? 3 : 2);
-        
-        onNodeHover?.(null);
-      })
       .on("click", function (event, d) {
         event.stopPropagation();
         
         // Toggle selection
-        if (selectedNodeId === d.id) {
-          setSelectedNodeId(null);
+        if (internalSelectedNodeId === d.id) {
+          setInternalSelectedNodeId(null);
           highlightConnections(null);
         } else {
-          setSelectedNodeId(d.id);
+          setInternalSelectedNodeId(d.id);
           highlightConnections(d);
         }
         
@@ -299,7 +314,7 @@ export function NetworkGraph({
 
     // Click on background to deselect
     svg.on("click", () => {
-      setSelectedNodeId(null);
+      setInternalSelectedNodeId(null);
       highlightConnections(null);
     });
 
@@ -343,7 +358,7 @@ export function NetworkGraph({
     return () => {
       simulation.stop();
     };
-  }, [data, dimensions, filter, filteredData, onNodeClick, onNodeHover, selectedNodeId]);
+  }, [data, dimensions, filter, filteredData, onNodeClick, onNodeHover, internalSelectedNodeId, externalSelectedNodeId]);
 
   return (
     <div ref={containerRef} className="w-full h-full min-h-[400px] bg-gradient-to-br from-gray-950 via-gray-900 to-black rounded-xl overflow-hidden">
@@ -360,6 +375,7 @@ export function NetworkGraph({
 // Helper functions
 function getNodeRadius(node: NetworkNode): number {
   if (node.matchType === "neutral") return 30; // Center node
+  if (node.matchType === "discoverable") return 16; // Slightly smaller for discoverable
   return 18 + (node.commonalityCount || 0) * 3;
 }
 
@@ -369,6 +385,8 @@ function getNodeColor(node: NetworkNode): string {
       return "url(#highAffinityGradient)";
     case "strategic":
       return "url(#strategicGradient)";
+    case "discoverable":
+      return "url(#discoverableGradient)";
     default:
       return "url(#neutralGradient)";
   }

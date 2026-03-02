@@ -1,0 +1,2 @@
+ALTER TABLE user_gamification_stats 
+ADD COLUMN IF NOT EXISTS weekly_goal INTEGER NOT NULL DEFAULT 25;
