@@ -49,9 +49,19 @@ export function ChatWindow({
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const [isOtherTyping, setIsOtherTyping] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
   const { socket, isConnected } = useSocket();
+
+  // Get current user ID from cookie
+  useEffect(() => {
+    const deviceId = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("device_id="))
+      ?.split("=")[1];
+    setCurrentUserId(deviceId || null);
+  }, []);
 
   // Handle both existing conversation and new conversation
   const isNewConversation = !conversation && newConversation;
@@ -166,7 +176,25 @@ export function ChatWindow({
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
     
-    if (!newMessage.trim() || isSending) return;
+    console.log("[ChatWindow] handleSend called", {
+      newMessage: newMessage,
+      isSending: isSending,
+      isNewConversation: isNewConversation,
+      newConversation: newConversation,
+      connectionId: connectionId,
+    });
+    
+    if (!newMessage.trim() || isSending) {
+      console.log("[ChatWindow] Early return - empty message or already sending");
+      return;
+    }
+
+    // Check for self-messaging
+    const targetId = newConversation?.userId || otherUser?.id;
+    if (currentUserId && targetId && currentUserId === targetId) {
+      alert("You cannot message yourself.");
+      return;
+    }
 
     const messageContent = newMessage.trim();
     setIsSending(true);
@@ -180,9 +208,16 @@ export function ChatWindow({
 
         if (isNewConversation && newConversation) {
           body.targetUserId = newConversation.userId;
+          console.log("[ChatWindow] Sending to new user:", newConversation.userId);
         } else if (connectionId) {
           body.connectionId = connectionId;
+          console.log("[ChatWindow] Sending to existing connection:", connectionId);
+        } else {
+          console.error("[ChatWindow] No targetUserId or connectionId available");
+          return false;
         }
+
+        console.log("[ChatWindow] HTTP request body:", JSON.stringify(body));
 
         const response = await fetch("/api/messages", {
           method: "POST",
@@ -192,6 +227,7 @@ export function ChatWindow({
         });
 
         const result = await response.json();
+        console.log("[ChatWindow] HTTP response:", result);
 
         if (result.success) {
           setMessages((prev) => [...prev, result.data.message]);
@@ -200,6 +236,7 @@ export function ChatWindow({
           return true;
         } else {
           console.error("[ChatWindow] HTTP send failed:", result.error);
+          alert(`Send failed: ${result.error || "Unknown error"}`);
           return false;
         }
       } catch (error) {
@@ -257,16 +294,24 @@ export function ChatWindow({
     };
 
     try {
+      console.log("[ChatWindow] Send attempt - Socket connected:", isConnected, "isNewConversation:", isNewConversation);
+      
       // Try Socket.io first if connected, with HTTP fallback
       let success = false;
       
       if (socket && isConnected) {
+        console.log("[ChatWindow] Trying Socket.io...");
         success = await sendViaSocket();
+        console.log("[ChatWindow] Socket.io result:", success);
+      } else {
+        console.log("[ChatWindow] Socket not connected, skipping to HTTP");
       }
       
       // Fall back to HTTP if socket failed or not connected
       if (!success) {
+        console.log("[ChatWindow] Trying HTTP fallback...");
         success = await sendViaHttp();
+        console.log("[ChatWindow] HTTP result:", success);
       }
       
       if (!success) {
