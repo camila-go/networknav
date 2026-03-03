@@ -33,7 +33,10 @@ import {
   MessageSquare,
   Calendar,
   LogOut,
+  HelpCircle,
+  BookOpenCheck,
 } from "lucide-react";
+import { resetOnboarding } from "@/components/onboarding";
 import { MATCH_TYPE_STYLES } from "@/lib/badge-styles";
 
 interface UserInterests {
@@ -714,6 +717,60 @@ export default function ProfilePage() {
                   <LogOut className="h-4 w-4" />
                   Sign Out
                 </Button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Help & Support */}
+        <div className="rounded-xl bg-white/5 border border-white/10 overflow-hidden">
+          <button
+            onClick={() => toggleSection("help")}
+            className="w-full flex items-center justify-between p-6 hover:bg-white/5 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-cyan-500/20">
+                <HelpCircle className="h-5 w-5 text-cyan-400" />
+              </div>
+              <div className="text-left">
+                <h2 className="text-lg font-semibold text-white">Help & Support</h2>
+                <p className="text-sm text-white/50">Learn how to use Jynx</p>
+              </div>
+            </div>
+            {expandedSection === "help" ? (
+              <ChevronUp className="h-5 w-5 text-white/50" />
+            ) : (
+              <ChevronDown className="h-5 w-5 text-white/50" />
+            )}
+          </button>
+          
+          {expandedSection === "help" && (
+            <div className="px-6 pb-6 space-y-4 border-t border-white/10 pt-4">
+              <button
+                onClick={() => {
+                  resetOnboarding();
+                  window.location.reload();
+                }}
+                className="w-full flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <BookOpenCheck className="h-4 w-4 text-cyan-400" />
+                  <div className="text-left">
+                    <p className="text-sm font-medium text-white">View App Tour</p>
+                    <p className="text-xs text-white/50">Learn how matches, streaks, and badges work</p>
+                  </div>
+                </div>
+                <ChevronDown className="h-4 w-4 text-white/50 -rotate-90" />
+              </button>
+              <div className="flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors cursor-pointer">
+                <div className="flex items-center gap-3">
+                  <MessageSquare className="h-4 w-4 text-white/50" />
+                  <div>
+                    <p className="text-sm font-medium text-white">Contact Support</p>
+                    <p className="text-xs text-white/50">Get help from our team</p>
+                  </div>
+                </div>
+                <Badge variant="outline" className="text-xs text-white/50 border-white/20">Coming Soon</Badge>
               </div>
             </div>
           )}
