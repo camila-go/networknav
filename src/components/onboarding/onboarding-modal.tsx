@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { 
@@ -19,6 +20,7 @@ import {
 import { cn } from "@/lib/utils";
 
 const ONBOARDING_STORAGE_KEY = "jynx_onboarding_completed";
+const QUESTIONNAIRE_COMPLETED_KEY = "jynx_questionnaire_completed";
 
 interface OnboardingStep {
   id: string;
@@ -96,14 +98,25 @@ const steps: OnboardingStep[] = [
 export function OnboardingModal() {
   const [isOpen, setIsOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     const hasCompletedOnboarding = localStorage.getItem(ONBOARDING_STORAGE_KEY);
-    if (!hasCompletedOnboarding) {
+    const justCompletedQuestionnaire = searchParams.get("welcome") === "true";
+    const hasCompletedQuestionnaire = localStorage.getItem(QUESTIONNAIRE_COMPLETED_KEY);
+    
+    // Show onboarding if:
+    // 1. User hasn't seen onboarding before AND
+    // 2. User just completed questionnaire (from URL param) OR has completed it before
+    if (!hasCompletedOnboarding && (justCompletedQuestionnaire || hasCompletedQuestionnaire)) {
+      // Mark questionnaire as completed for future visits
+      if (justCompletedQuestionnaire) {
+        localStorage.setItem(QUESTIONNAIRE_COMPLETED_KEY, "true");
+      }
       const timer = setTimeout(() => setIsOpen(true), 500);
       return () => clearTimeout(timer);
     }
-  }, []);
+  }, [searchParams]);
 
   function handleNext() {
     if (currentStep < steps.length - 1) {
@@ -241,4 +254,5 @@ export function OnboardingModal() {
 
 export function resetOnboarding() {
   localStorage.removeItem(ONBOARDING_STORAGE_KEY);
+  localStorage.removeItem(QUESTIONNAIRE_COMPLETED_KEY);
 }

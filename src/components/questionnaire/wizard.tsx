@@ -86,8 +86,8 @@ export function QuestionnaireWizard() {
       // Clear the stored questionnaire state
       reset();
 
-      // Redirect to dashboard
-      router.push("/dashboard");
+      // Redirect to dashboard with welcome flag to trigger onboarding
+      router.push("/dashboard?welcome=true");
       router.refresh();
     } catch {
       toast({

@@ -3,6 +3,7 @@
 import { Suspense, useState, useCallback } from "react";
 import { MatchesGrid } from "@/components/dashboard/matches-grid";
 import { StatsCards } from "@/components/dashboard/stats-cards";
+import { OnboardingModal } from "@/components/onboarding";
 
 export default function DashboardPage() {
   const [matchStats, setMatchStats] = useState({ count: 0, avgScore: 0 });
@@ -13,6 +14,9 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
+      {/* Onboarding modal for new users */}
+      <OnboardingModal />
+
       {/* Welcome header */}
       <div>
         <h1 className="text-3xl font-display font-bold text-white">
