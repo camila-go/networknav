@@ -15,6 +15,32 @@ export const metadata = {
 };
 
 export default function RegisterPage() {
+  const ssoForce = process.env.SSO_FORCE === "true";
+
+  if (ssoForce) {
+    return (
+      <Card className="w-full max-w-md animate-fade-in summit-card border-white/10">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl font-display text-white">Account Registration</CardTitle>
+          <CardDescription className="text-white/60">
+            Accounts are created automatically through corporate SSO
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-center text-sm text-white/50">
+            <Link
+              href="/login"
+              className="text-cyan-400 hover:text-cyan-300 hover:underline font-medium"
+            >
+              Sign in with SSO
+            </Link>{" "}
+            to access the leadership network. Your account will be created on first login.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="w-full max-w-md animate-fade-in summit-card border-white/10">
       <CardHeader className="text-center">

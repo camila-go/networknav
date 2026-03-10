@@ -19,7 +19,8 @@ export const RATE_LIMITS = {
   'login': { maxRequests: 5, windowMs: 15 * 60 * 1000 }, // 5 per 15 minutes
   'register': { maxRequests: 3, windowMs: 60 * 60 * 1000 }, // 3 per hour
   'password-reset': { maxRequests: 3, windowMs: 60 * 60 * 1000 }, // 3 per hour
-  
+  'sso-callback': { maxRequests: 20, windowMs: 60 * 1000 }, // 20 per minute
+
   // Profile & data updates
   'update-profile': { maxRequests: 5, windowMs: 60 * 60 * 1000 }, // 5 per hour
   'questionnaire-save': { maxRequests: 30, windowMs: 60 * 60 * 1000 }, // 30 per hour

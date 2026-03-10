@@ -18,6 +18,7 @@ Intelligent networking platform for leadership conferences. Uses market basket a
 | Database / Auth    | Supabase (with RLS, raw client queries)            |
 | Schema docs        | Drizzle ORM 0.29 (schema only, not used for queries) |
 | Auth tokens        | JWT via jose + bcryptjs                             |
+| SSO                | SAML 2.0 via @node-saml/node-saml (SP mode)         |
 | Real-time          | Socket.io 4.7 (custom server via `server.ts`)      |
 | Visualization      | D3.js 7.9                                          |
 | Calendar           | Google APIs + Microsoft Graph / MSAL                |
@@ -53,7 +54,7 @@ src/
 │   ├── (auth)/              # Login, register (public routes)
 │   ├── (dashboard)/         # Dashboard, explore, messages, meetings, network, profile, user/[userId]
 │   ├── (onboarding)/        # Questionnaire wizard
-│   ├── api/                 # API routes (auth, calendar, connections, matches, matchmaking, meetings, messages, notifications, profiles, integrations, attendees/search, users/block|report, csrf)
+│   ├── api/                 # API routes (auth, auth/sso, calendar, connections, matches, matchmaking, meetings, messages, notifications, profiles, integrations, attendees/search, users/block|report, csrf)
 │   ├── layout.tsx           # Root layout (fonts, Toaster)
 │   └── globals.css
 ├── components/
@@ -74,6 +75,7 @@ src/
 │   ├── ai/                  # Provider abstraction: types.ts, provider-factory.ts, openai-provider.ts, vertex-provider.ts, embeddings.ts, matching.ts, generative.ts
 │   ├── auth/                # middleware.ts (route protection, session helpers)
 │   ├── auth.ts              # JWT, bcrypt, cookies, validation
+│   ├── saml/                # SAML SSO: config.ts, types.ts, provision.ts (JIT user provisioning)
 │   ├── cache.ts             # MemoryCache with TTL
 │   ├── integrations/        # google-meet.ts (Meet + Calendar read), microsoft-teams.ts (Teams + Outlook read)
 │   ├── matching/            # matching-service.ts, market-basket-analysis.ts
@@ -108,6 +110,21 @@ All database queries use the raw Supabase client (`supabaseAdmin.from()`). Drizz
 - `authenticateRequest()` in `src/lib/auth/middleware.ts` for API route protection
 - Falls back to `device_id` cookie for anonymous/demo usage
 - Password requirements: 8+ chars, uppercase, lowercase, number
+
+### SAML 2.0 SSO
+`src/lib/saml/` provides corporate SSO via SAML 2.0 (app acts as Service Provider):
+- **Library:** `@node-saml/node-saml` (standalone, no Passport.js dependency)
+- **Config:** `src/lib/saml/config.ts` — lazy-initialized singleton SAML instance from env vars
+- **Feature flags:** `SSO_ENABLED` (show SSO button), `SSO_FORCE` (hide email/password form)
+- **API routes:**
+  - `GET /api/auth/sso/metadata` — SP metadata XML (Entity ID + ACS URL); share with IdP team
+  - `GET /api/auth/sso/login` — SP-initiated login (redirects to IdP with AuthnRequest)
+  - `POST /api/auth/sso/callback` — ACS endpoint; validates assertion, JIT-provisions user, issues JWT cookies, redirects to `/onboarding` or `/dashboard`
+- **JIT provisioning** (`src/lib/saml/provision.ts`): auto-creates user on first SSO login using IdP attributes (email, name, title, company); follows dual-storage pattern (in-memory + Supabase); SSO users get an unknowable `passwordHash` (prefix `SAML_SSO:`) preventing password login
+- **Attribute mapping:** IdP's `title` attribute maps to both `title` and `position` fields in the app
+- **Attribute sync:** Returning SSO users get their name/title/company updated from IdP on each login
+- **Error handling:** Failed SAML assertions redirect to `/login?error=sso_failed` with error message
+- After assertion validation, the callback issues the **same JWT tokens** as the login route — all downstream code (API routes, Socket.io auth, dashboard gate) works unchanged
 
 ### AI Provider Abstraction
 `src/lib/ai/` uses a provider pattern for swappable AI backends:
@@ -154,7 +171,7 @@ All API routes return:
 
 ### Rate Limiting
 In-memory rate limiter in `src/lib/security/rateLimit.ts` with per-endpoint configs:
-- Login: 5/15min, Register: 3/hr, Messages: 50/hr, Meetings: 20/hr, Calendar reads: 60/hr
+- Login: 5/15min, Register: 3/hr, SSO callback: 20/min, Messages: 50/hr, Meetings: 20/hr, Calendar reads: 60/hr
 
 ## Code Conventions
 
@@ -214,6 +231,16 @@ GOOGLE_CLOUD_PROJECT=              # required when AI_PROVIDER=vertex
 GOOGLE_CLOUD_LOCATION=us-central1  # GCP region for Vertex AI
 GOOGLE_APPLICATION_CREDENTIALS=    # path to GCP service account key JSON
 
+# SAML SSO (optional)
+SSO_ENABLED=false                  # show SSO login button
+SSO_FORCE=false                    # hide email/password form (true in production)
+SAML_ENTRY_POINT=                  # IdP SSO URL
+SAML_ISSUER=                       # SP Entity ID (defaults to APP_URL/api/auth/sso/metadata)
+SAML_CALLBACK_URL=                 # ACS URL (defaults to APP_URL/api/auth/sso/callback)
+SAML_IDP_CERT=                     # IdP X.509 signing cert (PEM, base64, no headers)
+SAML_SP_CERT=                      # SP signing cert (PEM, optional)
+SAML_SP_KEY=                       # SP private key (PEM, optional)
+
 # Calendar Integrations (optional)
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
@@ -237,7 +264,7 @@ MICROSOFT_REDIRECT_URI=http://localhost:3000/api/integrations/microsoft/callback
 - **Framework:** Vitest with jsdom environment
 - **Utilities:** @testing-library/react, @testing-library/jest-dom
 - **Config:** `vitest.config.ts` (globals: true, `@` alias)
-- **Tests:** `src/__tests__/` and co-located `*.test.ts` files in `src/lib/` (564 tests across 33 files)
+- **Tests:** `src/__tests__/` and co-located `*.test.ts` files in `src/lib/` (574 tests across 34 files)
 - **Coverage:** V8 provider, HTML reports
 
 ## ESLint

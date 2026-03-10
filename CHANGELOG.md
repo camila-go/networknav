@@ -6,6 +6,14 @@ All notable changes to NetworkNav (Jynx) will be documented in this file.
 
 ### Added
 
+- **SAML 2.0 SSO integration** — corporate SSO via `@node-saml/node-saml` with SP-initiated and IdP-initiated flows; JIT user provisioning creates accounts from IdP attributes on first login (`src/lib/saml/`, `src/app/api/auth/sso/`)
+- SSO API routes: SP metadata endpoint (`GET /api/auth/sso/metadata`), login initiation (`GET /api/auth/sso/login`), and ACS callback (`POST /api/auth/sso/callback`)
+- SSO feature flags via `SSO_ENABLED` and `SSO_FORCE` env vars — `SSO_FORCE=true` hides email/password login and registration forms
+- "Sign in with Corporate SSO" button on login page with "or" divider when both auth methods are available
+- SSO error handling: failed SAML assertions redirect to login page with error message
+- Rate limiting for SSO callback endpoint (20 requests/min per IP) in `src/lib/security/rateLimit.ts`
+- 10 unit tests for SSO endpoints covering metadata generation, login redirect, JIT provisioning, attribute sync, deduplication, and rate limiting (`src/__tests__/api/sso.test.ts`)
+- SAML SSO environment variables documented in `.env.example`
 - `supabase/migrations/20260225_add_missing_tables.sql` — idempotent SQL script that creates the `connections` and `meeting_requests` tables; safe to re-run via `IF NOT EXISTS`
 - Dev seed endpoint (`POST /api/dev/seed`) — populates in-memory stores with 6 users, questionnaires, matches, connections, messages, meetings, and notifications for local testing
 - `.env.example` template with all environment variables grouped by category
