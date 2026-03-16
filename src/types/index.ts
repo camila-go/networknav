@@ -23,6 +23,7 @@ export interface UserProfile {
 
 export interface PublicUser {
   id: string;
+  email?: string;
   profile: UserProfile;
   questionnaireCompleted: boolean;
 }

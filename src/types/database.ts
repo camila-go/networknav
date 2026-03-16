@@ -46,6 +46,30 @@ export interface Database {
         Insert: ReportInsert;
         Update: ReportUpdate;
       };
+      user_gamification_stats: {
+        Row: UserGamificationStatsRow;
+        Insert: UserGamificationStatsInsert;
+        Update: UserGamificationStatsUpdate;
+        Relationships: [];
+      };
+      user_activity: {
+        Row: UserActivityRow;
+        Insert: UserActivityInsert;
+        Update: Record<string, never>;
+        Relationships: [];
+      };
+      user_badges: {
+        Row: UserBadgeRow;
+        Insert: UserBadgeInsert;
+        Update: UserBadgeUpdate;
+        Relationships: [];
+      };
+      user_streaks: {
+        Row: UserStreakRow;
+        Insert: UserStreakInsert;
+        Update: UserStreakUpdate;
+        Relationships: [];
+      };
     };
     Functions: {
       match_profiles: {
@@ -389,6 +413,153 @@ export interface MessageInsert {
 
 export interface MessageUpdate {
   read?: boolean;
+}
+
+// ============================================
+// Gamification Tables
+// ============================================
+
+export interface UserGamificationStatsRow {
+  id: string;
+  user_id: string;
+  total_points: number;
+  points_this_week: number;
+  points_this_month: number;
+  messages_sent: number;
+  meetings_scheduled: number;
+  connections_made: number;
+  intros_requested: number;
+  current_daily_streak: number;
+  current_weekly_streak: number;
+  longest_daily_streak: number;
+  longest_weekly_streak: number;
+  last_active_at: string | null;
+  weekly_goal: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UserGamificationStatsInsert {
+  id?: string;
+  user_id: string;
+  total_points?: number;
+  points_this_week?: number;
+  points_this_month?: number;
+  messages_sent?: number;
+  meetings_scheduled?: number;
+  connections_made?: number;
+  intros_requested?: number;
+  current_daily_streak?: number;
+  current_weekly_streak?: number;
+  longest_daily_streak?: number;
+  longest_weekly_streak?: number;
+  last_active_at?: string | null;
+  weekly_goal?: number | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface UserGamificationStatsUpdate {
+  total_points?: number;
+  points_this_week?: number;
+  points_this_month?: number;
+  messages_sent?: number;
+  meetings_scheduled?: number;
+  connections_made?: number;
+  intros_requested?: number;
+  current_daily_streak?: number;
+  current_weekly_streak?: number;
+  longest_daily_streak?: number;
+  longest_weekly_streak?: number;
+  last_active_at?: string | null;
+  weekly_goal?: number | null;
+  updated_at?: string;
+  [key: string]: unknown;
+}
+
+export interface UserActivityRow {
+  id: string;
+  user_id: string;
+  activity_type: string;
+  points_earned: number;
+  metadata: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface UserActivityInsert {
+  id?: string;
+  user_id: string;
+  activity_type: string;
+  points_earned: number;
+  metadata?: Record<string, unknown>;
+  created_at?: string;
+}
+
+export interface UserBadgeRow {
+  id: string;
+  user_id: string;
+  badge_type: string;
+  tier: string;
+  progress: number;
+  earned_at: string;
+  updated_at: string;
+}
+
+export interface UserBadgeInsert {
+  id?: string;
+  user_id: string;
+  badge_type: string;
+  tier: string;
+  progress?: number;
+  earned_at?: string;
+  updated_at?: string;
+}
+
+export interface UserBadgeUpdate {
+  tier?: string;
+  progress?: number;
+  updated_at?: string;
+}
+
+export interface UserStreakRow {
+  id: string;
+  user_id: string;
+  streak_type: string;
+  current_streak: number;
+  longest_streak: number;
+  last_activity_date: string | null;
+  week_start_date: string | null;
+  points_this_week: number;
+  streak_frozen_until: string | null;
+  freezes_used_this_week: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UserStreakInsert {
+  id?: string;
+  user_id: string;
+  streak_type: string;
+  current_streak?: number;
+  longest_streak?: number;
+  last_activity_date?: string | null;
+  week_start_date?: string | null;
+  points_this_week?: number;
+  streak_frozen_until?: string | null;
+  freezes_used_this_week?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface UserStreakUpdate {
+  current_streak?: number;
+  longest_streak?: number;
+  last_activity_date?: string | null;
+  week_start_date?: string | null;
+  points_this_week?: number;
+  streak_frozen_until?: string | null;
+  freezes_used_this_week?: number;
+  updated_at?: string;
 }
 
 // ============================================

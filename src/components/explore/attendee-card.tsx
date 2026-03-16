@@ -2,13 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Calendar, Sparkles, Zap, MessageCircle, X, ChevronDown, ChevronUp } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Calendar, Sparkles, Zap, MessageCircle, X, ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
+import { cn, teamsChartUrl, teamsMeetingUrl } from "@/lib/utils";
 import type { AttendeeSearchResult } from "@/types";
-import { MeetingRequestModal } from "@/components/meetings/meeting-request-modal";
 
 interface AttendeeCardProps {
   attendee: AttendeeSearchResult;
@@ -16,9 +14,7 @@ interface AttendeeCardProps {
   onPass?: (userId: string) => void;
 }
 
-export function AttendeeCard({ attendee, onRequestMeeting, onPass }: AttendeeCardProps) {
-  const router = useRouter();
-  const [showMeetingModal, setShowMeetingModal] = useState(false);
+export function AttendeeCard({ attendee, onPass }: AttendeeCardProps) {
   const [showAllCommonalities, setShowAllCommonalities] = useState(false);
   const { user, matchPercentage, topCommonalities } = attendee;
 
@@ -42,10 +38,6 @@ export function AttendeeCard({ attendee, onRequestMeeting, onPass }: AttendeeCar
     : `Would be great to connect and learn from each other`;
 
   const profileUrl = `/user/${user.id}`;
-
-  function handleMessage() {
-    router.push(`/messages?userId=${user.id}&name=${encodeURIComponent(user.profile.name)}`);
-  }
 
   return (
     <div className="overflow-hidden rounded-xl bg-white/5 border border-white/10 hover:border-white/20 transition-all duration-300">
@@ -180,30 +172,31 @@ export function AttendeeCard({ attendee, onRequestMeeting, onPass }: AttendeeCar
             Pass
           </button>
         )}
-        <button
-          onClick={handleMessage}
-          className="inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-sm font-medium text-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20 transition-colors"
-        >
-          <MessageCircle className="h-4 w-4" />
-          Message
-        </button>
-        <button
-          onClick={() => setShowMeetingModal(true)}
-          className="flex-1 inline-flex items-center justify-center gap-1 px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-cyan-500 to-teal-500 text-black hover:from-cyan-400 hover:to-teal-400 transition-colors"
-        >
-          <Calendar className="h-4 w-4" />
-          Meet
-        </button>
+        {user.email && (
+          <>
+            <a
+              href={teamsChartUrl(user.email)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-sm font-medium text-white/70 border border-white/10 hover:text-white hover:border-white/30 hover:bg-white/5 transition-colors"
+            >
+              <MessageCircle className="h-3.5 w-3.5" />
+              Chat
+              <ExternalLink className="h-3 w-3 opacity-60" />
+            </a>
+            <a
+              href={teamsMeetingUrl(user.email, `Meet with ${user.profile.name}`)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-sm font-medium text-white/70 border border-white/10 hover:text-white hover:border-white/30 hover:bg-white/5 transition-colors"
+            >
+              <Calendar className="h-3.5 w-3.5" />
+              Schedule
+              <ExternalLink className="h-3 w-3 opacity-60" />
+            </a>
+          </>
+        )}
       </div>
-
-      {/* Meeting Request Modal */}
-      <MeetingRequestModal
-        open={showMeetingModal}
-        onOpenChange={setShowMeetingModal}
-        recipient={user}
-        commonalities={topCommonalities}
-        onSuccess={() => onRequestMeeting?.(user.id)}
-      />
     </div>
   );
 }

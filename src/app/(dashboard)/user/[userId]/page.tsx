@@ -3,12 +3,11 @@
 import { useEffect, useState, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, MessageCircle, Sparkles, Zap, Briefcase, Building2, Calendar, Trophy, Activity, Users, Flame, TrendingUp, Search, X, Award, Heart, Dumbbell, BookOpen, Target, HandHeart } from "lucide-react";
+import { ArrowLeft, MessageCircle, Sparkles, Zap, Briefcase, Building2, Calendar, Trophy, Activity, Users, Flame, TrendingUp, Search, X, Award, Heart, Dumbbell, BookOpen, Target, HandHeart, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { cn } from "@/lib/utils";
-import { MeetingRequestModal } from "@/components/meetings/meeting-request-modal";
+import { cn, teamsChartUrl, teamsMeetingUrl } from "@/lib/utils";
 import { BadgeDisplay } from "@/components/gamification/badge-display";
 import type { UserBadge } from "@/types";
 
@@ -72,7 +71,7 @@ export default function UserProfilePage() {
   const [userConnections, setUserConnections] = useState<UserConnection[]>([]);
   const [isActiveThisWeek, setIsActiveThisWeek] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [showMeetingModal, setShowMeetingModal] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
   const [isOwnProfile, setIsOwnProfile] = useState(false);
   const [connectionSearch, setConnectionSearch] = useState("");
   const [connectionFilter, setConnectionFilter] = useState<"all" | "high-affinity" | "strategic">("all");
@@ -140,6 +139,7 @@ export default function UserProfilePage() {
 
           if (match) {
             setProfile(match.matchedUser.profile);
+            if (match.matchedUser.email) setUserEmail(match.matchedUser.email);
             setMatchData({
               id: match.id,
               type: match.type,
@@ -158,6 +158,7 @@ export default function UserProfilePage() {
                   ...directProfileData.data.user.profile,
                   position: directProfileData.data.user.profile.position || directProfileData.data.user.profile.title,
                 });
+                if (directProfileData.data.user.email) setUserEmail(directProfileData.data.user.email);
               }
             } catch (err) {
               console.error("Failed to fetch direct profile:", err);
@@ -168,12 +169,13 @@ export default function UserProfilePage() {
           try {
             const directProfileRes = await fetch(`/api/profile?userId=${userId}`);
             const directProfileData = await directProfileRes.json();
-            
+
             if (directProfileData.success && directProfileData.data?.user?.profile) {
               setProfile({
                 ...directProfileData.data.user.profile,
                 position: directProfileData.data.user.profile.position || directProfileData.data.user.profile.title,
               });
+              if (directProfileData.data.user.email) setUserEmail(directProfileData.data.user.email);
             }
           } catch (err) {
             console.error("Failed to fetch direct profile:", err);
@@ -236,10 +238,6 @@ export default function UserProfilePage() {
 
     fetchData();
   }, [userId]);
-
-  function handleMessage() {
-    router.push(`/messages?userId=${userId}&name=${encodeURIComponent(profile?.name || '')}`);
-  }
 
   function getInitials(name: string) {
     return name
@@ -369,23 +367,28 @@ export default function UserProfilePage() {
           </div>
 
           {/* Action buttons - hide on own profile */}
-          {!isOwnProfile && (
+          {!isOwnProfile && userEmail && (
             <div className="flex flex-row sm:flex-col gap-2 w-full sm:w-auto">
-              <Button 
-                onClick={handleMessage} 
-                variant="outline"
-                className="gap-2 flex-1 sm:flex-initial border-white/20 text-white hover:bg-white/10"
+              <a
+                href={teamsChartUrl(userEmail)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white/70 border border-white/20 hover:text-white hover:border-white/40 hover:bg-white/5 transition-colors"
               >
                 <MessageCircle className="h-4 w-4" />
-                Message
-              </Button>
-              <Button 
-                onClick={() => setShowMeetingModal(true)}
-                className="gap-2 flex-1 sm:flex-initial bg-gradient-to-r from-cyan-500 to-teal-500 text-black hover:from-cyan-400 hover:to-teal-400"
+                Chat
+                <ExternalLink className="h-3 w-3 opacity-60" />
+              </a>
+              <a
+                href={teamsMeetingUrl(userEmail, `Meet with ${profile?.name || ''}`)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white/70 border border-white/20 hover:text-white hover:border-white/40 hover:bg-white/5 transition-colors"
               >
                 <Calendar className="h-4 w-4" />
-                Meet
-              </Button>
+                Schedule
+                <ExternalLink className="h-3 w-3 opacity-60" />
+              </a>
             </div>
           )}
         </div>
@@ -774,45 +777,31 @@ export default function UserProfilePage() {
       )}
 
       {/* Quick action footer - hide on own profile */}
-      {!isOwnProfile && (
+      {!isOwnProfile && userEmail && (
         <div className="rounded-xl bg-white/5 border border-white/10 p-4">
           <div className="flex gap-2">
-            <button
-              onClick={handleMessage}
-              className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium text-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20 transition-colors"
+            <a
+              href={teamsChartUrl(userEmail)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium text-white/70 border border-white/10 hover:text-white hover:border-white/30 hover:bg-white/5 transition-colors"
             >
               <MessageCircle className="h-4 w-4" />
-              Message
-            </button>
-            <button
-              onClick={() => setShowMeetingModal(true)}
-              className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium bg-gradient-to-r from-cyan-500 to-teal-500 text-black hover:from-cyan-400 hover:to-teal-400 transition-colors"
+              Chat in Teams
+              <ExternalLink className="h-3.5 w-3.5 opacity-60" />
+            </a>
+            <a
+              href={teamsMeetingUrl(userEmail, `Meet with ${profile?.name || ''}`)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium text-white/70 border border-white/10 hover:text-white hover:border-white/30 hover:bg-white/5 transition-colors"
             >
               <Calendar className="h-4 w-4" />
-              Schedule Meeting
-            </button>
+              Schedule in Teams
+              <ExternalLink className="h-3.5 w-3.5 opacity-60" />
+            </a>
           </div>
         </div>
-      )}
-
-      {/* Meeting Modal */}
-      {profile && (
-        <MeetingRequestModal
-          open={showMeetingModal}
-          onOpenChange={setShowMeetingModal}
-          recipient={{
-            id: userId,
-            profile: {
-              name: profile.name,
-              position: profile.position,
-              title: profile.title,
-              company: profile.company,
-            },
-            questionnaireCompleted: true,
-          }}
-          commonalities={matchData?.commonalities || []}
-          conversationStarters={matchData?.conversationStarters || []}
-        />
       )}
     </div>
   );

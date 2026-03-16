@@ -19,6 +19,7 @@ import {
 
 interface UserWithResponses {
   id: string;
+  email?: string;
   profile: PublicUser["profile"];
   responses: Partial<QuestionnaireData>;
 }
@@ -174,6 +175,7 @@ function createMatch(userId: string, candidate: MatchCandidate): Match {
     matchedUserId: candidate.user.id,
     matchedUser: {
       id: candidate.user.id,
+      email: candidate.user.email,
       profile: candidate.user.profile,
       questionnaireCompleted: true,
     },

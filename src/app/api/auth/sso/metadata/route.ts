@@ -1,11 +1,14 @@
 import { NextResponse } from "next/server";
-import { getSaml, getSpCert, isSsoEnabled } from "@/lib/saml/config";
+import { generateSpMetadataXml, isSsoEnabled } from "@/lib/saml/config";
 
 /**
  * GET /api/auth/sso/metadata
  *
  * Returns SAML SP metadata XML. Share this with the IdP team so they
  * can configure the SP connection on their side.
+ *
+ * This endpoint works without IdP configuration (SAML_ENTRY_POINT /
+ * SAML_IDP_CERT) so metadata can be exchanged before the IdP is set up.
  */
 export async function GET() {
   if (!isSsoEnabled()) {
@@ -16,13 +19,7 @@ export async function GET() {
   }
 
   try {
-    const saml = getSaml();
-    const spCert = getSpCert();
-
-    const metadata = saml.generateServiceProviderMetadata(
-      null, // decryption cert (not needed unless encrypted assertions)
-      spCert ?? null // signing cert
-    );
+    const metadata = generateSpMetadataXml();
 
     return new NextResponse(metadata, {
       status: 200,

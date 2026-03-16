@@ -57,6 +57,49 @@ export function getSaml(): SAML {
   return samlInstance;
 }
 
+/**
+ * Generate SP metadata XML without requiring IdP config.
+ * This allows sharing metadata with the IdP team before they provide
+ * their entry point and signing certificate.
+ */
+export function generateSpMetadataXml(): string {
+  const entityId =
+    process.env.SAML_ISSUER || `${APP_URL}/api/auth/sso/metadata`;
+  const acsUrl =
+    process.env.SAML_CALLBACK_URL || `${APP_URL}/api/auth/sso/callback`;
+  const spCert = getSpCert();
+
+  let keyDescriptor = "";
+  if (spCert) {
+    const certBody = spCert
+      .replace(/-----BEGIN CERTIFICATE-----/g, "")
+      .replace(/-----END CERTIFICATE-----/g, "")
+      .replace(/\s+/g, "");
+    keyDescriptor = `
+    <KeyDescriptor use="signing">
+      <ds:KeyInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+        <ds:X509Data>
+          <ds:X509Certificate>${certBody}</ds:X509Certificate>
+        </ds:X509Data>
+      </ds:KeyInfo>
+    </KeyDescriptor>`;
+  }
+
+  return `<?xml version="1.0"?>
+<EntityDescriptor xmlns="urn:oasis:names:tc:SAML:2.0:metadata"
+                  entityID="${entityId}">
+  <SPSSODescriptor AuthnRequestsSigned="${spCert ? "true" : "false"}"
+                   WantAssertionsSigned="true"
+                   protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">${keyDescriptor}
+    <NameIDFormat>urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress</NameIDFormat>
+    <AssertionConsumerService index="1"
+                              isDefault="true"
+                              Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
+                              Location="${acsUrl}" />
+  </SPSSODescriptor>
+</EntityDescriptor>`;
+}
+
 /** Get the SP signing certificate (PEM) if configured, for metadata generation */
 export function getSpCert(): string | undefined {
   return process.env.SAML_SP_CERT || undefined;

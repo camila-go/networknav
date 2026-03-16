@@ -545,6 +545,7 @@ export async function POST(request: NextRequest) {
 
         const publicUser: PublicUser = {
           id: user.id,
+          email: user.email,
           profile: {
             name: user.name,
             position: user.position,
@@ -705,6 +706,7 @@ async function searchSupabaseUsers(
       results.push({
         user: {
           id: profile.id,
+          email: profile.email || undefined,
           profile: {
             name: profile.name!,
             position: profile.position || '',

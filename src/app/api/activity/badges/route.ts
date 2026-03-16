@@ -15,41 +15,49 @@ function generateDemoBadges(userId: string): UserBadge[] {
   if (seed % 3 !== 0) {
     demoBadges.push({
       id: `demo-badge-1-${userId}`,
+      userId,
       badgeType: "conversation_starter",
       tier: seed % 5 === 0 ? "gold" : seed % 3 === 0 ? "silver" : "bronze",
+      progress: 100,
       earnedAt: new Date(now.getTime() - (seed % 30) * 24 * 60 * 60 * 1000),
       updatedAt: new Date(now.getTime() - (seed % 7) * 24 * 60 * 60 * 1000),
     });
   }
-  
+
   // Networking Streak badge
   if (seed % 4 !== 0) {
     demoBadges.push({
       id: `demo-badge-2-${userId}`,
+      userId,
       badgeType: "networking_streak",
       tier: seed % 7 === 0 ? "gold" : seed % 2 === 0 ? "silver" : "bronze",
+      progress: 100,
       earnedAt: new Date(now.getTime() - (seed % 20) * 24 * 60 * 60 * 1000),
       updatedAt: new Date(now.getTime() - (seed % 5) * 24 * 60 * 60 * 1000),
     });
   }
-  
+
   // Super Connector badge (less common)
   if (seed % 5 === 0) {
     demoBadges.push({
       id: `demo-badge-3-${userId}`,
+      userId,
       badgeType: "super_connector",
       tier: seed % 10 === 0 ? "gold" : "silver",
+      progress: 100,
       earnedAt: new Date(now.getTime() - (seed % 15) * 24 * 60 * 60 * 1000),
       updatedAt: new Date(now.getTime() - (seed % 3) * 24 * 60 * 60 * 1000),
     });
   }
-  
+
   // Weekly Warrior badge
   if (seed % 6 !== 0) {
     demoBadges.push({
       id: `demo-badge-4-${userId}`,
+      userId,
       badgeType: "weekly_warrior",
       tier: seed % 8 === 0 ? "gold" : seed % 4 === 0 ? "silver" : "bronze",
+      progress: 100,
       earnedAt: new Date(now.getTime() - (seed % 10) * 24 * 60 * 60 * 1000),
       updatedAt: new Date(now.getTime() - (seed % 2) * 24 * 60 * 60 * 1000),
     });

@@ -2,21 +2,20 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import type { MatchWithUser } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Sparkles,
   Zap,
-  Calendar,
   X,
   ChevronDown,
   ChevronUp,
   MessageCircle,
+  Calendar,
+  ExternalLink,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { MeetingRequestModal } from "@/components/meetings/meeting-request-modal";
+import { cn, teamsChartUrl, teamsMeetingUrl } from "@/lib/utils";
 
 interface MatchCardProps {
   match: MatchWithUser;
@@ -24,9 +23,7 @@ interface MatchCardProps {
 }
 
 export function MatchCard({ match, onPass }: MatchCardProps) {
-  const router = useRouter();
   const [showAllCommonalities, setShowAllCommonalities] = useState(false);
-  const [showMeetingModal, setShowMeetingModal] = useState(false);
   const { matchedUser, type, commonalities, conversationStarters, score } = match;
 
   const displayedCommonalities = showAllCommonalities
@@ -40,14 +37,6 @@ export function MatchCard({ match, onPass }: MatchCardProps) {
     .toUpperCase();
 
   const profileUrl = `/user/${match.matchedUserId}`;
-
-  function handleMessage() {
-    router.push(`/messages?userId=${match.matchedUserId}&name=${encodeURIComponent(matchedUser.profile.name)}`);
-  }
-
-  function handleRequestMeeting() {
-    setShowMeetingModal(true);
-  }
 
   return (
     <div className="overflow-hidden rounded-xl bg-white/5 border border-white/10 hover:border-white/20 transition-all duration-300">
@@ -180,30 +169,31 @@ export function MatchCard({ match, onPass }: MatchCardProps) {
           <X className="h-4 w-4" />
           Pass
         </button>
-        <button
-          onClick={handleMessage}
-          className="inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-sm font-medium text-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20 transition-colors"
-        >
-          <MessageCircle className="h-4 w-4" />
-          Message
-        </button>
-        <button
-          onClick={handleRequestMeeting}
-          className="flex-1 inline-flex items-center justify-center gap-1 px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-cyan-500 to-teal-500 text-black hover:from-cyan-400 hover:to-teal-400 transition-colors"
-        >
-          <Calendar className="h-4 w-4" />
-          Meet
-        </button>
+        {matchedUser.email && (
+          <>
+            <a
+              href={teamsChartUrl(matchedUser.email)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-sm font-medium text-white/70 border border-white/10 hover:text-white hover:border-white/30 hover:bg-white/5 transition-colors"
+            >
+              <MessageCircle className="h-3.5 w-3.5" />
+              Chat
+              <ExternalLink className="h-3 w-3 opacity-60" />
+            </a>
+            <a
+              href={teamsMeetingUrl(matchedUser.email, `Meet with ${matchedUser.profile.name}`)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-sm font-medium text-white/70 border border-white/10 hover:text-white hover:border-white/30 hover:bg-white/5 transition-colors"
+            >
+              <Calendar className="h-3.5 w-3.5" />
+              Schedule
+              <ExternalLink className="h-3 w-3 opacity-60" />
+            </a>
+          </>
+        )}
       </div>
-
-      {/* Meeting Request Modal */}
-      <MeetingRequestModal
-        open={showMeetingModal}
-        onOpenChange={setShowMeetingModal}
-        recipient={matchedUser}
-        commonalities={commonalities}
-        conversationStarters={conversationStarters}
-      />
     </div>
   );
 }

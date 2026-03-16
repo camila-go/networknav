@@ -43,3 +43,13 @@ export function truncate(str: string, length: number): string {
   return str.slice(0, length) + "...";
 }
 
+export function teamsChartUrl(email: string): string {
+  return `https://teams.microsoft.com/l/chat/0/0?users=${encodeURIComponent(email)}`;
+}
+
+export function teamsMeetingUrl(email: string, subject?: string): string {
+  const params = new URLSearchParams({ attendees: email });
+  if (subject) params.set("subject", subject);
+  return `https://teams.microsoft.com/l/meeting/new?${params.toString()}`;
+}
+

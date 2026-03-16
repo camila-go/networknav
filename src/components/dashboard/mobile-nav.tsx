@@ -2,15 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Sparkles, Search, Network, Calendar, MessageCircle, User } from "lucide-react";
+import { Sparkles, Search, Network, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/dashboard", label: "Matches", icon: Sparkles },
   { href: "/explore", label: "Explore", icon: Search },
   { href: "/network", label: "Network", icon: Network },
-  { href: "/meetings", label: "Meetings", icon: Calendar },
-  { href: "/messages", label: "Messages", icon: MessageCircle },
   { href: "/profile", label: "Profile", icon: User },
 ];
 

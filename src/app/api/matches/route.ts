@@ -161,6 +161,7 @@ async function generateMatchesForUser(
 
     candidates.push({
       id: user.id,
+      email: email,
       profile: {
         name: user.name,
         position: user.position,
@@ -332,6 +333,7 @@ async function generateMatchesFromSupabase(currentUserId: string, currentUserEma
         matchedUserId: profile.id,
         matchedUser: {
           id: profile.id,
+          email: profile.email,
           profile: {
             name: profile.name || 'Anonymous',
             position: profile.position || '',

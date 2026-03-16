@@ -5,6 +5,16 @@ All notable changes to NetworkNav (Jynx) will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- Microsoft Teams deep link helpers `teamsChartUrl()` and `teamsMeetingUrl()` in `src/lib/utils.ts` for constructing org-aware Teams chat and meeting URLs
+- `email` field (optional) added to `PublicUser` type; populated from Supabase and in-memory stores in the matches and attendee search APIs so Teams links can be constructed client-side
+
+### Changed
+- Removed **Messages** and **Meetings** nav items from desktop and mobile navigation (`src/components/dashboard/nav.tsx`, `src/components/dashboard/mobile-nav.tsx`); underlying pages and API routes are preserved but no longer linked
+- Match cards (`src/components/dashboard/match-card.tsx`): replaced in-app "Message" and "Meet" CTAs with subtle "Chat ↗" and "Schedule ↗" buttons that open Microsoft Teams chat and new meeting deep links; `MeetingRequestModal` no longer rendered here
+- Explore attendee cards (`src/components/explore/attendee-card.tsx`): same replacement — Teams deep link buttons instead of in-app message/meeting CTAs; `MeetingRequestModal` no longer rendered here
+- User profile page (`src/app/(dashboard)/user/[userId]/page.tsx`): replaced "Message" and "Schedule Meeting" buttons (header + quick action footer) with Teams "Chat in Teams" and "Schedule in Teams" links; `MeetingRequestModal` removed from this page
+
+
 
 - **SAML 2.0 SSO integration** — corporate SSO via `@node-saml/node-saml` with SP-initiated and IdP-initiated flows; JIT user provisioning creates accounts from IdP attributes on first login (`src/lib/saml/`, `src/app/api/auth/sso/`)
 - SSO API routes: SP metadata endpoint (`GET /api/auth/sso/metadata`), login initiation (`GET /api/auth/sso/login`), and ACS callback (`POST /api/auth/sso/callback`)
