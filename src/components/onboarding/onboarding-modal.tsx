@@ -146,21 +146,13 @@ export function OnboardingModal() {
   const isLastStep = currentStep === steps.length - 1;
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) handleSkip(); }}>
       <DialogContent className="sm:max-w-lg bg-black border border-white/10 p-0 overflow-hidden">
         {/* Header with gradient */}
         <div className={cn(
           "relative p-8 pb-12 bg-gradient-to-br text-white",
           step.gradient
         )}>
-          {/* Skip button */}
-          <button
-            onClick={handleSkip}
-            className="absolute top-4 right-4 text-white/70 hover:text-white text-sm transition-colors"
-          >
-            Skip
-          </button>
-
           {/* Icon */}
           <div className="flex justify-center mb-4">
             <div className="p-4 rounded-full bg-white/20 backdrop-blur-sm">

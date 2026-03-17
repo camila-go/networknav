@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth";
 import { users, questionnaireResponses, userMatches } from "@/lib/stores";
 import { cookies } from "next/headers";
 import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
+import { cache, CACHE_KEYS, CACHE_TTLS } from "@/lib/cache";
 import type { NetworkGraphData, NetworkNode, NetworkEdge, NetworkCluster, MatchType } from "@/types";
 
 // Demo user data for the network
@@ -193,13 +194,14 @@ function generateNetworkData(userId: string): NetworkGraphData {
     });
   }
 
-  // Get matches for the user
-  const matches = userMatches.get(userId) || [];
+  // Get top 80 matches by score — keeps graph performant and legible at 300+ attendees
+  const matches = (userMatches.get(userId) || [])
+    .filter(m => !m.passed)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 80);
 
   // Add nodes from matches
   for (const match of matches) {
-    if (match.passed) continue;
-
     const matchType: MatchType = match.type;
     const commonalityDescriptions = match.commonalities.map(c => c.description);
 
@@ -359,6 +361,13 @@ export async function GET(request: NextRequest) {
 
     const currentUserId = session?.userId || deviceId || "demo-user";
 
+    // Return cached response if available (10-min TTL per CACHE_TTLS.NETWORK_DATA)
+    const cacheKey = CACHE_KEYS.NETWORK_DATA(currentUserId);
+    const cached = cache.get<{ network: NetworkGraphData; insights: object; extendedNetwork: object }>(cacheKey);
+    if (cached) {
+      return NextResponse.json({ success: true, data: cached });
+    }
+
     // Ensure extended network demo users exist in the users store
     ensureExtendedNetworkUsersExist();
 
@@ -499,13 +508,12 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    const responseData = { network: networkData, insights, extendedNetwork };
+    cache.set(cacheKey, responseData, CACHE_TTLS.NETWORK_DATA);
+
     return NextResponse.json({
       success: true,
-      data: {
-        network: networkData,
-        insights,
-        extendedNetwork,
-      },
+      data: responseData,
     });
   } catch (error) {
     console.error("Network data error:", error);
