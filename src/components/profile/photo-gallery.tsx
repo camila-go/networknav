@@ -15,7 +15,7 @@ interface PhotoGalleryProps {
 }
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-const MAX_SIZE = 5 * 1024 * 1024;
+const MAX_SIZE = 4 * 1024 * 1024;
 const MAX_PHOTOS = 12;
 
 export function PhotoGallery({ userId, isOwner, withContainer = false, containerClassName }: PhotoGalleryProps) {
@@ -80,7 +80,7 @@ export function PhotoGallery({ userId, isOwner, withContainer = false, container
       return;
     }
     if (file.size > MAX_SIZE) {
-      setUploadError("File too large. Maximum size is 5 MB.");
+      setUploadError("File too large. Maximum size is 4 MB.");
       e.target.value = "";
       return;
     }

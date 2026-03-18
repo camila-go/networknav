@@ -5,7 +5,7 @@ import { checkRateLimit } from "@/lib/security/rateLimit";
 import type { UserPhoto } from "@/types";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
+const MAX_SIZE = 4 * 1024 * 1024; // 4 MB (below Vercel's ~4.5 MB serverless body limit)
 const MAX_PHOTOS = 12;
 
 function rowToUserPhoto(row: {
@@ -137,7 +137,7 @@ export async function POST(request: NextRequest) {
 
     if (file.size > MAX_SIZE) {
       return NextResponse.json(
-        { success: false, error: "File too large. Maximum size is 5 MB." },
+        { success: false, error: "File too large. Maximum size is 4 MB." },
         { status: 400 }
       );
     }

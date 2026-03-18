@@ -82,8 +82,8 @@ export function ProfileForm() {
       setAvatarError("Invalid file type. Use JPG, PNG, WebP, or GIF.");
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      setAvatarError("File too large. Maximum size is 5 MB.");
+    if (file.size > 4 * 1024 * 1024) {
+      setAvatarError("File too large. Maximum size is 4 MB.");
       return;
     }
 
@@ -236,7 +236,7 @@ export function ProfileForm() {
           {avatarError && (
             <p className="text-xs text-red-400">{avatarError}</p>
           )}
-          <p className="text-xs text-white/40">JPG, PNG, WebP or GIF · max 5 MB</p>
+          <p className="text-xs text-white/40">JPG, PNG, WebP or GIF · max 4 MB</p>
         </div>
       </div>
 

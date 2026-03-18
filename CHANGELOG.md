@@ -4,8 +4,12 @@ All notable changes to NetworkNav (Jynx) will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+- Fix 413 Payload Too Large on avatar upload: reduced max file size from 5 MB to 4 MB (stays within Vercel's ~4.5 MB serverless body limit), added `experimental.serverActions.bodySizeLimit: '5mb'` to `next.config.js`, updated client-side validation to match
+- Fix 500 on user photo gallery: added `user_photos` table migration (`supabase/migrations/20260318_add_user_photos_table.sql`) with RLS policies; updated `SUPABASE_SETUP.md` with table setup, storage bucket creation instructions, and migration reference
+
 ### Added
-- Profile picture upload: replaced photo URL text input in profile form with a file picker that validates (JPG/PNG/WebP/GIF, max 5 MB), shows a live preview with upload spinner, and stores the Supabase Storage public URL in `users.photo_url` (`src/components/profile/profile-form.tsx`, `src/app/api/profile/avatar/route.ts`)
+- Profile picture upload: replaced photo URL text input in profile form with a file picker that validates (JPG/PNG/WebP/GIF, max 4 MB), shows a live preview with upload spinner, and stores the Supabase Storage public URL in `users.photo_url` (`src/components/profile/profile-form.tsx`, `src/app/api/profile/avatar/route.ts`)
 - Photo gallery: users can upload up to 12 photos per profile, reorder via up/down arrows, add/edit captions inline, and delete with a confirm step; displayed as a grid on own profile and other users' public profiles with a lightbox modal (keyboard-navigable) for full-size viewing (`src/components/profile/photo-gallery.tsx`, `src/app/api/profile/photos/route.ts`, `src/app/api/profile/photos/[photoId]/route.ts`, `src/app/api/users/[userId]/photos/route.ts`)
 - `user_photos` table: `id, user_id, storage_key, url, caption, display_order, created_at` (UUID PK, CASCADE delete on user); Drizzle schema docs in `src/db/schema.ts`, DB types in `src/types/database.ts`, domain type `UserPhoto` in `src/types/index.ts`
 - Rate limit entries `upload-avatar` (10/hr) and `upload-gallery-photo` (20/hr) in `src/lib/security/rateLimit.ts`

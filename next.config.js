@@ -5,6 +5,11 @@ const nextConfig = {
     // do not block the conference deployment; runtime behavior is correct
     ignoreBuildErrors: true,
   },
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "5mb",
+    },
+  },
   images: {
     formats: ["image/avif", "image/webp"],
     remotePatterns: [
