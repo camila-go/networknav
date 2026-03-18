@@ -101,9 +101,11 @@ describe("MatchCard", () => {
     expect(screen.getByText("Both enjoy hiking")).toBeInTheDocument();
   });
 
-  it("should render conversation starters", () => {
-    render(<MatchCard match={createMatch()} onPass={mockOnPass} onConnect={mockOnConnect} />);
-    expect(screen.getByText("I'd love to hear how you scaled your engineering team")).toBeInTheDocument();
+  it("should render personalized conversation starters", () => {
+    render(<MatchCard match={createMatch()} onPass={mockOnPass} viewerFirstName="Alex" />);
+    expect(screen.getByText("💬 Conversation starters")).toBeInTheDocument();
+    const section = screen.getByText("💬 Conversation starters").closest("div");
+    expect(section?.textContent).toMatch(/Sarah|Technology|hiking|leadership|TechCorp|VP/i);
   });
 
   it("should show expand button when more than 3 commonalities", async () => {

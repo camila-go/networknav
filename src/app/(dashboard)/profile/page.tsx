@@ -12,13 +12,8 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 import {
   Users,
-  Sparkles,
   Zap,
   Heart,
-  Dumbbell,
-  BookOpen,
-  Target,
-  HandHeart,
   Settings,
   Shield,
   Bell,
@@ -39,6 +34,10 @@ import {
 } from "lucide-react";
 import { resetOnboarding } from "@/components/onboarding";
 import { MATCH_TYPE_STYLES } from "@/lib/badge-styles";
+import {
+  InterestChipsPanel,
+  hasProfileInterestContent,
+} from "@/components/profile/interest-chips-panel";
 
 interface UserInterests {
   rechargeActivities: string[];
@@ -83,6 +82,8 @@ export default function ProfilePage() {
   const [connectionSearch, setConnectionSearch] = useState("");
   const [showAllConnections, setShowAllConnections] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [profileQuestionnaireCompleted, setProfileQuestionnaireCompleted] =
+    useState(true);
   
   // Settings state
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
@@ -128,8 +129,11 @@ export default function ProfilePage() {
           activityRes.json(),
         ]);
 
-        if (interestsData.success) {
+        if (interestsData.success && interestsData.data) {
           setInterests(interestsData.data.interests);
+          setProfileQuestionnaireCompleted(
+            !!interestsData.data.questionnaireCompleted
+          );
         }
         if (badgesData.success) {
           setBadges(badgesData.badges || []);
@@ -340,146 +344,39 @@ export default function ProfilePage() {
           )}
         </div>
 
-        {/* Interests */}
-        {interests && (
-          <div className="rounded-xl bg-white/5 border border-white/10 p-6">
-            <h2 className="text-xs font-semibold text-white/50 uppercase tracking-wider flex items-center gap-2 mb-4">
-              <Heart className="h-4 w-4 text-pink-400" />
+        {interests && hasProfileInterestContent(interests) && (
+          <InterestChipsPanel
+            interests={interests}
+            title="Your Interests & Passions"
+            variant="profile"
+          />
+        )}
+        {interests && !hasProfileInterestContent(interests) && (
+          <div className="rounded-xl border border-dashed border-white/15 bg-white/[0.03] p-6">
+            <h2 className="text-xs font-semibold text-white/50 uppercase tracking-wider mb-3">
               Your Interests & Passions
             </h2>
-            
-            <div className="space-y-4">
-              {interests.rechargeActivities.length > 0 && (
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Sparkles className="h-3.5 w-3.5 text-violet-400" />
-                    <span className="text-xs font-medium text-white/60">How I Recharge</span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {interests.rechargeActivities.map((activity, i) => (
-                      <span 
-                        key={i}
-                        className="px-3 py-1.5 text-xs font-medium bg-gradient-to-r from-violet-500/20 to-purple-500/20 text-violet-300 rounded-full border border-violet-500/30"
-                      >
-                        {activity}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {interests.fitnessActivities.length > 0 && (
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Dumbbell className="h-3.5 w-3.5 text-emerald-400" />
-                    <span className="text-xs font-medium text-white/60">Fitness & Wellness</span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {interests.fitnessActivities.map((activity, i) => (
-                      <span 
-                        key={i}
-                        className="px-3 py-1.5 text-xs font-medium bg-gradient-to-r from-emerald-500/20 to-green-500/20 text-emerald-300 rounded-full border border-emerald-500/30"
-                      >
-                        {activity}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {interests.contentPreferences.length > 0 && (
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <BookOpen className="h-3.5 w-3.5 text-blue-400" />
-                    <span className="text-xs font-medium text-white/60">What I'm Learning</span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {interests.contentPreferences.map((pref, i) => (
-                      <span 
-                        key={i}
-                        className="px-3 py-1.5 text-xs font-medium bg-gradient-to-r from-blue-500/20 to-cyan-500/20 text-blue-300 rounded-full border border-blue-500/30"
-                      >
-                        {pref}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {interests.volunteerCauses.length > 0 && (
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <HandHeart className="h-3.5 w-3.5 text-rose-400" />
-                    <span className="text-xs font-medium text-white/60">Causes I Care About</span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {interests.volunteerCauses.map((cause, i) => (
-                      <span 
-                        key={i}
-                        className="px-3 py-1.5 text-xs font-medium bg-gradient-to-r from-rose-500/20 to-pink-500/20 text-rose-300 rounded-full border border-rose-500/30"
-                      >
-                        {cause}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {interests.leadershipPriorities.length > 0 && (
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Target className="h-3.5 w-3.5 text-amber-400" />
-                    <span className="text-xs font-medium text-white/60">Leadership Focus</span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {interests.leadershipPriorities.map((priority, i) => (
-                      <span 
-                        key={i}
-                        className="px-3 py-1.5 text-xs font-medium bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-300 rounded-full border border-amber-500/30"
-                      >
-                        {priority}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {interests.customInterests.length > 0 && (
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Heart className="h-3.5 w-3.5 text-pink-400" />
-                    <span className="text-xs font-medium text-white/60">Other Interests</span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {interests.customInterests.map((interest, i) => (
-                      <span 
-                        key={i}
-                        className="px-3 py-1.5 text-xs font-medium bg-gradient-to-r from-pink-500/20 to-rose-500/20 text-pink-300 rounded-full border border-pink-500/30"
-                      >
-                        {interest}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {interests.idealWeekend && (
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Sparkles className="h-3.5 w-3.5 text-cyan-400" />
-                    <span className="text-xs font-medium text-white/60">Ideal Weekend</span>
-                  </div>
-                  <p className="text-sm text-white/80 bg-white/5 rounded-lg p-3 border border-white/10">
-                    {interests.idealWeekend}
-                  </p>
-                </div>
-              )}
-            </div>
+            <p className="text-sm text-white/55 mb-4">
+              {profileQuestionnaireCompleted
+                ? "Your questionnaire doesn’t include interest answers yet. Update it to show chips here and improve matches."
+                : "Complete the questionnaire to add your interests — they’ll appear as chips others can explore."}
+            </p>
+            <Link
+              href="/onboarding"
+              className="text-sm font-medium text-cyan-400 hover:text-cyan-300"
+            >
+              {profileQuestionnaireCompleted
+                ? "Update questionnaire →"
+                : "Complete questionnaire →"}
+            </Link>
           </div>
         )}
 
         {/* Questionnaire */}
-        <div className="rounded-xl bg-white/5 border border-white/10 p-6">
+        <div
+          id="questionnaire"
+          className="rounded-xl bg-white/5 border border-white/10 p-6"
+        >
           <div className="mb-4">
             <h2 className="text-lg font-semibold text-white">Questionnaire Responses</h2>
             <p className="text-sm text-white/50">

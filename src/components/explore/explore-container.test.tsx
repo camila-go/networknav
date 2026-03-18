@@ -23,6 +23,10 @@ vi.mock("next/navigation", () => ({
   }),
 }));
 
+vi.mock("./explore-feed-tab", () => ({
+  ExploreFeedTab: () => <div data-testid="explore-feed-tab">Feed</div>,
+}));
+
 // Mock FilterSidebar
 vi.mock("./filter-sidebar", () => ({
   FilterSidebar: ({
@@ -121,16 +125,19 @@ describe("ExploreContainer", () => {
     });
   });
 
-  it("should display loading state", () => {
+  it("should display loading state", async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     global.fetch = vi.fn().mockReturnValue(new Promise(() => {}));
     render(<ExploreContainer />);
-    // The Loader2 spinner is rendered during loading — it's an SVG with animate-spin
+    await switchToSearchTab(user);
     const loader = document.querySelector(".animate-spin");
     expect(loader).toBeInTheDocument();
   });
 
   it("should render search results", async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     render(<ExploreContainer />);
+    await switchToSearchTab(user);
 
     await waitFor(() => {
       expect(screen.getByTestId("attendee-user-1")).toBeInTheDocument();
@@ -141,7 +148,9 @@ describe("ExploreContainer", () => {
   });
 
   it("should show result count", async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     render(<ExploreContainer />);
+    await switchToSearchTab(user);
 
     await waitFor(() => {
       expect(screen.getByText(/showing 2 of 2 attendees/i)).toBeInTheDocument();
@@ -149,8 +158,10 @@ describe("ExploreContainer", () => {
   });
 
   it("should show empty state when no results", async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     global.fetch = mockSearchFetch([], 0);
     render(<ExploreContainer />);
+    await switchToSearchTab(user);
 
     await waitFor(() => {
       expect(screen.getByText(/no attendees found/i)).toBeInTheDocument();
@@ -164,6 +175,8 @@ describe("ExploreContainer", () => {
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledTimes(1);
     });
+
+    await switchToSearchTab(user);
 
     const searchInput = screen.getByPlaceholderText(/search by name/i);
     await user.type(searchInput, "alice");
@@ -180,6 +193,7 @@ describe("ExploreContainer", () => {
   it("should navigate when requesting meeting", async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     render(<ExploreContainer />);
+    await switchToSearchTab(user);
 
     await waitFor(() => {
       expect(screen.getByTestId("attendee-user-1")).toBeInTheDocument();
@@ -194,6 +208,7 @@ describe("ExploreContainer", () => {
   it("should show toast when saving search", async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     render(<ExploreContainer />);
+    await switchToSearchTab(user);
 
     await waitFor(() => {
       expect(screen.getByTestId("filter-sidebar")).toBeInTheDocument();
@@ -221,8 +236,10 @@ describe("ExploreContainer", () => {
   });
 
   it("should show pagination when results exceed page size", async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     global.fetch = mockSearchFetch(mockResults, 25, true);
     render(<ExploreContainer />);
+    await switchToSearchTab(user);
 
     await waitFor(() => {
       expect(screen.getByText(/page 1 of/i)).toBeInTheDocument();
@@ -235,6 +252,7 @@ describe("ExploreContainer", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     global.fetch = mockSearchFetch(mockResults, 25, true);
     render(<ExploreContainer />);
+    await switchToSearchTab(user);
 
     await waitFor(() => {
       expect(screen.getByText(/next/i)).toBeEnabled();
@@ -254,6 +272,7 @@ describe("ExploreContainer", () => {
   it("should toggle view mode between grid and list", async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     render(<ExploreContainer />);
+    await switchToSearchTab(user);
 
     await waitFor(() => {
       expect(screen.getByTestId("attendee-user-1")).toBeInTheDocument();

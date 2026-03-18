@@ -331,6 +331,8 @@ export interface AttendeeSearchResult {
   matchPercentage: number;
   topCommonalities: Commonality[];
   questionnaire?: Partial<QuestionnaireData>;
+  /** Human-readable interests that matched the search keywords (explore search) */
+  searchMatchLabels?: string[];
 }
 
 // ============================================
@@ -342,6 +344,8 @@ export interface NetworkNode {
   name: string;
   title: string;
   company?: string;
+  /** For Teams meeting deep link */
+  email?: string | null;
   matchType: MatchType | "neutral" | "discoverable";
   commonalityCount: number;
   commonalities: string[];
@@ -419,14 +423,16 @@ export type ActivityType =
   | "message_sent"
   | "meeting_scheduled"
   | "connection_made"
-  | "intro_requested";
+  | "intro_requested"
+  | "explore_pass";
 
 export type BadgeType =
   | "conversation_starter"
   | "super_connector"
   | "meeting_master"
   | "networking_streak"
-  | "weekly_warrior";
+  | "weekly_warrior"
+  | "thoughtful_curator";
 
 export type BadgeTier = "bronze" | "silver" | "gold";
 
@@ -537,6 +543,7 @@ export const POINT_VALUES: Record<ActivityType, number> = {
   meeting_scheduled: 25,
   connection_made: 15,
   intro_requested: 10,
+  explore_pass: 2,
 };
 
 export const BADGE_DEFINITIONS: BadgeDefinition[] = [
@@ -593,6 +600,17 @@ export const BADGE_DEFINITIONS: BadgeDefinition[] = [
       bronze: { requirement: 4, description: "4-week streak" },
       silver: { requirement: 12, description: "12-week streak" },
       gold: { requirement: 52, description: "52-week streak" },
+    },
+  },
+  {
+    type: "thoughtful_curator",
+    name: "Thoughtful Curator",
+    description: "Use Pass to focus on the best-fit connections",
+    icon: "Filter",
+    tiers: {
+      bronze: { requirement: 5, description: "Pass 5 profiles" },
+      silver: { requirement: 25, description: "Pass 25 profiles" },
+      gold: { requirement: 100, description: "Pass 100 profiles" },
     },
   },
 ];

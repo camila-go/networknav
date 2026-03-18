@@ -14,6 +14,7 @@ const BADGE_REQUIREMENTS: Record<BadgeType, Record<BadgeTier, number>> = {
   meeting_master: { bronze: 3, silver: 10, gold: 25 },
   networking_streak: { bronze: 7, silver: 30, gold: 90 },
   weekly_warrior: { bronze: 4, silver: 12, gold: 52 },
+  thoughtful_curator: { bronze: 5, silver: 25, gold: 100 },
 };
 
 // Map activity types to badge types
@@ -42,6 +43,7 @@ interface StatsRow {
   meetings_scheduled: number;
   connections_made: number;
   intros_requested: number;
+  explore_passes?: number;
   current_daily_streak: number;
   current_weekly_streak: number;
   longest_daily_streak: number;
@@ -105,7 +107,7 @@ export async function checkAndAwardBadges(
   // Get current stats
   const { data: statsData, error: statsError } = await supabaseAdmin
     .from("user_gamification_stats")
-    .select("messages_sent, meetings_scheduled, connections_made, intros_requested, current_daily_streak, current_weekly_streak, longest_daily_streak, longest_weekly_streak")
+    .select("messages_sent, meetings_scheduled, connections_made, intros_requested, explore_passes, current_daily_streak, current_weekly_streak, longest_daily_streak, longest_weekly_streak")
     .eq("user_id", userId)
     .single();
 
@@ -127,6 +129,7 @@ export async function checkAndAwardBadges(
     { type: "meeting_master", progress: stats.meetings_scheduled },
     { type: "networking_streak", progress: stats.longest_daily_streak },
     { type: "weekly_warrior", progress: stats.longest_weekly_streak },
+    { type: "thoughtful_curator", progress: stats.explore_passes ?? 0 },
   ];
 
   for (const check of badgeChecks) {
@@ -215,7 +218,7 @@ export async function getBadgeProgress(userId: string): Promise<BadgeProgress[]>
   // Get stats
   const { data: statsData } = await supabaseAdmin
     .from("user_gamification_stats")
-    .select("messages_sent, meetings_scheduled, connections_made, longest_daily_streak, longest_weekly_streak")
+    .select("messages_sent, meetings_scheduled, connections_made, explore_passes, longest_daily_streak, longest_weekly_streak")
     .eq("user_id", userId)
     .single();
 
@@ -223,6 +226,7 @@ export async function getBadgeProgress(userId: string): Promise<BadgeProgress[]>
     messages_sent: 0,
     meetings_scheduled: 0,
     connections_made: 0,
+    explore_passes: 0,
     longest_daily_streak: 0,
     longest_weekly_streak: 0,
   };
@@ -236,6 +240,7 @@ export async function getBadgeProgress(userId: string): Promise<BadgeProgress[]>
     meeting_master: stats.meetings_scheduled,
     networking_streak: stats.longest_daily_streak,
     weekly_warrior: stats.longest_weekly_streak,
+    thoughtful_curator: stats.explore_passes ?? 0,
   };
 
   const badgeInfo: Record<BadgeType, { name: string; description: string; icon: string }> = {
@@ -263,6 +268,11 @@ export async function getBadgeProgress(userId: string): Promise<BadgeProgress[]>
       name: "Weekly Warrior",
       description: "Hit your weekly networking goals",
       icon: "Trophy",
+    },
+    thoughtful_curator: {
+      name: "Thoughtful Curator",
+      description: "Pass on profiles to stay focused on great fits",
+      icon: "Filter",
     },
   };
 

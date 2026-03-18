@@ -1,6 +1,6 @@
 "use client";
 
-import { MessageCircle, Users, Calendar, Share2 } from "lucide-react";
+import { MessageCircle, Users, Calendar, Share2, UserX } from "lucide-react";
 import type { UserActivity, ActivityType } from "@/types";
 import { cn } from "@/lib/utils";
 
@@ -38,6 +38,12 @@ const ACTIVITY_CONFIG: Record<ActivityType, {
     label: "Requested an intro",
     color: "text-amber-400",
     bgColor: "bg-amber-500/20",
+  },
+  explore_pass: {
+    icon: <UserX className="h-3.5 w-3.5" />,
+    label: "Passed on a profile",
+    color: "text-slate-400",
+    bgColor: "bg-slate-500/20",
   },
 };
 

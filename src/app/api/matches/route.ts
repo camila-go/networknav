@@ -7,42 +7,6 @@ import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
 import { generateConversationStartersAI } from "@/lib/ai/generative";
 import type { Match, QuestionnaireData } from "@/types";
 
-/**
- * Generate personable, natural-sounding conversation starters for meeting invites
- */
-function generatePersonableStarters(
-  firstName?: string,
-  company?: string,
-  position?: string,
-  matchType?: string
-): string[] {
-  const name = firstName || "you";
-  const starters: string[] = [];
-  
-  // Role-based starters that feel like genuine curiosity
-  if (position && company) {
-    starters.push(`I'd love to hear what ${name}'s working on at ${company}`);
-  } else if (company) {
-    starters.push(`Curious to learn more about what you're building at ${company}`);
-  } else if (position) {
-    starters.push(`Would love to hear about your journey as a ${position}`);
-  }
-  
-  // Match type-specific additions
-  if (matchType === 'high-affinity') {
-    starters.push(`Sounds like we have a lot in common — excited to connect!`);
-  } else {
-    starters.push(`I think we'd have interesting perspectives to share`);
-  }
-  
-  // Warm, general fallback
-  if (starters.length < 2) {
-    starters.push(`Looking forward to meeting and learning from each other`);
-  }
-  
-  return starters.slice(0, 2);
-}
-
 export async function GET(request: NextRequest) {
   try {
     const session = await getSession();
@@ -238,15 +202,25 @@ async function generateMatchesFromSupabase(currentUserId: string, currentUserEma
     
     // Fetch current user's questionnaire data for real MBA scoring
     let currentUserQuestionnaire: Partial<QuestionnaireData> | null = null;
+    let currentViewerFirstName: string | undefined;
     if (currentUserSupabaseId) {
       const { data: currentProfile } = await supabaseAdmin
         .from('user_profiles')
-        .select('questionnaire_data')
+        .select('questionnaire_data, name')
         .eq('id', currentUserSupabaseId)
         .single();
       if (currentProfile) {
-        currentUserQuestionnaire = (currentProfile as { questionnaire_data?: Record<string, unknown> }).questionnaire_data as Partial<QuestionnaireData> ?? null;
+        const row = currentProfile as {
+          questionnaire_data?: Record<string, unknown>;
+          name?: string;
+        };
+        currentUserQuestionnaire =
+          (row.questionnaire_data as Partial<QuestionnaireData>) ?? null;
+        currentViewerFirstName = row.name?.trim().split(/\s+/)[0];
       }
+    }
+    if (!currentViewerFirstName && currentUserEmail && !currentUserEmail.includes("@jynx.demo")) {
+      currentViewerFirstName = currentUserEmail.split("@")[0]?.replace(/[._]/g, " ");
     }
 
     // Fetch all users from Supabase
@@ -345,7 +319,12 @@ async function generateMatchesFromSupabase(currentUserId: string, currentUserEma
         },
         type,
         commonalities,
-        conversationStarters: generateConversationStarters(commonalities, type, firstName),
+        conversationStarters: generateConversationStarters(commonalities, type, firstName, {
+          theirPosition: profile.position || profile.title,
+          theirCompany: profile.company,
+          viewerFirstName: currentViewerFirstName,
+          seed: `${currentUserId}-${profile.id}`,
+        }),
         score,
         generatedAt: now,
         viewed: false,
@@ -353,13 +332,13 @@ async function generateMatchesFromSupabase(currentUserId: string, currentUserEma
       };
     });
 
-    // Try AI-generated conversation starters (runs in parallel for all matches)
+    // Optional AI layer: merge with template starters so lines stay varied even when AI is generic
     try {
       const aiStarterResults = await Promise.all(
         matches.map((match) =>
           generateConversationStartersAI({
-            userName: 'you',
-            matchName: match.matchedUser.profile.name.split(' ')[0] || 'them',
+            userName: currentViewerFirstName || "there",
+            matchName: match.matchedUser.profile.name.split(" ")[0] || "them",
             matchType: match.type,
             commonalities: match.commonalities.map((c) => c.description),
             matchPosition: match.matchedUser.profile.position,
@@ -369,12 +348,16 @@ async function generateMatchesFromSupabase(currentUserId: string, currentUserEma
       );
       for (let i = 0; i < matches.length; i++) {
         const aiStarters = aiStarterResults[i];
-        if (aiStarters) {
-          matches[i].conversationStarters = aiStarters;
+        const base = matches[i].conversationStarters;
+        if (aiStarters?.length) {
+          const merged = [...aiStarters.slice(0, 2), ...base].filter(
+            (s, idx, arr) => s && arr.findIndex((x) => x.toLowerCase().slice(0, 40) === s.toLowerCase().slice(0, 40)) === idx
+          );
+          matches[i].conversationStarters = merged.slice(0, 3);
         }
       }
     } catch {
-      // AI starters failed — algorithmic ones already in place
+      // keep template starters
     }
 
     // Final safety filter - remove any matches where the matched user is the current user

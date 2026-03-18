@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { questionnaireResponses, users } from "@/lib/stores";
 import { cookies } from "next/headers";
+import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
 
 interface UserInterests {
   rechargeActivities: string[];
@@ -14,64 +15,47 @@ interface UserInterests {
   networkingGoals: string[];
 }
 
-// Demo interests for users without questionnaire data
-const DEMO_INTERESTS_POOL = {
-  rechargeActivities: [
-    "Reading", "Meditation", "Hiking", "Travel", "Cooking", "Photography",
-    "Music", "Podcasts", "Gardening", "Art", "Writing", "Gaming"
-  ],
-  fitnessActivities: [
-    "Running", "Yoga", "Weightlifting", "Swimming", "Cycling", "Tennis",
-    "Golf", "CrossFit", "Pilates", "Hiking", "Basketball", "Soccer"
-  ],
-  volunteerCauses: [
-    "Education", "Environment", "Healthcare", "Youth mentorship", "Animal welfare",
-    "Homelessness", "Arts & culture", "Technology access", "Food security"
-  ],
-  contentPreferences: [
-    "Business podcasts", "Tech blogs", "Leadership books", "Industry news",
-    "TED Talks", "Online courses", "Newsletters", "Research papers"
-  ],
-  leadershipPriorities: [
-    "Team development", "Innovation", "Culture building", "Strategic growth",
-    "Operational excellence", "Customer focus", "Digital transformation"
-  ],
-  networkingGoals: [
-    "Find mentors", "Learn from peers", "Explore partnerships", "Career growth",
-    "Industry insights", "Build community", "Share knowledge"
-  ],
-  idealWeekends: [
-    "Exploring new hiking trails and enjoying nature",
-    "Quality time with family and catching up on reading",
-    "Working on side projects and learning new skills",
-    "Traveling to new places and experiencing different cultures",
-    "Hosting friends for dinner and good conversations",
-    "Attending local events and discovering new restaurants"
-  ]
-};
-
-function generateDemoInterests(userId: string): UserInterests {
-  // Use userId to create deterministic but varied interests
-  const seed = userId.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
-  
-  const pickRandom = (arr: string[], count: number, offset: number = 0): string[] => {
-    const shuffled = [...arr].sort((a, b) => {
-      const aHash = (a.charCodeAt(0) + seed + offset) % 100;
-      const bHash = (b.charCodeAt(0) + seed + offset) % 100;
-      return aHash - bHash;
-    });
-    return shuffled.slice(0, count);
+function emptyInterests(): UserInterests {
+  return {
+    rechargeActivities: [],
+    fitnessActivities: [],
+    volunteerCauses: [],
+    contentPreferences: [],
+    customInterests: [],
+    idealWeekend: null,
+    leadershipPriorities: [],
+    networkingGoals: [],
   };
+}
+
+/** Map stored questionnaire JSON to profile interest chips (questionnaire answers only). */
+function interestsFromQuestionnaireData(
+  data: Record<string, unknown> | null | undefined
+): UserInterests {
+  if (!data || typeof data !== "object") {
+    return emptyInterests();
+  }
+  const strings = (key: string): string[] => {
+    const v = data[key];
+    if (!Array.isArray(v)) return [];
+    return v
+      .filter((x): x is string => typeof x === "string" && x.trim().length > 0)
+      .map((x) => x.trim());
+  };
+  const ideal =
+    typeof data.idealWeekend === "string" && data.idealWeekend.trim()
+      ? data.idealWeekend.trim()
+      : null;
 
   return {
-    rechargeActivities: pickRandom(DEMO_INTERESTS_POOL.rechargeActivities, 3 + (seed % 3), 1),
-    fitnessActivities: pickRandom(DEMO_INTERESTS_POOL.fitnessActivities, 2 + (seed % 2), 2),
-    volunteerCauses: pickRandom(DEMO_INTERESTS_POOL.volunteerCauses, 2 + (seed % 2), 3),
-    contentPreferences: pickRandom(DEMO_INTERESTS_POOL.contentPreferences, 2 + (seed % 3), 4),
-    customInterests: [],
-    idealWeekend: DEMO_INTERESTS_POOL.idealWeekends[seed % DEMO_INTERESTS_POOL.idealWeekends.length],
-    leadershipPriorities: pickRandom(DEMO_INTERESTS_POOL.leadershipPriorities, 2 + (seed % 2), 5),
-    networkingGoals: pickRandom(DEMO_INTERESTS_POOL.networkingGoals, 2 + (seed % 2), 6),
+    rechargeActivities: strings("rechargeActivities"),
+    fitnessActivities: strings("fitnessActivities"),
+    volunteerCauses: strings("volunteerCauses"),
+    contentPreferences: strings("contentPreferences"),
+    customInterests: strings("customInterests"),
+    idealWeekend: ideal,
+    leadershipPriorities: strings("leadershipPriorities"),
+    networkingGoals: strings("networkingGoals"),
   };
 }
 
@@ -83,8 +67,7 @@ export async function GET(
     const session = await getSession();
     const cookieStore = cookies();
     const deviceId = cookieStore.get("device_id")?.value;
-    
-    // Allow authenticated users and demo users
+
     if (!session && !deviceId) {
       return NextResponse.json(
         { success: false, error: "Not authenticated" },
@@ -93,40 +76,72 @@ export async function GET(
     }
 
     const targetUserId = params.userId;
-    let interests: UserInterests | null = null;
-
-    // Try to get questionnaire responses for the target user
-    const questionnaire = questionnaireResponses.get(targetUserId);
-    
-    if (questionnaire && questionnaire.responses) {
-      const r = questionnaire.responses;
-      interests = {
-        rechargeActivities: r.rechargeActivities || [],
-        fitnessActivities: r.fitnessActivities || [],
-        volunteerCauses: r.volunteerCauses || [],
-        contentPreferences: r.contentPreferences || [],
-        customInterests: r.customInterests || [],
-        idealWeekend: r.idealWeekend || null,
-        leadershipPriorities: r.leadershipPriorities || [],
-        networkingGoals: r.networkingGoals || [],
-      };
-    }
-
-    // If no questionnaire data, generate demo interests
-    if (!interests || (
-      interests.rechargeActivities.length === 0 &&
-      interests.fitnessActivities.length === 0 &&
-      interests.volunteerCauses.length === 0
-    )) {
-      interests = generateDemoInterests(targetUserId);
-    }
-
-    // Get user name
+    let interests: UserInterests = emptyInterests();
     let userName = "User";
-    for (const user of users.values()) {
-      if (user.id === targetUserId) {
-        userName = user.name;
-        break;
+    let questionnaireCompleted = false;
+
+    if (isSupabaseConfigured && supabaseAdmin) {
+      const { data: byProfileId, error: e1 } = await supabaseAdmin
+        .from("user_profiles")
+        .select("name, questionnaire_data, questionnaire_completed")
+        .eq("id", targetUserId)
+        .maybeSingle();
+
+      if (!e1 && byProfileId) {
+        userName = (byProfileId.name as string)?.trim() || "User";
+        questionnaireCompleted = !!byProfileId.questionnaire_completed;
+        interests = interestsFromQuestionnaireData(
+          (byProfileId.questionnaire_data as Record<string, unknown>) || null
+        );
+      } else {
+        const { data: byAuthId, error: e2 } = await supabaseAdmin
+          .from("user_profiles")
+          .select("name, questionnaire_data, questionnaire_completed")
+          .eq("user_id", targetUserId)
+          .maybeSingle();
+
+        if (!e2 && byAuthId) {
+          userName = (byAuthId.name as string)?.trim() || "User";
+          questionnaireCompleted = !!byAuthId.questionnaire_completed;
+          interests = interestsFromQuestionnaireData(
+            (byAuthId.questionnaire_data as Record<string, unknown>) || null
+          );
+        }
+      }
+    }
+
+    const hasAnyChip =
+      interests.rechargeActivities.length > 0 ||
+      interests.fitnessActivities.length > 0 ||
+      interests.volunteerCauses.length > 0 ||
+      interests.contentPreferences.length > 0 ||
+      interests.customInterests.length > 0 ||
+      interests.leadershipPriorities.length > 0 ||
+      interests.networkingGoals.length > 0 ||
+      interests.idealWeekend;
+
+    if (!hasAnyChip) {
+      const questionnaire = questionnaireResponses.get(targetUserId);
+      if (questionnaire?.responses) {
+        interests = interestsFromQuestionnaireData(
+          questionnaire.responses as Record<string, unknown>
+        );
+      }
+      for (const user of users.values()) {
+        if (user.id === targetUserId) {
+          userName = user.name;
+          if (!isSupabaseConfigured || !questionnaireCompleted) {
+            questionnaireCompleted = user.questionnaireCompleted;
+          }
+          break;
+        }
+      }
+    } else {
+      for (const user of users.values()) {
+        if (user.id === targetUserId) {
+          userName = user.name;
+          break;
+        }
       }
     }
 
@@ -136,6 +151,7 @@ export async function GET(
         userId: targetUserId,
         userName,
         interests,
+        questionnaireCompleted,
       },
     });
   } catch (error) {

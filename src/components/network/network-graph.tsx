@@ -7,6 +7,8 @@ import type { NetworkGraphData, NetworkNode, NetworkEdge } from "@/types";
 interface NetworkGraphProps {
   data: NetworkGraphData | null;
   onNodeClick?: (node: NetworkNode) => void;
+  /** Double-click opens profile (skip neutral "You" and discoverable if handled elsewhere) */
+  onNodeDoubleClick?: (node: NetworkNode) => void;
   onNodeHover?: (node: NetworkNode | null) => void;
   filter?: "all" | "high-affinity" | "strategic";
   selectedNodeId?: string;
@@ -29,6 +31,7 @@ type TextSel = d3.Selection<SVGTextElement, SimulationNode, SVGGElement, unknown
 export function NetworkGraph({
   data,
   onNodeClick,
+  onNodeDoubleClick,
   onNodeHover,
   filter = "all",
   selectedNodeId: externalSelectedNodeId,
@@ -54,8 +57,10 @@ export function NetworkGraph({
   // Stable callback refs so prop changes never invalidate the simulation effect
   const onNodeClickRef = useRef(onNodeClick);
   const onNodeHoverRef = useRef(onNodeHover);
+  const onNodeDoubleClickRef = useRef(onNodeDoubleClick);
   useEffect(() => { onNodeClickRef.current = onNodeClick; }, [onNodeClick]);
   useEffect(() => { onNodeHoverRef.current = onNodeHover; }, [onNodeHover]);
+  useEffect(() => { onNodeDoubleClickRef.current = onNodeDoubleClick; }, [onNodeDoubleClick]);
 
   // Debounced resize — avoids rebuilding simulation on every pixel change while dragging window border
   useEffect(() => {
@@ -311,16 +316,21 @@ export function NetworkGraph({
     nameLabelRef.current = nameLabels;
     titleLabelRef.current = titleLabels;
 
-    // Click to select node (reads ref to avoid stale closure without adding to effect deps)
-    node.on("click", function (event, d) {
-      event.stopPropagation();
-      if (selectedNodeIdRef.current === d.id) {
-        setInternalSelectedNodeId(null);
-      } else {
-        setInternalSelectedNodeId(d.id);
-      }
-      onNodeClickRef.current?.(d);
-    });
+    node
+      .on("click", function (event, d) {
+        event.stopPropagation();
+        if (selectedNodeIdRef.current === d.id) {
+          setInternalSelectedNodeId(null);
+        } else {
+          setInternalSelectedNodeId(d.id);
+        }
+        onNodeClickRef.current?.(d);
+      })
+      .on("dblclick", function (event, d) {
+        event.stopPropagation();
+        if (d.matchType === "neutral") return;
+        onNodeDoubleClickRef.current?.(d);
+      });
 
     // Click on background to deselect
     svg.on("click", () => {

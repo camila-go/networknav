@@ -1,30 +1,61 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
-import type { MatchWithUser } from "@/types";
+import type { MatchWithUser, Commonality } from "@/types";
+import { buildPersonalizedConversationStarters } from "@/lib/conversation-starters";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  Sparkles,
-  Zap,
-  X,
-  ChevronDown,
-  ChevronUp,
-  MessageCircle,
-  Calendar,
-  ExternalLink,
-} from "lucide-react";
-import { cn, teamsChartUrl, teamsMeetingUrl } from "@/lib/utils";
+import { Sparkles, Zap, ChevronDown, ChevronUp, X } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { TeamsActionButtons } from "@/components/network/teams-action-buttons";
+import { logExplorePassClick } from "@/lib/log-network-action";
 
 interface MatchCardProps {
   match: MatchWithUser;
   onPass: (id: string) => void;
+  viewerFirstName?: string;
 }
 
-export function MatchCard({ match, onPass }: MatchCardProps) {
+export function MatchCard({ match, onPass, viewerFirstName }: MatchCardProps) {
   const [showAllCommonalities, setShowAllCommonalities] = useState(false);
-  const { matchedUser, type, commonalities, conversationStarters, score } = match;
+  const { matchedUser, type, commonalities, score } = match;
+
+  const displayStarters = useMemo(() => {
+    const coms: Commonality[] =
+      commonalities.length > 0
+        ? commonalities
+        : [
+            {
+              category: "professional",
+              description:
+                matchedUser.profile.position && matchedUser.profile.company
+                  ? `${matchedUser.profile.position} at ${matchedUser.profile.company}`
+                  : matchedUser.profile.position || "Fellow attendee",
+              weight: 0.6,
+            },
+          ];
+    return buildPersonalizedConversationStarters(
+      coms,
+      type,
+      matchedUser.profile.name.split(/\s+/)[0],
+      {
+        theirPosition: matchedUser.profile.position,
+        theirCompany: matchedUser.profile.company ?? undefined,
+        viewerFirstName,
+        seed: `${match.userId}-${match.matchedUserId}`,
+      }
+    );
+  }, [
+    commonalities,
+    type,
+    matchedUser.profile.name,
+    matchedUser.profile.position,
+    matchedUser.profile.company,
+    viewerFirstName,
+    match.userId,
+    match.matchedUserId,
+  ]);
 
   const displayedCommonalities = showAllCommonalities
     ? commonalities
@@ -136,13 +167,22 @@ export function MatchCard({ match, onPass }: MatchCardProps) {
           )}
         </div>
 
-        {/* Conversation starter */}
-        {conversationStarters.length > 0 && (
-          <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-lg p-3">
-            <p className="text-xs font-medium text-cyan-400 mb-1">
-              💬 Conversation starter
+        {/* Conversation starters (personalized like Explore) */}
+        {displayStarters.length > 0 && (
+          <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-lg p-3 space-y-2">
+            <p className="text-xs font-medium text-cyan-400">
+              💬 Conversation starters
             </p>
-            <p className="text-sm text-white/80">{conversationStarters[0]}</p>
+            {displayStarters.slice(0, 2).map((line, i) => (
+              <p key={i} className="text-sm text-white/80 leading-relaxed">
+                {i === 1 && (
+                  <span className="text-white/40 text-[10px] uppercase tracking-wide block mb-0.5">
+                    Also try
+                  </span>
+                )}
+                {line}
+              </p>
+            ))}
           </div>
         )}
 
@@ -161,37 +201,30 @@ export function MatchCard({ match, onPass }: MatchCardProps) {
         </div>
       </div>
 
-      <div className="border-t border-white/10 bg-white/5 flex gap-2 p-4">
-        <button
-          onClick={() => onPass(match.id)}
-          className="inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-sm font-medium text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-        >
-          <X className="h-4 w-4" />
-          Pass
-        </button>
-        {matchedUser.email && (
-          <>
-            <a
-              href={teamsChartUrl(matchedUser.email)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-sm font-medium text-white/70 border border-white/10 hover:text-white hover:border-white/30 hover:bg-white/5 transition-colors"
-            >
-              <MessageCircle className="h-3.5 w-3.5" />
-              Chat
-              <ExternalLink className="h-3 w-3 opacity-60" />
-            </a>
-            <a
-              href={teamsMeetingUrl(matchedUser.email, `Meet with ${matchedUser.profile.name}`)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-sm font-medium text-white/70 border border-white/10 hover:text-white hover:border-white/30 hover:bg-white/5 transition-colors"
-            >
-              <Calendar className="h-3.5 w-3.5" />
-              Schedule
-              <ExternalLink className="h-3 w-3 opacity-60" />
-            </a>
-          </>
+      <div className="border-t border-white/10 bg-white/5 p-4">
+        {matchedUser.email ? (
+          <TeamsActionButtons
+            targetEmail={matchedUser.email}
+            targetName={matchedUser.profile.name}
+            targetUserId={match.matchedUserId}
+            source="dashboard_match"
+            onPass={() => onPass(match.id)}
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              logExplorePassClick({
+                source: "dashboard_match",
+                targetUserId: match.matchedUserId,
+              });
+              onPass(match.id);
+            }}
+            className="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-white/50 hover:text-white/80 hover:bg-white/5 transition-colors w-full"
+          >
+            <span>Pass</span>
+            <X className="h-4 w-4 opacity-70" />
+          </button>
         )}
       </div>
     </div>

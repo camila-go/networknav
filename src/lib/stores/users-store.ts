@@ -22,3 +22,11 @@ export interface StoredUser {
 
 const g = globalThis as unknown as { __netnav_users?: Map<string, StoredUser> };
 export const users = (g.__netnav_users ??= new Map<string, StoredUser>());
+
+/** Map is keyed by email; use this when you only have user id (e.g. JWT / explore_posts.user_id). */
+export function getUserById(id: string): StoredUser | undefined {
+  for (const u of users.values()) {
+    if (u.id === id) return u;
+  }
+  return undefined;
+}

@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
-import { cn } from "@/lib/utils";
+import { cn, teamsMeetingUrl } from "@/lib/utils";
 import {
   Network,
   Sparkles,
@@ -31,7 +31,6 @@ import {
 import type { NetworkGraphData, NetworkNode, NetworkEdge, MatchType } from "@/types";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { MeetingRequestModal } from "@/components/meetings/meeting-request-modal";
 
 interface NetworkInsights {
   totalConnections: number;
@@ -61,7 +60,6 @@ export function NetworkContainer() {
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "high-affinity" | "strategic">("all");
   const [selectedNode, setSelectedNode] = useState<NetworkNode | null>(null);
-  const [showMeetingModal, setShowMeetingModal] = useState(false);
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
   const [showMobileDetail, setShowMobileDetail] = useState(false);
 
@@ -322,8 +320,19 @@ export function NetworkContainer() {
           nodes={filteredNodes}
           onNodeSelect={handleMobileNodeSelect}
           onMeet={(node) => {
-            setSelectedNode(node);
-            setShowMeetingModal(true);
+            if (node.email) {
+              window.open(
+                teamsMeetingUrl(node.email, `Meet: ${node.name}`),
+                "_blank",
+                "noopener,noreferrer"
+              );
+            } else {
+              toast({
+                title: "Meet on Teams",
+                description:
+                  "Email isn’t available for this member yet. Open their profile to connect.",
+              });
+            }
           }}
           getMutualConnections={getMutualConnections}
         />
@@ -334,12 +343,13 @@ export function NetworkContainer() {
             data={enhancedNetworkData}
             filter={filter}
             onNodeClick={handleNodeClick}
+            onNodeDoubleClick={(node) => router.push(`/user/${node.id}`)}
             selectedNodeId={selectedNode?.id}
           />
 
           {/* Instructions */}
-          <div className="absolute top-4 right-4 text-xs text-white/50 bg-black/60 backdrop-blur-sm rounded-lg px-3 py-2 border border-white/10">
-            <p>🖱️ Click node to view • Drag to move • Scroll to zoom</p>
+          <div className="absolute top-4 right-4 text-xs text-white/50 bg-black/60 backdrop-blur-sm rounded-lg px-3 py-2 border border-white/10 max-w-[220px]">
+            <p>Click to select • Double-click bubble for profile • Drag • Scroll to zoom</p>
           </div>
         </div>
       </div>
@@ -369,7 +379,10 @@ export function NetworkContainer() {
             {/* Scrollable content */}
             <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-4">
               {/* Header */}
-              <div className="flex items-start gap-3">
+              <Link
+                href={`/user/${selectedNode.id}`}
+                className="flex items-start gap-3 rounded-xl hover:bg-white/5 -m-1 p-1 transition-colors"
+              >
                 <Avatar className="h-14 w-14 border-2 border-white/20 shrink-0">
                   <AvatarFallback className={cn(
                     "text-black font-semibold text-lg",
@@ -381,7 +394,7 @@ export function NetworkContainer() {
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-lg text-white">{selectedNode.name}</p>
+                  <p className="font-semibold text-lg text-white hover:text-cyan-300">{selectedNode.name}</p>
                   <p className="text-sm text-white/60">{selectedNode.title}</p>
                   {selectedNode.company && (
                     <p className="text-sm text-cyan-400">{selectedNode.company}</p>
@@ -401,7 +414,7 @@ export function NetworkContainer() {
                     )}
                   </Badge>
                 </div>
-              </div>
+              </Link>
 
               {/* Commonalities */}
               {selectedNode.commonalities.length > 0 && (
@@ -504,13 +517,31 @@ export function NetworkContainer() {
                   <MessageCircle className="h-4 w-4" />
                   Message
                 </button>
-                <button
-                  onClick={() => setShowMeetingModal(true)}
-                  className="inline-flex items-center justify-center gap-1 px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-cyan-500 to-teal-500 text-black hover:from-cyan-400 hover:to-teal-400 transition-colors"
-                >
-                  <Calendar className="h-4 w-4" />
-                  Meet
-                </button>
+                {selectedNode.email ? (
+                  <a
+                    href={teamsMeetingUrl(selectedNode.email, `Meet: ${selectedNode.name}`)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-1 px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-cyan-500 to-teal-500 text-black hover:from-cyan-400 hover:to-teal-400 transition-colors"
+                  >
+                    <Calendar className="h-4 w-4" />
+                    Meet
+                  </a>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      toast({
+                        title: "Meet on Teams",
+                        description: "Email isn’t available for this member yet. Open their profile to connect.",
+                      })
+                    }
+                    className="inline-flex items-center justify-center gap-1 px-4 py-2 rounded-lg text-sm font-medium bg-white/10 text-white/70"
+                  >
+                    <Calendar className="h-4 w-4" />
+                    Meet
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -570,7 +601,7 @@ export function NetworkContainer() {
                   </Button>
                 </div>
                 <div className="space-y-4">
-                  <div className="flex items-center gap-3">
+                  <Link href={`/user/${selectedNode.id}`} className="flex items-center gap-3 rounded-lg hover:bg-white/5 p-1 -m-1">
                     <Avatar className="h-12 w-12 border-2 border-white/20">
                       <AvatarFallback className={cn(
                         "text-black font-semibold",
@@ -582,27 +613,45 @@ export function NetworkContainer() {
                       </AvatarFallback>
                     </Avatar>
                     <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-white truncate">{selectedNode.name}</p>
+                      <p className="font-semibold text-white truncate hover:text-cyan-300">{selectedNode.name}</p>
                       <p className="text-sm text-white/60 truncate">{selectedNode.title}</p>
                       {selectedNode.company && (
                         <p className="text-sm text-cyan-400 truncate">{selectedNode.company}</p>
                       )}
                     </div>
-                  </div>
+                  </Link>
                   <div className="flex gap-2">
                     <Link href={`/user/${selectedNode.id}`} className="flex-1">
                       <Button variant="outline" size="sm" className="w-full border-white/20 text-white hover:bg-white/10">
                         View Profile
                       </Button>
                     </Link>
-                    <Button
-                      size="sm"
-                      className="flex-1 gap-1 bg-gradient-to-r from-cyan-500 to-teal-500 text-black hover:from-cyan-400 hover:to-teal-400"
-                      onClick={() => setShowMeetingModal(true)}
-                    >
-                      <Calendar className="h-4 w-4" />
-                      Meet
-                    </Button>
+                    {selectedNode.email ? (
+                      <a
+                        href={teamsMeetingUrl(selectedNode.email, `Meet: ${selectedNode.name}`)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 inline-flex items-center justify-center gap-1 rounded-md text-sm font-medium bg-gradient-to-r from-cyan-500 to-teal-500 text-black hover:from-cyan-400 hover:to-teal-400 px-3 py-2"
+                      >
+                        <Calendar className="h-4 w-4" />
+                        Meet
+                      </a>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="flex-1 gap-1 bg-white/10 text-white/70"
+                        onClick={() =>
+                          toast({
+                            title: "Meet on Teams",
+                            description: "Email isn’t available for this member yet.",
+                          })
+                        }
+                      >
+                        <Calendar className="h-4 w-4" />
+                        Meet
+                      </Button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -752,9 +801,9 @@ export function NetworkContainer() {
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {getMutualConnections(selectedNode.id).map((conn) => (
-                      <button
+                      <Link
                         key={conn.id}
-                        onClick={() => setSelectedNode(conn)}
+                        href={`/user/${conn.id}`}
                         className="flex items-center gap-2 p-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
                       >
                         <Avatar className="h-8 w-8 border border-white/20">
@@ -770,7 +819,7 @@ export function NetworkContainer() {
                         <span className="text-xs text-white/80">
                           {conn.name.split(" ")[0]}
                         </span>
-                      </button>
+                      </Link>
                     ))}
                   </div>
                 </div>
@@ -782,14 +831,32 @@ export function NetworkContainer() {
                     View Profile
                   </Button>
                 </Link>
-                <Button
-                  size="sm"
-                  className="flex-1 gap-1 bg-gradient-to-r from-cyan-500 to-teal-500 text-black hover:from-cyan-400 hover:to-teal-400"
-                  onClick={() => setShowMeetingModal(true)}
-                >
-                  <Calendar className="h-4 w-4" />
-                  Meet
-                </Button>
+                {selectedNode.email ? (
+                  <a
+                    href={teamsMeetingUrl(selectedNode.email, `Meet: ${selectedNode.name}`)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 inline-flex items-center justify-center gap-1 rounded-md text-sm font-medium bg-gradient-to-r from-cyan-500 to-teal-500 text-black hover:from-cyan-400 hover:to-teal-400 px-3 py-2"
+                  >
+                    <Calendar className="h-4 w-4" />
+                    Meet
+                  </a>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="flex-1 gap-1 bg-white/10 text-white/70"
+                    onClick={() =>
+                      toast({
+                        title: "Meet on Teams",
+                        description: "Email isn’t available for this member yet. Open their profile to connect.",
+                      })
+                    }
+                  >
+                    <Calendar className="h-4 w-4" />
+                    Meet
+                  </Button>
+                )}
               </div>
             </div>
           </div>
@@ -883,28 +950,6 @@ export function NetworkContainer() {
         )}
       </aside>
 
-      {/* Meeting Request Modal */}
-      {selectedNode && (
-        <MeetingRequestModal
-          open={showMeetingModal}
-          onOpenChange={setShowMeetingModal}
-          recipient={{
-            id: selectedNode.id,
-            profile: {
-              name: selectedNode.name,
-              position: selectedNode.title,
-              title: selectedNode.title,
-              company: selectedNode.company,
-            },
-            questionnaireCompleted: true,
-          }}
-          commonalities={selectedNode.commonalities.map(c => ({
-            category: "professional" as const,
-            description: c,
-            weight: 0.8,
-          }))}
-        />
-      )}
     </div>
   );
 }

@@ -17,15 +17,18 @@ export async function generateConversationStartersAI(context: {
   if (!provider) return null;
 
   const systemInstruction = `You are a professional networking assistant for a leadership conference app.
-Generate 2-3 short, warm, personable conversation starters for someone about to meet a new connection.
-Each starter should be 1 sentence, feel genuine (not corporate), and reference specific shared context.
-Return ONLY the starters, one per line. No numbering, no quotes.`;
+Generate exactly 3 conversation starters for ${context.userName} to send when meeting ${context.matchName}.
+Rules:
+- Each starter is ONE sentence, warm and specific (use their name, role, company, or shared topics where natural).
+- Vary the shape: mix questions, observations, and light invitations—do not start all three the same way.
+- Avoid generic phrases like "I'd love to connect" or "pick your brain" unless rephrased uniquely.
+- No numbering, bullets, or quote marks—one starter per line only.`;
 
-  const prompt = `Generate conversation starters for ${context.userName} to use when meeting ${context.matchName}.
+  const prompt = `${context.userName} is reaching out to ${context.matchName}.
 Match type: ${context.matchType}
-${context.matchPosition ? `Their role: ${context.matchPosition}` : ''}
-${context.matchCompany ? `Their company: ${context.matchCompany}` : ''}
-What they have in common: ${context.commonalities.join('; ')}`;
+${context.matchPosition ? `Their role: ${context.matchPosition}` : ""}
+${context.matchCompany ? `Their company: ${context.matchCompany}` : ""}
+Shared context: ${context.commonalities.length ? context.commonalities.join(" | ") : "(infer from role/company)"}`;
 
   try {
     const text = await provider.generateText(prompt, systemInstruction);

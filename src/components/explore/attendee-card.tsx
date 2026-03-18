@@ -4,19 +4,24 @@ import { useState } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Calendar, Sparkles, Zap, MessageCircle, X, ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
-import { cn, teamsChartUrl, teamsMeetingUrl } from "@/lib/utils";
-import type { AttendeeSearchResult } from "@/types";
+import { Sparkles, Zap, X, ChevronDown, ChevronUp } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { TeamsActionButtons } from "@/components/network/teams-action-buttons";
+import { logExplorePassClick } from "@/lib/log-network-action";
+import type { AttendeeSearchResult, Commonality } from "@/types";
+import { buildPersonalizedConversationStarters } from "@/lib/conversation-starters";
 
 interface AttendeeCardProps {
   attendee: AttendeeSearchResult;
   onRequestMeeting?: (userId: string) => void;
   onPass?: (userId: string) => void;
+  viewerFirstName?: string;
 }
 
-export function AttendeeCard({ attendee, onPass }: AttendeeCardProps) {
+export function AttendeeCard({ attendee, onPass, viewerFirstName }: AttendeeCardProps) {
   const [showAllCommonalities, setShowAllCommonalities] = useState(false);
-  const { user, matchPercentage, topCommonalities } = attendee;
+  const { user, matchPercentage, topCommonalities, searchMatchLabels } =
+    attendee;
 
   const initials = user.profile.name
     .split(" ")
@@ -32,10 +37,32 @@ export function AttendeeCard({ attendee, onPass }: AttendeeCardProps) {
     ? topCommonalities
     : topCommonalities.slice(0, 3);
 
-  // Generate a conversation starter based on commonalities
-  const conversationStarter = topCommonalities.length > 0
-    ? `I'd love to get your take on this from your vantage point`
-    : `Would be great to connect and learn from each other`;
+  const commonalitiesForStarters: Commonality[] =
+    topCommonalities.length > 0
+      ? topCommonalities
+      : [
+          {
+            category: "professional",
+            description:
+              user.profile.position && user.profile.company
+                ? `${user.profile.position} at ${user.profile.company}`
+                : user.profile.position
+                  ? user.profile.position
+                  : "Fellow attendee",
+            weight: 0.6,
+          },
+        ];
+  const starters = buildPersonalizedConversationStarters(
+    commonalitiesForStarters,
+    matchType,
+    user.profile.name.split(/\s+/)[0],
+    {
+      theirPosition: user.profile.position,
+      theirCompany: user.profile.company ?? undefined,
+      viewerFirstName,
+      seed: `${user.id}-explore`,
+    }
+  );
 
   const profileUrl = `/user/${user.id}`;
 
@@ -97,6 +124,16 @@ export function AttendeeCard({ attendee, onPass }: AttendeeCardProps) {
       </div>
 
       <div className="px-6 pb-4 space-y-4">
+        {searchMatchLabels && searchMatchLabels.length > 0 && (
+          <div className="rounded-lg border border-cyan-500/25 bg-cyan-500/5 px-3 py-2">
+            <p className="text-[10px] font-medium uppercase tracking-wider text-cyan-400/90 mb-1">
+              Matches your search
+            </p>
+            <p className="text-sm text-white/90">
+              {searchMatchLabels.join(" · ")}
+            </p>
+          </div>
+        )}
         {/* Commonalities */}
         {topCommonalities.length > 0 && (
           <div>
@@ -139,12 +176,21 @@ export function AttendeeCard({ attendee, onPass }: AttendeeCardProps) {
           </div>
         )}
 
-        {/* Conversation starter */}
-        <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-lg p-3">
-          <p className="text-xs font-medium text-cyan-400 mb-1">
-            💬 Conversation starter
+        {/* Conversation starters */}
+        <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-lg p-3 space-y-2">
+          <p className="text-xs font-medium text-cyan-400">
+            💬 Conversation starters
           </p>
-          <p className="text-sm text-white/80">{conversationStarter}</p>
+          {starters.slice(0, 2).map((line, i) => (
+            <p key={i} className="text-sm text-white/80 leading-relaxed">
+              {i === 1 && (
+                <span className="text-white/40 text-[10px] uppercase tracking-wide block mb-0.5">
+                  Also try
+                </span>
+              )}
+              {line}
+            </p>
+          ))}
         </div>
 
         {/* Match score */}
@@ -162,39 +208,33 @@ export function AttendeeCard({ attendee, onPass }: AttendeeCardProps) {
         </div>
       </div>
 
-      <div className="border-t border-white/10 bg-white/5 flex gap-2 p-4">
-        {onPass && (
-          <button
-            onClick={() => onPass(user.id)}
-            className="inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-sm font-medium text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-          >
-            <X className="h-4 w-4" />
-            Pass
-          </button>
-        )}
-        {user.email && (
-          <>
-            <a
-              href={teamsChartUrl(user.email)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-sm font-medium text-white/70 border border-white/10 hover:text-white hover:border-white/30 hover:bg-white/5 transition-colors"
+      <div className="border-t border-white/10 bg-white/5 p-4">
+        {user.email ? (
+          <TeamsActionButtons
+            targetEmail={user.email}
+            targetName={user.profile.name}
+            targetUserId={user.id}
+            source="explore_search"
+            onPass={onPass ? () => onPass(user.id) : undefined}
+            showPass={Boolean(onPass)}
+          />
+        ) : (
+          onPass && (
+            <button
+              type="button"
+              onClick={() => {
+                logExplorePassClick({
+                  source: "explore_search",
+                  targetUserId: user.id,
+                });
+                onPass(user.id);
+              }}
+              className="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-white/50 hover:text-white/80 hover:bg-white/5 transition-colors w-full"
             >
-              <MessageCircle className="h-3.5 w-3.5" />
-              Chat
-              <ExternalLink className="h-3 w-3 opacity-60" />
-            </a>
-            <a
-              href={teamsMeetingUrl(user.email, `Meet with ${user.profile.name}`)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-sm font-medium text-white/70 border border-white/10 hover:text-white hover:border-white/30 hover:bg-white/5 transition-colors"
-            >
-              <Calendar className="h-3.5 w-3.5" />
-              Schedule
-              <ExternalLink className="h-3 w-3 opacity-60" />
-            </a>
-          </>
+              <span>Pass</span>
+              <X className="h-4 w-4 opacity-70" />
+            </button>
+          )
         )}
       </div>
     </div>

@@ -262,33 +262,161 @@ function matchesFilters(
   return true;
 }
 
-// Keyword search across profile and responses
-function matchesKeywords(
+const INTEREST_FIELD_IDS = [
+  "rechargeActivities",
+  "fitnessActivities",
+  "volunteerCauses",
+  "contentPreferences",
+  "customInterests",
+  "leadershipPriorities",
+  "networkingGoals",
+  "growthAreas",
+  "energizers",
+] as const;
+
+/** Text blob for interest-scoped search (chips + “find people who enjoy X”) */
+function interestSearchBlob(
+  responses: Record<string, unknown>,
+  profileInterestTags: string[]
+): string {
+  const parts: string[] = [...profileInterestTags.map((t) => t.toLowerCase())];
+  for (const id of INTEREST_FIELD_IDS) {
+    const arr = responses[id as string];
+    if (!Array.isArray(arr)) continue;
+    for (const v of arr) {
+      if (typeof v !== "string" || !v.trim()) continue;
+      parts.push(v.toLowerCase());
+      parts.push(getLabel(id, v).toLowerCase());
+    }
+  }
+  if (typeof responses.idealWeekend === "string" && responses.idealWeekend.trim()) {
+    parts.push(responses.idealWeekend.toLowerCase());
+  }
+  return parts.join(" ");
+}
+
+function collectAllQuestionnaireStrings(r: Record<string, unknown>): string[] {
+  const out: string[] = [];
+  const walk = (v: unknown) => {
+    if (v == null) return;
+    if (typeof v === "string" && v.trim()) {
+      out.push(v);
+      return;
+    }
+    if (Array.isArray(v)) {
+      v.forEach(walk);
+      return;
+    }
+    if (typeof v === "object") {
+      Object.values(v as object).forEach(walk);
+    }
+  };
+  walk(r);
+  return out;
+}
+
+/** Widen search: raw values + option labels for every questionnaire multi-select we know */
+function fullSearchBlob(
   userProfile: { name: string; position: string; title: string; company?: string },
   responses: Record<string, unknown>,
-  keywords: string
-): boolean {
-  const searchTerms = keywords.toLowerCase().split(/\s+/).filter(Boolean);
-  if (searchTerms.length === 0) return true;
-
-  // Build searchable text from profile including custom interests
-  const searchableText = [
+  profileInterestTags: string[]
+): string {
+  const parts: string[] = [
     userProfile.name,
     userProfile.position,
     userProfile.title,
     userProfile.company || "",
-    responses.industry as string || "",
-    responses.leadershipLevel as string || "",
-    ...((responses.leadershipPriorities as string[]) || []),
-    ...((responses.leadershipChallenges as string[]) || []),
-    ...((responses.rechargeActivities as string[]) || []),
-    ...((responses.energizers as string[]) || []),
-    ...((responses.leadershipPhilosophy as string[]) || []),
-    ...((responses.customInterests as string[]) || []),
-  ].join(" ").toLowerCase();
+    ...profileInterestTags,
+    ...collectAllQuestionnaireStrings(responses),
+  ];
+  const labelKeys = [
+    ...INTEREST_FIELD_IDS,
+    "industry",
+    "leadershipLevel",
+    "organizationSize",
+    "leadershipPriorities",
+    "leadershipChallenges",
+    "leadershipPhilosophy",
+    "communicationStyle",
+    "decisionMakingStyle",
+    "failureApproach",
+    "relationshipValues",
+  ] as const;
+  for (const id of labelKeys) {
+    const v = responses[id as string];
+    if (Array.isArray(v)) {
+      for (const x of v) {
+        if (typeof x === "string") parts.push(getLabel(id as string, x));
+      }
+    } else if (typeof v === "string") {
+      parts.push(getLabel(id as string, v));
+    }
+  }
+  return parts.join(" ").toLowerCase();
+}
 
-  // Check if all search terms are found
-  return searchTerms.every((term) => searchableText.includes(term));
+function matchedInterestLabels(
+  searchTerms: string[],
+  responses: Record<string, unknown>,
+  profileInterestTags: string[]
+): string[] {
+  const labels: string[] = [];
+  const seen = new Set<string>();
+  for (const id of INTEREST_FIELD_IDS) {
+    const arr = responses[id as string];
+    if (!Array.isArray(arr)) continue;
+    for (const val of arr) {
+      if (typeof val !== "string") continue;
+      const label = getLabel(id, val);
+      const hay = `${val} ${label}`.toLowerCase();
+      if (searchTerms.some((t) => hay.includes(t))) {
+        if (!seen.has(label)) {
+          seen.add(label);
+          labels.push(label);
+        }
+      }
+    }
+  }
+  const customs = (responses.customInterests as string[]) || [];
+  for (const c of customs) {
+    const low = c.toLowerCase();
+    if (searchTerms.some((t) => low.includes(t)) && !seen.has(c)) {
+      seen.add(c);
+      labels.push(c);
+    }
+  }
+  for (const t of profileInterestTags) {
+    const low = t.toLowerCase();
+    if (searchTerms.some((st) => low.includes(st)) && !seen.has(t)) {
+      seen.add(t);
+      labels.push(t);
+    }
+  }
+  return labels.slice(0, 5);
+}
+
+type SearchScope = "all" | "interests";
+
+function keywordMatchResult(
+  userProfile: { name: string; position: string; title: string; company?: string },
+  responses: Record<string, unknown>,
+  keywords: string,
+  profileInterestTags: string[],
+  scope: SearchScope
+): { ok: boolean; labels: string[] } {
+  const searchTerms = keywords.toLowerCase().split(/\s+/).filter(Boolean);
+  if (searchTerms.length === 0) {
+    return { ok: true, labels: [] };
+  }
+  const blob =
+    scope === "interests"
+      ? interestSearchBlob(responses, profileInterestTags)
+      : fullSearchBlob(userProfile, responses, profileInterestTags);
+  const ok = searchTerms.every((term) => blob.includes(term));
+  const labels = ok
+    ? matchedInterestLabels(searchTerms, responses, profileInterestTags)
+    : [];
+  return { ok, labels };
 }
 
 // Fallback demo users when no data is seeded
@@ -462,13 +590,24 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { filters, keywords, page = 1, pageSize = 20, sortBy = "relevance" } = body as {
+    const {
+      filters,
+      keywords,
+      page = 1,
+      pageSize = 20,
+      sortBy = "relevance",
+      searchScope: searchScopeRaw,
+    } = body as {
       filters?: SearchFilters;
       keywords?: string;
       page?: number;
       pageSize?: number;
       sortBy?: "relevance" | "match" | "name" | "level";
+      /** interests = only questionnaire interest fields (profile chips / hobby search) */
+      searchScope?: "all" | "interests";
     };
+    const searchScope: SearchScope =
+      searchScopeRaw === "interests" ? "interests" : "all";
 
     // Get current user's responses for match calculation
     let currentResponses: Record<string, unknown> = {};
@@ -526,15 +665,22 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        // Apply keyword search
+        let searchMatchLabels: string[] | undefined;
         if (keywords && keywords.trim() !== "") {
-          if (!matchesKeywords(
-            { name: user.name, position: user.position, title: user.title, company: user.company },
+          const { ok, labels } = keywordMatchResult(
+            {
+              name: user.name,
+              position: user.position,
+              title: user.title,
+              company: user.company,
+            },
             candidateResponses.responses,
-            keywords
-          )) {
-            continue;
-          }
+            keywords,
+            [],
+            searchScope
+          );
+          if (!ok) continue;
+          if (labels.length > 0) searchMatchLabels = labels;
         }
 
         // Calculate match data
@@ -561,6 +707,7 @@ export async function POST(request: NextRequest) {
           user: publicUser,
           matchPercentage: percentage,
           topCommonalities: commonalities,
+          searchMatchLabels,
           questionnaire: {
             industry: candidateResponses.responses.industry as string,
             leadershipLevel: candidateResponses.responses.leadershipLevel as string,
@@ -596,8 +743,12 @@ export async function POST(request: NextRequest) {
         break;
       case "relevance":
       default:
-        // Sort by match percentage but also factor in commonality count
         results.sort((a, b) => {
+          if (keywords?.trim()) {
+            const ma = a.searchMatchLabels?.length ?? 0;
+            const mb = b.searchMatchLabels?.length ?? 0;
+            if (mb !== ma) return mb - ma;
+          }
           const scoreA = a.matchPercentage + a.topCommonalities.length * 5;
           const scoreB = b.matchPercentage + b.topCommonalities.length * 5;
           return scoreB - scoreA;
@@ -633,7 +784,8 @@ async function searchSupabaseUsers(
   currentUserEmail: string | undefined,
   currentResponses: Record<string, unknown>,
   filters?: SearchFilters,
-  keywords?: string
+  keywords?: string,
+  searchScope: SearchScope = "all"
 ): Promise<AttendeeSearchResult[]> {
   if (!supabaseAdmin) return [];
 
@@ -641,7 +793,7 @@ async function searchSupabaseUsers(
     // Build query - exclude current user by both id and user_id
     let query = supabaseAdmin
       .from('user_profiles')
-      .select('id, user_id, name, email, position, title, company, photo_url, location, questionnaire_data, questionnaire_completed')
+      .select('id, user_id, name, email, position, title, company, photo_url, location, questionnaire_data, questionnaire_completed, interests')
       .eq('is_active', true)
       .neq('user_id', currentUserId)
       .not('name', 'is', null);
@@ -656,7 +808,8 @@ async function searchSupabaseUsers(
       query = query.neq('id', currentUserId);
     }
 
-    const { data: profiles, error } = await query.limit(100);
+    const rowLimit = keywords?.trim() ? 500 : 100;
+    const { data: profiles, error } = await query.limit(rowLimit);
 
     if (error) {
       console.error('Supabase search error:', error);
@@ -673,6 +826,13 @@ async function searchSupabaseUsers(
       if (!profile.name) continue;
 
       const candidateResponses = (profile.questionnaire_data || {}) as Record<string, unknown>;
+      const profileInterestTags = Array.isArray(
+        (profile as { interests?: string[] | null }).interests
+      )
+        ? ((profile as { interests?: string[] }).interests || []).filter(
+            (x): x is string => typeof x === "string"
+          )
+        : [];
 
       // Apply filters
       if (filters && Object.keys(filters).length > 0) {
@@ -681,20 +841,22 @@ async function searchSupabaseUsers(
         }
       }
 
-      // Apply keyword search
+      let searchMatchLabels: string[] | undefined;
       if (keywords && keywords.trim() !== "") {
-        if (!matchesKeywords(
-          { 
-            name: profile.name, 
-            position: profile.position || '', 
-            title: profile.title || '', 
-            company: profile.company || '' 
+        const { ok, labels } = keywordMatchResult(
+          {
+            name: profile.name!,
+            position: profile.position || "",
+            title: profile.title || "",
+            company: profile.company || undefined,
           },
           candidateResponses,
-          keywords
-        )) {
-          continue;
-        }
+          keywords,
+          profileInterestTags,
+          searchScope
+        );
+        if (!ok) continue;
+        if (labels.length > 0) searchMatchLabels = labels;
       }
 
       // Calculate match data
@@ -719,6 +881,7 @@ async function searchSupabaseUsers(
         },
         matchPercentage: percentage,
         topCommonalities: commonalities,
+        searchMatchLabels,
         questionnaire: {
           industry: (candidateResponses.industry as string) || '',
           leadershipLevel: (candidateResponses.leadershipLevel as string) || '',
