@@ -2,10 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { users } from "@/lib/stores";
 import { supabaseAdmin } from "@/lib/supabase/client";
-import { checkRateLimit } from "@/lib/security/rateLimit";
-
-const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-const MAX_SIZE = 4 * 1024 * 1024; // 4 MB (below Vercel's ~4.5 MB serverless body limit)
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,38 +14,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { allowed } = await checkRateLimit(session.userId, "upload-avatar");
-    if (!allowed) {
-      return NextResponse.json(
-        { success: false, error: "Too many uploads. Please try again later." },
-        { status: 429 }
-      );
-    }
-
-    const formData = await request.formData();
-    const file = formData.get("file") as File | null;
-
-    if (!file) {
-      return NextResponse.json(
-        { success: false, error: "No file provided" },
-        { status: 400 }
-      );
-    }
-
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      return NextResponse.json(
-        { success: false, error: "Invalid file type. Use JPG, PNG, WebP, or GIF." },
-        { status: 400 }
-      );
-    }
-
-    if (file.size > MAX_SIZE) {
-      return NextResponse.json(
-        { success: false, error: "File too large. Maximum size is 4 MB." },
-        { status: 400 }
-      );
-    }
-
     if (!supabaseAdmin) {
       return NextResponse.json(
         { success: false, error: "Storage not configured" },
@@ -57,22 +21,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const storageKey = `${session.userId}/avatar`;
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    const body = await request.json();
+    const { storageKey } = body as { storageKey: string };
 
-    const { error: uploadError } = await supabaseAdmin.storage
-      .from("profile-photos")
-      .upload(storageKey, buffer, {
-        contentType: file.type,
-        upsert: true,
-      });
-
-    if (uploadError) {
-      console.error("Storage upload error:", uploadError);
+    if (!storageKey) {
       return NextResponse.json(
-        { success: false, error: "Failed to upload image" },
-        { status: 500 }
+        { success: false, error: "storageKey is required" },
+        { status: 400 }
+      );
+    }
+
+    // Validate storage key matches the authenticated user
+    const expectedKey = `${session.userId}/avatar`;
+    if (storageKey !== expectedKey) {
+      return NextResponse.json(
+        { success: false, error: "Invalid storage key" },
+        { status: 403 }
       );
     }
 
@@ -107,7 +71,7 @@ export async function POST(request: NextRequest) {
       data: { photoUrl: publicUrl },
     });
   } catch (error) {
-    console.error("Avatar upload error:", error);
+    console.error("Avatar confirm error:", error);
     return NextResponse.json(
       { success: false, error: "An unexpected error occurred" },
       { status: 500 }

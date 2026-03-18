@@ -82,8 +82,8 @@ export function ProfileForm() {
       setAvatarError("Invalid file type. Use JPG, PNG, WebP, or GIF.");
       return;
     }
-    if (file.size > 4 * 1024 * 1024) {
-      setAvatarError("File too large. Maximum size is 4 MB.");
+    if (file.size > 10 * 1024 * 1024) {
+      setAvatarError("File too large. Maximum size is 10 MB.");
       return;
     }
 
@@ -98,23 +98,50 @@ export function ProfileForm() {
   async function uploadAvatar(file: File) {
     setUploadingAvatar(true);
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const response = await fetch("/api/profile/avatar", {
+      // Step 1: Get signed upload URL from server
+      const urlResponse = await fetch("/api/profile/avatar/upload-url", {
         method: "POST",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileType: file.type, fileSize: file.size }),
       });
 
-      const result = await response.json();
+      const urlResult = await urlResponse.json();
+      if (!urlResult.success) {
+        setAvatarError(urlResult.error ?? "Upload failed");
+        setAvatarPreview(null);
+        return;
+      }
 
-      if (result.success) {
-        setValue("photoUrl", result.data.photoUrl, { shouldDirty: false });
+      // Step 2: Upload file directly to Supabase Storage
+      const { signedUrl, storageKey } = urlResult.data;
+      const uploadResponse = await fetch(signedUrl, {
+        method: "PUT",
+        body: file,
+        headers: { "Content-Type": file.type },
+      });
+
+      if (!uploadResponse.ok) {
+        setAvatarError("Upload failed. Please try again.");
+        setAvatarPreview(null);
+        return;
+      }
+
+      // Step 3: Confirm upload and update DB
+      const confirmResponse = await fetch("/api/profile/avatar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ storageKey }),
+      });
+
+      const confirmResult = await confirmResponse.json();
+
+      if (confirmResult.success) {
+        setValue("photoUrl", confirmResult.data.photoUrl, { shouldDirty: false });
         if (avatarPreview) URL.revokeObjectURL(avatarPreview);
         setAvatarPreview(null);
         toast({ variant: "success", title: "Photo updated" });
       } else {
-        setAvatarError(result.error ?? "Upload failed");
+        setAvatarError(confirmResult.error ?? "Upload failed");
         setAvatarPreview(null);
       }
     } catch {
@@ -236,7 +263,7 @@ export function ProfileForm() {
           {avatarError && (
             <p className="text-xs text-red-400">{avatarError}</p>
           )}
-          <p className="text-xs text-white/40">JPG, PNG, WebP or GIF · max 4 MB</p>
+          <p className="text-xs text-white/40">JPG, PNG, WebP or GIF · max 10 MB</p>
         </div>
       </div>
 

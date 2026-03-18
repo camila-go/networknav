@@ -15,7 +15,7 @@ interface PhotoGalleryProps {
 }
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-const MAX_SIZE = 4 * 1024 * 1024;
+const MAX_SIZE = 10 * 1024 * 1024;
 const MAX_PHOTOS = 12;
 
 export function PhotoGallery({ userId, isOwner, withContainer = false, containerClassName }: PhotoGalleryProps) {
@@ -80,7 +80,7 @@ export function PhotoGallery({ userId, isOwner, withContainer = false, container
       return;
     }
     if (file.size > MAX_SIZE) {
-      setUploadError("File too large. Maximum size is 4 MB.");
+      setUploadError("File too large. Maximum size is 10 MB.");
       e.target.value = "";
       return;
     }
@@ -92,19 +92,44 @@ export function PhotoGallery({ userId, isOwner, withContainer = false, container
   async function uploadPhoto(file: File) {
     setUploading(true);
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const response = await fetch("/api/profile/photos", {
+      // Step 1: Get signed upload URL from server
+      const urlResponse = await fetch("/api/profile/photos/upload-url", {
         method: "POST",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileType: file.type, fileSize: file.size }),
       });
-      const result = await response.json();
+      const urlResult = await urlResponse.json();
 
-      if (result.success) {
-        setPhotos(prev => [...prev, result.data.photo]);
+      if (!urlResult.success) {
+        setUploadError(urlResult.error ?? "Upload failed");
+        return;
+      }
+
+      // Step 2: Upload file directly to Supabase Storage
+      const { signedUrl, storageKey, photoId } = urlResult.data;
+      const uploadResponse = await fetch(signedUrl, {
+        method: "PUT",
+        body: file,
+        headers: { "Content-Type": file.type },
+      });
+
+      if (!uploadResponse.ok) {
+        setUploadError("Upload failed. Please try again.");
+        return;
+      }
+
+      // Step 3: Confirm upload and create DB record
+      const confirmResponse = await fetch("/api/profile/photos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ storageKey, photoId }),
+      });
+      const confirmResult = await confirmResponse.json();
+
+      if (confirmResult.success) {
+        setPhotos(prev => [...prev, confirmResult.data.photo]);
       } else {
-        setUploadError(result.error ?? "Upload failed");
+        setUploadError(confirmResult.error ?? "Upload failed");
       }
     } catch {
       setUploadError("Upload failed. Please try again.");

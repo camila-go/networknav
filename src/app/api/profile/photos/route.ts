@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase/client";
-import { checkRateLimit } from "@/lib/security/rateLimit";
 import type { UserPhoto } from "@/types";
 
-const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-const MAX_SIZE = 4 * 1024 * 1024; // 4 MB (below Vercel's ~4.5 MB serverless body limit)
 const MAX_PHOTOS = 12;
 
 function rowToUserPhoto(row: {
@@ -81,14 +78,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { allowed } = await checkRateLimit(session.userId, "upload-gallery-photo");
-    if (!allowed) {
-      return NextResponse.json(
-        { success: false, error: "Too many uploads. Please try again later." },
-        { status: 429 }
-      );
-    }
-
     if (!supabaseAdmin) {
       return NextResponse.json(
         { success: false, error: "Storage not configured" },
@@ -96,7 +85,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check current photo count
+    const body = await request.json();
+    const { storageKey, photoId, caption } = body as {
+      storageKey: string;
+      photoId: string;
+      caption?: string;
+    };
+
+    if (!storageKey || !photoId) {
+      return NextResponse.json(
+        { success: false, error: "storageKey and photoId are required" },
+        { status: 400 }
+      );
+    }
+
+    // Validate storage key matches the authenticated user
+    const expectedKey = `${session.userId}/gallery/${photoId}`;
+    if (storageKey !== expectedKey) {
+      return NextResponse.json(
+        { success: false, error: "Invalid storage key" },
+        { status: 403 }
+      );
+    }
+
+    // Re-check photo count (defense against race conditions)
     const { count, error: countError } = await supabaseAdmin
       .from("user_photos")
       .select("*", { count: "exact", head: true })
@@ -111,51 +123,11 @@ export async function POST(request: NextRequest) {
     }
 
     if ((count ?? 0) >= MAX_PHOTOS) {
+      // Clean up the orphaned storage file
+      await supabaseAdmin.storage.from("profile-photos").remove([storageKey]);
       return NextResponse.json(
         { success: false, error: `Maximum ${MAX_PHOTOS} gallery photos allowed` },
         { status: 400 }
-      );
-    }
-
-    const formData = await request.formData();
-    const file = formData.get("file") as File | null;
-    const caption = (formData.get("caption") as string | null) ?? undefined;
-
-    if (!file) {
-      return NextResponse.json(
-        { success: false, error: "No file provided" },
-        { status: 400 }
-      );
-    }
-
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      return NextResponse.json(
-        { success: false, error: "Invalid file type. Use JPG, PNG, WebP, or GIF." },
-        { status: 400 }
-      );
-    }
-
-    if (file.size > MAX_SIZE) {
-      return NextResponse.json(
-        { success: false, error: "File too large. Maximum size is 4 MB." },
-        { status: 400 }
-      );
-    }
-
-    const photoId = crypto.randomUUID();
-    const storageKey = `${session.userId}/gallery/${photoId}`;
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-
-    const { error: uploadError } = await supabaseAdmin.storage
-      .from("profile-photos")
-      .upload(storageKey, buffer, { contentType: file.type });
-
-    if (uploadError) {
-      console.error("Storage upload error:", uploadError);
-      return NextResponse.json(
-        { success: false, error: "Failed to upload image" },
-        { status: 500 }
       );
     }
 
@@ -203,7 +175,7 @@ export async function POST(request: NextRequest) {
       data: { photo: rowToUserPhoto(newPhoto) },
     });
   } catch (error) {
-    console.error("Gallery upload error:", error);
+    console.error("Gallery confirm error:", error);
     return NextResponse.json(
       { success: false, error: "An unexpected error occurred" },
       { status: 500 }
