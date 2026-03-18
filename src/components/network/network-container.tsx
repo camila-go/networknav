@@ -29,10 +29,8 @@ import {
   UserPlus,
 } from "lucide-react";
 import type { NetworkGraphData, NetworkNode, NetworkEdge, MatchType } from "@/types";
-import type { ToastProps } from "@/components/ui/use-toast";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { MeetingRequestModal } from "@/components/meetings/meeting-request-modal";
 
 interface NetworkInsights {
   totalConnections: number;
@@ -321,8 +319,22 @@ export function NetworkContainer() {
         <NetworkMobileCards
           nodes={filteredNodes}
           onNodeSelect={handleMobileNodeSelect}
+          onMeet={(node) => {
+            if (node.email) {
+              window.open(
+                teamsMeetingUrl(node.email, `Meet: ${node.name}`),
+                "_blank",
+                "noopener,noreferrer"
+              );
+            } else {
+              toast({
+                title: "Meet on Teams",
+                description:
+                  "Email isn’t available for this member yet. Open their profile to connect.",
+              });
+            }
+          }}
           getMutualConnections={getMutualConnections}
-          toast={toast}
         />
 
         {/* Graph visualization - hidden on mobile */}
@@ -819,14 +831,32 @@ export function NetworkContainer() {
                     View Profile
                   </Button>
                 </Link>
-                <Button
-                  size="sm"
-                  className="flex-1 gap-1 bg-gradient-to-r from-cyan-500 to-teal-500 text-black hover:from-cyan-400 hover:to-teal-400"
-                  onClick={() => setShowMeetingModal(true)}
-                >
-                  <Calendar className="h-4 w-4" />
-                  Meet
-                </Button>
+                {selectedNode.email ? (
+                  <a
+                    href={teamsMeetingUrl(selectedNode.email, `Meet: ${selectedNode.name}`)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 inline-flex items-center justify-center gap-1 rounded-md text-sm font-medium bg-gradient-to-r from-cyan-500 to-teal-500 text-black hover:from-cyan-400 hover:to-teal-400 px-3 py-2"
+                  >
+                    <Calendar className="h-4 w-4" />
+                    Meet
+                  </a>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="flex-1 gap-1 bg-white/10 text-white/70"
+                    onClick={() =>
+                      toast({
+                        title: "Meet on Teams",
+                        description: "Email isn’t available for this member yet. Open their profile to connect.",
+                      })
+                    }
+                  >
+                    <Calendar className="h-4 w-4" />
+                    Meet
+                  </Button>
+                )}
               </div>
             </div>
           </div>
