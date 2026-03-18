@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { FilterSidebar } from "./filter-sidebar";
 import { AttendeeCard } from "./attendee-card";
 import { ExploreFeedTab } from "./explore-feed-tab";
@@ -30,13 +30,27 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
 import type { SearchFilters, AttendeeSearchResult } from "@/types";
 
+function exploreStateFromSearchParams(
+  sp: ReturnType<typeof useSearchParams>
+): { tab: "feed" | "search"; keywords: string } {
+  const q = sp.get("q")?.trim() ?? "";
+  const tab: "feed" | "search" =
+    q.length > 0 || sp.get("tab") === "search" ? "search" : "feed";
+  return { tab, keywords: q };
+}
+
 export function ExploreContainer() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
 
+  const initialExplore = exploreStateFromSearchParams(searchParams);
+  const [activeTab, setActiveTab] = useState<"feed" | "search">(initialExplore.tab);
   const [filters, setFilters] = useState<SearchFilters>({});
-  const [keywords, setKeywords] = useState("");
-  const [debouncedKeywords, setDebouncedKeywords] = useState("");
+  const [keywords, setKeywords] = useState(initialExplore.keywords);
+  const [debouncedKeywords, setDebouncedKeywords] = useState(
+    initialExplore.keywords
+  );
   const [results, setResults] = useState<AttendeeSearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [sortBy, setSortBy] = useState<"relevance" | "match" | "name" | "level">("relevance");
@@ -48,6 +62,29 @@ export function ExploreContainer() {
   const [viewerFirstName, setViewerFirstName] = useState<string | undefined>();
 
   const pageSize = 12;
+
+  const exploreSearchScope = useMemo((): "all" | "interests" => {
+    return searchParams.get("scope") === "interests" ? "interests" : "all";
+  }, [searchParams]);
+
+  const searchParamsKeyRef = useRef<string | null>(null);
+  useEffect(() => {
+    const key = searchParams.toString();
+    if (searchParamsKeyRef.current === null) {
+      searchParamsKeyRef.current = key;
+      return;
+    }
+    if (searchParamsKeyRef.current === key) return;
+    searchParamsKeyRef.current = key;
+    const q = searchParams.get("q")?.trim() ?? "";
+    if (q || searchParams.get("tab") === "search") {
+      setActiveTab("search");
+      if (q) {
+        setKeywords(q);
+        setDebouncedKeywords(q);
+      }
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     let cancelled = false;
@@ -85,6 +122,7 @@ export function ExploreContainer() {
           page,
           pageSize,
           sortBy,
+          searchScope: exploreSearchScope,
         }),
       });
 
@@ -110,7 +148,15 @@ export function ExploreContainer() {
     } finally {
       setIsLoading(false);
     }
-  }, [filters, debouncedKeywords, page, pageSize, sortBy, toast]);
+  }, [
+    filters,
+    debouncedKeywords,
+    page,
+    pageSize,
+    sortBy,
+    toast,
+    exploreSearchScope,
+  ]);
 
   useEffect(() => {
     performSearch();
@@ -141,7 +187,7 @@ export function ExploreContainer() {
     });
   }
 
-  // Get active filter tags for display
+  // Get active filter tags for display (sidebar filters)
   const activeFilterTags = Object.entries(filters)
     .filter(([, value]) => value && (Array.isArray(value) ? value.length > 0 : value !== ""))
     .flatMap(([key, value]) => {
@@ -151,8 +197,39 @@ export function ExploreContainer() {
       return [{ key, value: value as string }];
     });
 
+  const keywordFilter = debouncedKeywords.trim();
+  type ActiveTag =
+    | { kind: "keyword"; value: string }
+    | { kind: "filter"; key: string; value: string };
+  const activeTagsForDisplay: ActiveTag[] = [
+    ...(keywordFilter ? [{ kind: "keyword" as const, value: keywordFilter }] : []),
+    ...activeFilterTags.map((t) => ({
+      kind: "filter" as const,
+      key: t.key,
+      value: t.value,
+    })),
+  ];
+  const showActiveFiltersRow = activeTagsForDisplay.length > 0;
+  const MAX_VISIBLE_TAGS = 6;
+  const visibleActiveTags = activeTagsForDisplay.slice(0, MAX_VISIBLE_TAGS);
+  const overflowTagCount = activeTagsForDisplay.length - visibleActiveTags.length;
+
+  function clearKeywordFilter() {
+    setKeywords("");
+    setDebouncedKeywords("");
+  }
+
+  function clearAllFiltersAndSearch() {
+    setFilters({});
+    clearKeywordFilter();
+  }
+
   return (
-    <Tabs defaultValue="feed" className="flex flex-col h-full bg-black min-h-0">
+    <Tabs
+      value={activeTab}
+      onValueChange={(v) => setActiveTab(v as "feed" | "search")}
+      className="flex flex-col h-full bg-black min-h-0"
+    >
       <div className="flex-shrink-0 z-20 w-full border-b border-white/10 bg-gradient-to-b from-zinc-900/95 to-black">
         <TabsList className="grid w-full grid-cols-2 h-12 sm:h-14 rounded-none border-0 bg-transparent p-0 gap-0">
           <TabsTrigger
@@ -298,38 +375,66 @@ export function ExploreContainer() {
               </Button>
             </div>
           </div>
+          {exploreSearchScope === "interests" && debouncedKeywords.trim() && (
+            <p className="text-xs text-cyan-400/85">
+              Interest search: only people who selected matching topics in their
+              questionnaire.
+            </p>
+          )}
 
-          {/* Active filter tags */}
-          {activeFilterTags.length > 0 && (
+          {/* Active filter tags (search keyword + sidebar filters) */}
+          {showActiveFiltersRow && (
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-sm text-white/50">Active filters:</span>
-              {activeFilterTags.slice(0, 5).map(({ key, value }, index) => (
-                <span
-                  key={`${key}-${value}-${index}`}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-cyan-500/10 text-cyan-400 border border-cyan-500/30"
-                >
-                  {value}
-                  <button
-                    onClick={() => {
-                      const currentValues = (filters[key as keyof SearchFilters] as string[]) || [];
-                      handleFiltersChange({
-                        ...filters,
-                        [key]: currentValues.filter((v) => v !== value),
-                      });
-                    }}
-                    className="ml-0.5 p-0.5 hover:bg-cyan-500/20 rounded-full transition-colors"
+              {visibleActiveTags.map((tag, index) =>
+                tag.kind === "keyword" ? (
+                  <span
+                    key={`keyword-${tag.value}`}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-violet-500/15 text-violet-300 border border-violet-500/35"
+                    title="Search keyword"
                   >
-                    <X className="h-3 w-3" />
-                  </button>
-                </span>
-              ))}
-              {activeFilterTags.length > 5 && (
+                    <Search className="h-3 w-3 shrink-0 opacity-80" />
+                    {tag.value}
+                    <button
+                      type="button"
+                      onClick={clearKeywordFilter}
+                      className="ml-0.5 p-0.5 hover:bg-violet-500/25 rounded-full transition-colors"
+                      aria-label="Remove search"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ) : (
+                  <span
+                    key={`${tag.key}-${tag.value}-${index}`}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-cyan-500/10 text-cyan-400 border border-cyan-500/30"
+                  >
+                    {tag.value}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const currentValues =
+                          (filters[tag.key as keyof SearchFilters] as string[]) || [];
+                        handleFiltersChange({
+                          ...filters,
+                          [tag.key]: currentValues.filter((v) => v !== tag.value),
+                        });
+                      }}
+                      className="ml-0.5 p-0.5 hover:bg-cyan-500/20 rounded-full transition-colors"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                )
+              )}
+              {overflowTagCount > 0 && (
                 <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-white/5 text-white/70 border border-white/10">
-                  +{activeFilterTags.length - 5} more
+                  +{overflowTagCount} more
                 </span>
               )}
               <button
-                onClick={() => setFilters({})}
+                type="button"
+                onClick={clearAllFiltersAndSearch}
                 className="text-sm text-cyan-400 hover:text-cyan-300 underline underline-offset-2"
               >
                 Clear all
@@ -353,13 +458,10 @@ export function ExploreContainer() {
               <p className="text-white/50 max-w-md">
                 Try adjusting your filters or search terms to find more connections.
               </p>
-              {activeFilterTags.length > 0 && (
+              {showActiveFiltersRow && (
                 <Button
                   variant="outline"
-                  onClick={() => {
-                    setFilters({});
-                    setKeywords("");
-                  }}
+                  onClick={clearAllFiltersAndSearch}
                   className="mt-4 border-white/20 text-white hover:bg-white/10"
                 >
                   Clear all filters
