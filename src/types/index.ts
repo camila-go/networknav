@@ -321,6 +321,8 @@ export interface AttendeeSearchResult {
   matchPercentage: number;
   topCommonalities: Commonality[];
   questionnaire?: Partial<QuestionnaireData>;
+  /** Human-readable interests that matched the search keywords (explore search) */
+  searchMatchLabels?: string[];
 }
 
 // ============================================

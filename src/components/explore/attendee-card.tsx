@@ -20,7 +20,8 @@ interface AttendeeCardProps {
 
 export function AttendeeCard({ attendee, onPass, viewerFirstName }: AttendeeCardProps) {
   const [showAllCommonalities, setShowAllCommonalities] = useState(false);
-  const { user, matchPercentage, topCommonalities } = attendee;
+  const { user, matchPercentage, topCommonalities, searchMatchLabels } =
+    attendee;
 
   const initials = user.profile.name
     .split(" ")
@@ -123,6 +124,16 @@ export function AttendeeCard({ attendee, onPass, viewerFirstName }: AttendeeCard
       </div>
 
       <div className="px-6 pb-4 space-y-4">
+        {searchMatchLabels && searchMatchLabels.length > 0 && (
+          <div className="rounded-lg border border-cyan-500/25 bg-cyan-500/5 px-3 py-2">
+            <p className="text-[10px] font-medium uppercase tracking-wider text-cyan-400/90 mb-1">
+              Matches your search
+            </p>
+            <p className="text-sm text-white/90">
+              {searchMatchLabels.join(" · ")}
+            </p>
+          </div>
+        )}
         {/* Commonalities */}
         {topCommonalities.length > 0 && (
           <div>
