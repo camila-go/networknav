@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2, Save } from "lucide-react";
+import { Loader2, Save, Camera, X } from "lucide-react";
 import { profileSchema, type ProfileInput } from "@/lib/validations";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,12 +14,17 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 export function ProfileForm() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const {
     register,
     handleSubmit,
     reset,
     watch,
+    setValue,
     formState: { errors, isSubmitting, isDirty },
   } = useForm<ProfileInput>({
     resolver: zodResolver(profileSchema),
@@ -32,6 +37,13 @@ export function ProfileForm() {
     .join("")
     .toUpperCase()
     .slice(0, 2);
+
+  // Revoke object URL on cleanup to avoid memory leaks
+  useEffect(() => {
+    return () => {
+      if (avatarPreview) URL.revokeObjectURL(avatarPreview);
+    };
+  }, [avatarPreview]);
 
   useEffect(() => {
     fetchProfile();
@@ -56,6 +68,81 @@ export function ProfileForm() {
       console.error("Failed to fetch profile:", error);
     } finally {
       setIsLoading(false);
+    }
+  }
+
+  function handleAvatarSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setAvatarError(null);
+
+    const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!allowed.includes(file.type)) {
+      setAvatarError("Invalid file type. Use JPG, PNG, WebP, or GIF.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setAvatarError("File too large. Maximum size is 5 MB.");
+      return;
+    }
+
+    const preview = URL.createObjectURL(file);
+    setAvatarPreview(preview);
+    uploadAvatar(file);
+
+    // Reset input so the same file can be re-selected
+    e.target.value = "";
+  }
+
+  async function uploadAvatar(file: File) {
+    setUploadingAvatar(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/api/profile/avatar", {
+        method: "POST",
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setValue("photoUrl", result.data.photoUrl, { shouldDirty: false });
+        if (avatarPreview) URL.revokeObjectURL(avatarPreview);
+        setAvatarPreview(null);
+        toast({ variant: "success", title: "Photo updated" });
+      } else {
+        setAvatarError(result.error ?? "Upload failed");
+        setAvatarPreview(null);
+      }
+    } catch {
+      setAvatarError("Upload failed. Please try again.");
+      setAvatarPreview(null);
+    } finally {
+      setUploadingAvatar(false);
+    }
+  }
+
+  async function removeAvatar() {
+    setValue("photoUrl", "", { shouldDirty: false });
+    setAvatarPreview(null);
+    try {
+      await fetch("/api/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: watch("name"),
+          position: watch("position"),
+          title: watch("title"),
+          company: watch("company"),
+          location: watch("location"),
+          photoUrl: "",
+        }),
+      });
+    } catch {
+      // Non-blocking
     }
   }
 
@@ -100,24 +187,56 @@ export function ProfileForm() {
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       {/* Avatar */}
       <div className="flex items-center gap-4">
-        <Avatar className="h-20 w-20 border-2 border-white/20">
-          <AvatarImage src={watch("photoUrl")} />
-          <AvatarFallback className="bg-gradient-to-br from-cyan-500 to-teal-500 text-black text-xl font-semibold">
-            {initials || "?"}
-          </AvatarFallback>
-        </Avatar>
-        <div className="flex-1">
-          <Label htmlFor="photoUrl" className="text-white/80">Photo URL</Label>
-          <Input
-            id="photoUrl"
-            type="url"
-            placeholder="https://example.com/photo.jpg"
-            {...register("photoUrl")}
-            className="bg-white/5 border-white/20 text-white placeholder:text-white/40"
+        <div className="relative group">
+          <Avatar className="h-20 w-20 border-2 border-white/20">
+            <AvatarImage src={avatarPreview ?? watch("photoUrl")} />
+            <AvatarFallback className="bg-gradient-to-br from-cyan-500 to-teal-500 text-black text-xl font-semibold">
+              {initials || "?"}
+            </AvatarFallback>
+          </Avatar>
+          {uploadingAvatar && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-full">
+              <Loader2 className="h-5 w-5 animate-spin text-white" />
+            </div>
+          )}
+        </div>
+        <div className="flex flex-col gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            onChange={handleAvatarSelect}
+            className="hidden"
           />
-          <p className="text-xs text-white/50 mt-1">
-            Enter a URL to your profile photo
-          </p>
+          {/* Keep photoUrl registered as hidden for form submission */}
+          <input type="hidden" {...register("photoUrl")} />
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={uploadingAvatar}
+            onClick={() => fileInputRef.current?.click()}
+            className="border-white/20 text-white/80 hover:bg-white/10"
+          >
+            <Camera className="mr-2 h-4 w-4" />
+            {uploadingAvatar ? "Uploading..." : "Change Photo"}
+          </Button>
+          {watch("photoUrl") && !uploadingAvatar && (
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={removeAvatar}
+              className="text-white/50 hover:text-white/80 hover:bg-white/5"
+            >
+              <X className="mr-2 h-4 w-4" />
+              Remove
+            </Button>
+          )}
+          {avatarError && (
+            <p className="text-xs text-red-400">{avatarError}</p>
+          )}
+          <p className="text-xs text-white/40">JPG, PNG, WebP or GIF · max 5 MB</p>
         </div>
       </div>
 

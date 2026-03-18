@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn, teamsChartUrl, teamsMeetingUrl } from "@/lib/utils";
 import { BadgeDisplay } from "@/components/gamification/badge-display";
 import type { UserBadge } from "@/types";
+import { PhotoGallery } from "@/components/profile/photo-gallery";
 
 interface UserInterests {
   rechargeActivities: string[];
@@ -564,6 +565,9 @@ export default function UserProfilePage() {
           </div>
         </div>
       )}
+
+      {/* Photo Gallery — self-hides when empty and isOwner=false */}
+      <PhotoGallery userId={userId} isOwner={isOwnProfile} withContainer={true} />
 
       {/* Connections Section */}
       {userConnections.length > 0 && (

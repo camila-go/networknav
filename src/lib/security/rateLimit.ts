@@ -33,6 +33,10 @@ export const RATE_LIMITS = {
   'schedule-meeting': { maxRequests: 20, windowMs: 60 * 60 * 1000 }, // 20 per hour
   'send-message': { maxRequests: 50, windowMs: 60 * 60 * 1000 }, // 50 per hour
 
+  // File uploads
+  'upload-avatar': { maxRequests: 10, windowMs: 60 * 60 * 1000 }, // 10 per hour
+  'upload-gallery-photo': { maxRequests: 20, windowMs: 60 * 60 * 1000 }, // 20 per hour
+
   // Calendar reads
   'calendar-read': { maxRequests: 60, windowMs: 60 * 60 * 1000 }, // 60 per hour
   
