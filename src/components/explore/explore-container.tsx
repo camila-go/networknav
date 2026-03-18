@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { FilterSidebar } from "./filter-sidebar";
 import { AttendeeCard } from "./attendee-card";
+import { ExploreFeedTab } from "./explore-feed-tab";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -43,8 +45,24 @@ export function ExploreContainer() {
   const [page, setPage] = useState(1);
   const [totalResults, setTotalResults] = useState(0);
   const [hasMore, setHasMore] = useState(false);
+  const [viewerFirstName, setViewerFirstName] = useState<string | undefined>();
 
   const pageSize = 12;
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/profile")
+      .then((r) => r.json())
+      .then((d) => {
+        if (cancelled || !d.success || !d.data?.user?.profile?.name) return;
+        const first = String(d.data.user.profile.name).trim().split(/\s+/)[0];
+        if (first) setViewerFirstName(first);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Debounce keywords
   useEffect(() => {
@@ -112,6 +130,10 @@ export function ExploreContainer() {
     router.push(`/messages?targetUserId=${userId}`);
   }
 
+  function handlePassAttendee(userId: string) {
+    setResults((prev) => prev.filter((r) => r.user.id !== userId));
+  }
+
   function handleSaveSearch() {
     toast({
       title: "Search saved!",
@@ -130,7 +152,36 @@ export function ExploreContainer() {
     });
 
   return (
-    <div className="flex h-full bg-black">
+    <Tabs defaultValue="feed" className="flex flex-col h-full bg-black min-h-0">
+      <div className="flex-shrink-0 z-20 w-full border-b border-white/10 bg-gradient-to-b from-zinc-900/95 to-black">
+        <TabsList className="grid w-full grid-cols-2 h-12 sm:h-14 rounded-none border-0 bg-transparent p-0 gap-0">
+          <TabsTrigger
+            value="feed"
+            className="rounded-none border-0 border-r border-white/10 data-[state=active]:bg-teal-500/15 data-[state=active]:text-teal-300 data-[state=active]:shadow-[inset_0_-3px_0_0_rgba(45,212,191,0.9)] text-white/55 data-[state=inactive]:hover:bg-white/5 text-sm sm:text-base font-medium"
+          >
+            Feed
+          </TabsTrigger>
+          <TabsTrigger
+            value="search"
+            className="rounded-none border-0 data-[state=active]:bg-cyan-500/15 data-[state=active]:text-cyan-300 data-[state=active]:shadow-[inset_0_-3px_0_0_rgba(34,211,238,0.9)] text-white/55 data-[state=inactive]:hover:bg-white/5 text-sm sm:text-base font-medium"
+          >
+            Search
+          </TabsTrigger>
+        </TabsList>
+      </div>
+
+      <TabsContent
+        value="feed"
+        className="flex-1 min-h-0 m-0 p-0 border-0 outline-none data-[state=inactive]:hidden overflow-y-auto"
+      >
+        <ExploreFeedTab />
+      </TabsContent>
+
+      <TabsContent
+        value="search"
+        className="flex-1 flex min-h-0 m-0 p-0 border-0 outline-none data-[state=inactive]:hidden overflow-hidden"
+      >
+    <div className="flex h-full min-h-0 w-full bg-black">
       {/* Desktop filter sidebar */}
       <aside className="hidden lg:block w-72 border-r border-white/10 bg-black/50 flex-shrink-0">
         <FilterSidebar
@@ -324,9 +375,11 @@ export function ExploreContainer() {
               </p>
 
               {/* Mobile: Horizontal swipeable cards */}
-              <MobileCardSwiper 
-                results={results} 
-                onRequestMeeting={handleRequestMeeting} 
+              <MobileCardSwiper
+                results={results}
+                onRequestMeeting={handleRequestMeeting}
+                onPassAttendee={handlePassAttendee}
+                viewerFirstName={viewerFirstName}
               />
 
               {/* Desktop: Grid/List */}
@@ -343,6 +396,8 @@ export function ExploreContainer() {
                     key={attendee.user.id}
                     attendee={attendee}
                     onRequestMeeting={handleRequestMeeting}
+                    onPass={handlePassAttendee}
+                    viewerFirstName={viewerFirstName}
                   />
                 ))}
               </div>
@@ -380,16 +435,22 @@ export function ExploreContainer() {
         </div>
       </main>
     </div>
+      </TabsContent>
+    </Tabs>
   );
 }
 
 // Mobile swipeable cards component
-function MobileCardSwiper({ 
-  results, 
-  onRequestMeeting 
-}: { 
-  results: AttendeeSearchResult[]; 
+function MobileCardSwiper({
+  results,
+  onRequestMeeting,
+  onPassAttendee,
+  viewerFirstName,
+}: {
+  results: AttendeeSearchResult[];
   onRequestMeeting: (userId: string) => void;
+  onPassAttendee: (userId: string) => void;
+  viewerFirstName?: string;
 }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -427,6 +488,8 @@ function MobileCardSwiper({
             <AttendeeCard
               attendee={attendee}
               onRequestMeeting={onRequestMeeting}
+              onPass={onPassAttendee}
+              viewerFirstName={viewerFirstName}
             />
           </div>
         ))}

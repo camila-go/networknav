@@ -7,6 +7,8 @@ import type { NetworkGraphData, NetworkNode, NetworkEdge } from "@/types";
 interface NetworkGraphProps {
   data: NetworkGraphData | null;
   onNodeClick?: (node: NetworkNode) => void;
+  /** Double-click opens profile (skip neutral "You" and discoverable if handled elsewhere) */
+  onNodeDoubleClick?: (node: NetworkNode) => void;
   onNodeHover?: (node: NetworkNode | null) => void;
   filter?: "all" | "high-affinity" | "strategic";
   selectedNodeId?: string;
@@ -24,6 +26,7 @@ interface SimulationLink extends d3.SimulationLinkDatum<SimulationNode> {
 export function NetworkGraph({
   data,
   onNodeClick,
+  onNodeDoubleClick,
   onNodeHover,
   filter = "all",
   selectedNodeId: externalSelectedNodeId,
@@ -299,7 +302,7 @@ export function NetworkGraph({
     node
       .on("click", function (event, d) {
         event.stopPropagation();
-        
+
         // Toggle selection
         if (internalSelectedNodeId === d.id) {
           setInternalSelectedNodeId(null);
@@ -308,8 +311,13 @@ export function NetworkGraph({
           setInternalSelectedNodeId(d.id);
           highlightConnections(d);
         }
-        
+
         onNodeClick?.(d);
+      })
+      .on("dblclick", function (event, d) {
+        event.stopPropagation();
+        if (d.matchType === "neutral") return;
+        onNodeDoubleClick?.(d);
       });
 
     // Click on background to deselect

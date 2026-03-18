@@ -3,11 +3,12 @@
 import { useEffect, useState, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, MessageCircle, Sparkles, Zap, Briefcase, Building2, Calendar, Trophy, Activity, Users, Flame, TrendingUp, Search, X, Award, Heart, Dumbbell, BookOpen, Target, HandHeart, ExternalLink } from "lucide-react";
+import { ArrowLeft, MessageCircle, Sparkles, Zap, Briefcase, Building2, Trophy, Activity, Users, Flame, TrendingUp, Search, X, Award, Heart, Dumbbell, BookOpen, Target, HandHeart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { cn, teamsChartUrl, teamsMeetingUrl } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+import { TeamsActionButtons } from "@/components/network/teams-action-buttons";
 import { BadgeDisplay } from "@/components/gamification/badge-display";
 import type { UserBadge } from "@/types";
 
@@ -368,28 +369,14 @@ export default function UserProfilePage() {
 
           {/* Action buttons - hide on own profile */}
           {!isOwnProfile && userEmail && (
-            <div className="flex flex-row sm:flex-col gap-2 w-full sm:w-auto">
-              <a
-                href={teamsChartUrl(userEmail)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white/70 border border-white/20 hover:text-white hover:border-white/40 hover:bg-white/5 transition-colors"
-              >
-                <MessageCircle className="h-4 w-4" />
-                Chat
-                <ExternalLink className="h-3 w-3 opacity-60" />
-              </a>
-              <a
-                href={teamsMeetingUrl(userEmail, `Meet with ${profile?.name || ''}`)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white/70 border border-white/20 hover:text-white hover:border-white/40 hover:bg-white/5 transition-colors"
-              >
-                <Calendar className="h-4 w-4" />
-                Schedule
-                <ExternalLink className="h-3 w-3 opacity-60" />
-              </a>
-            </div>
+            <TeamsActionButtons
+              targetEmail={userEmail}
+              targetName={profile?.name ?? ""}
+              targetUserId={userId}
+              source="user_profile"
+              showPass={false}
+              className="flex-col sm:flex-row sm:flex-nowrap w-full sm:w-auto max-w-md"
+            />
           )}
         </div>
       </div>
@@ -779,28 +766,14 @@ export default function UserProfilePage() {
       {/* Quick action footer - hide on own profile */}
       {!isOwnProfile && userEmail && (
         <div className="rounded-xl bg-white/5 border border-white/10 p-4">
-          <div className="flex gap-2">
-            <a
-              href={teamsChartUrl(userEmail)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium text-white/70 border border-white/10 hover:text-white hover:border-white/30 hover:bg-white/5 transition-colors"
-            >
-              <MessageCircle className="h-4 w-4" />
-              Chat in Teams
-              <ExternalLink className="h-3.5 w-3.5 opacity-60" />
-            </a>
-            <a
-              href={teamsMeetingUrl(userEmail, `Meet with ${profile?.name || ''}`)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium text-white/70 border border-white/10 hover:text-white hover:border-white/30 hover:bg-white/5 transition-colors"
-            >
-              <Calendar className="h-4 w-4" />
-              Schedule in Teams
-              <ExternalLink className="h-3.5 w-3.5 opacity-60" />
-            </a>
-          </div>
+          <TeamsActionButtons
+            targetEmail={userEmail}
+            targetName={profile?.name ?? ""}
+            targetUserId={userId}
+            source="user_profile"
+            showPass={false}
+            className="flex-col sm:flex-row"
+          />
         </div>
       )}
     </div>

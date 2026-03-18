@@ -17,6 +17,7 @@ const POINTS: Record<ActivityType, number> = {
   meeting_scheduled: 25,
   connection_made: 15,
   intro_requested: 10,
+  explore_pass: 2,
 };
 
 // ============================================
@@ -42,6 +43,7 @@ interface StatsRow {
   meetings_scheduled: number;
   connections_made: number;
   intros_requested: number;
+  explore_passes?: number;
   current_daily_streak: number;
   current_weekly_streak: number;
   longest_daily_streak: number;
@@ -77,6 +79,7 @@ function mapRowToStats(row: StatsRow): GamificationStats {
     meetingsScheduled: row.meetings_scheduled,
     connectionsMade: row.connections_made,
     introsRequested: row.intros_requested,
+    explorePasses: row.explore_passes ?? 0,
     currentDailyStreak: row.current_daily_streak,
     currentWeeklyStreak: row.current_weekly_streak,
     longestDailyStreak: row.longest_daily_streak,
@@ -132,6 +135,7 @@ function createEmptyStats(userId: string): GamificationStats {
     meetingsScheduled: 0,
     connectionsMade: 0,
     introsRequested: 0,
+    explorePasses: 0,
     currentDailyStreak: 0,
     currentWeeklyStreak: 0,
     longestDailyStreak: 0,
@@ -186,35 +190,82 @@ async function logActivity(
     return null;
   }
 
-  // Update stats
-  const statField = getStatFieldForActivity(activityType);
   const now = new Date();
-  
-  const { error: statsError } = await supabaseAdmin.rpc("increment_gamification_stats", {
-    p_user_id: userId,
-    p_points: points,
-    p_stat_field: statField,
-    p_last_active: now.toISOString(),
-  });
 
-  // Fallback if RPC doesn't exist - use direct update
-  if (statsError) {
-    await supabaseAdmin
+  if (activityType === "explore_pass") {
+    const { data: existingStats } = await supabaseAdmin
       .from("user_gamification_stats")
-      .upsert({
+      .select("*")
+      .eq("user_id", userId)
+      .single();
+
+    const prevPasses = (existingStats as StatsRow | null)?.explore_passes ?? 0;
+
+    if (existingStats) {
+      await supabaseAdmin
+        .from("user_gamification_stats")
+        .update({
+          total_points: ((existingStats as StatsRow).total_points || 0) + points,
+          points_this_week: ((existingStats as StatsRow).points_this_week || 0) + points,
+          points_this_month: ((existingStats as StatsRow).points_this_month || 0) + points,
+          explore_passes: prevPasses + 1,
+          last_active_at: now.toISOString(),
+        })
+        .eq("user_id", userId);
+    } else {
+      await supabaseAdmin.from("user_gamification_stats").insert({
         user_id: userId,
         total_points: points,
         points_this_week: points,
         points_this_month: points,
-        [statField]: 1,
+        explore_passes: 1,
         last_active_at: now.toISOString(),
-      }, { onConflict: "user_id" });
+      });
+    }
+  } else {
+    const statField = getStatFieldForActivity(activityType);
+    const { error: statsError } = await supabaseAdmin.rpc("increment_gamification_stats", {
+      p_user_id: userId,
+      p_points: points,
+      p_stat_field: statField,
+      p_last_active: now.toISOString(),
+    });
+
+    if (statsError) {
+      const { data: existingStats } = await supabaseAdmin
+        .from("user_gamification_stats")
+        .select("*")
+        .eq("user_id", userId)
+        .single();
+
+      if (existingStats) {
+        const row = existingStats as StatsRow;
+        const fieldKey = statField as keyof StatsRow;
+        const prev = Number(row[fieldKey] ?? 0);
+        await supabaseAdmin
+          .from("user_gamification_stats")
+          .update({
+            total_points: (row.total_points || 0) + points,
+            points_this_week: (row.points_this_week || 0) + points,
+            points_this_month: (row.points_this_month || 0) + points,
+            [statField]: prev + 1,
+            last_active_at: now.toISOString(),
+          })
+          .eq("user_id", userId);
+      } else {
+        await supabaseAdmin.from("user_gamification_stats").insert({
+          user_id: userId,
+          total_points: points,
+          points_this_week: points,
+          points_this_month: points,
+          [statField]: 1,
+          last_active_at: now.toISOString(),
+        });
+      }
+    }
   }
 
-  // Update streaks
   await updateStreaks(userId);
-
-  // Check for new badges
   await checkAndAwardBadges(userId, activityType);
 
   return mapRowToActivity(activityData as ActivityRow);
@@ -230,6 +281,8 @@ function getStatFieldForActivity(activityType: ActivityType): string {
       return "connections_made";
     case "intro_requested":
       return "intros_requested";
+    case "explore_pass":
+      return "explore_passes";
     default:
       return "messages_sent";
   }
@@ -382,6 +435,7 @@ export async function POST(request: NextRequest) {
       "meeting_scheduled",
       "connection_made",
       "intro_requested",
+      "explore_pass",
     ];
 
     if (!validTypes.includes(activityType)) {

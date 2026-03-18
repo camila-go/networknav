@@ -1,6 +1,6 @@
 "use client";
 
-import { MessageCircle, Users, Calendar, Flame, Trophy, Lock } from "lucide-react";
+import { MessageCircle, Users, Calendar, Flame, Trophy, Lock, Filter } from "lucide-react";
 import type { UserBadge, BadgeType, BadgeTier } from "@/types";
 import { cn } from "@/lib/utils";
 
@@ -37,6 +37,7 @@ const BADGE_NAMES: Record<BadgeType, string> = {
   meeting_master: "Meeting Master",
   networking_streak: "Networking Streak",
   weekly_warrior: "Weekly Warrior",
+  thoughtful_curator: "Thoughtful Curator",
 };
 
 const TIER_COLORS: Record<BadgeTier, { bg: string; border: string; text: string; gradient: string }> = {
@@ -71,6 +72,7 @@ export function BadgeDisplay({ badges, progress, showProgress = false, compact =
     "meeting_master",
     "networking_streak",
     "weekly_warrior",
+    "thoughtful_curator",
   ];
 
   return (

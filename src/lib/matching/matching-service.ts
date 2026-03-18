@@ -166,7 +166,12 @@ function createMatch(userId: string, candidate: MatchCandidate): Match {
   const conversationStarters = generateConversationStarters(
     candidate.commonalities,
     candidate.matchType,
-    firstName
+    firstName,
+    {
+      theirPosition: candidate.user.profile.position,
+      theirCompany: candidate.user.profile.company,
+      seed: `${userId}-${candidate.user.id}`,
+    }
   );
 
   return {

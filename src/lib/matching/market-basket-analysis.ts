@@ -6,6 +6,8 @@
  */
 
 import type { QuestionnaireData, Commonality, CommonalityCategory } from "@/types";
+import type { ConversationStarterExtras } from "@/lib/conversation-starters";
+import { buildPersonalizedConversationStarters } from "@/lib/conversation-starters";
 
 // ============================================
 // Types
@@ -419,56 +421,14 @@ function deduplicateCommonalities(commonalities: Commonality[]): Commonality[] {
 export function generateConversationStarters(
   commonalities: Commonality[],
   matchType: "high-affinity" | "strategic",
-  recipientFirstName?: string
+  recipientFirstName?: string,
+  extras?: ConversationStarterExtras
 ): string[] {
-  const starters: string[] = [];
-  const name = recipientFirstName || "them";
-
-  for (const commonality of commonalities.slice(0, 2)) {
-    const desc = commonality.description.toLowerCase();
-    
-    if (commonality.category === "professional") {
-      if (matchType === "high-affinity") {
-        // More conversational phrasing for similar backgrounds
-        if (desc.includes("both in") || desc.includes("industry")) {
-          starters.push(`I'd love to hear how you're navigating our industry right now`);
-        } else if (desc.includes("scaling") || desc.includes("team")) {
-          starters.push(`Would love to swap stories about scaling teams`);
-        } else if (desc.includes("challenges")) {
-          starters.push(`I'm curious how you've been tackling similar challenges`);
-        } else {
-          starters.push(`I think we'd have a lot to learn from each other`);
-        }
-      } else {
-        // Strategic matches - focus on complementary value
-        if (desc.includes("complementary")) {
-          starters.push(`Your perspective would be really valuable for what I'm working on`);
-        } else {
-          starters.push(`I'd love to get your take on this from your vantage point`);
-        }
-      }
-    } else if (commonality.category === "hobby") {
-      // Make hobby starters feel like genuine connection
-      const hobby = desc.replace("both enjoy", "").replace("both", "").trim();
-      if (hobby) {
-        starters.push(`Fellow ${hobby} enthusiast! Would love to chat about that too`);
-      }
-    } else if (commonality.category === "values") {
-      starters.push(`It sounds like we share a similar leadership philosophy`);
-    }
-  }
-
-  // Add warm, personable fallback starters
-  if (starters.length === 0) {
-    if (matchType === "high-affinity") {
-      starters.push(`I think we'd really hit it off — let's connect!`);
-    } else {
-      starters.push(`I'd value hearing your different perspective on things`);
-    }
-  }
-
-  // Deduplicate and limit
-  const unique = [...new Set(starters)];
-  return unique.slice(0, 3);
+  return buildPersonalizedConversationStarters(
+    commonalities,
+    matchType,
+    recipientFirstName,
+    extras
+  );
 }
 

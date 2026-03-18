@@ -138,10 +138,23 @@ export function MatchesGrid({ onMatchesLoaded }: MatchesGridProps = {}) {
   const [isLoading, setIsLoading] = useState(true);
   const [streaks, setStreaks] = useState<StreakStatus | null>(null);
   const [encouragement, setEncouragement] = useState<{ icon: React.ComponentType<{ className?: string }>; text: string; color: string } | null>(null);
+  const [viewerFirstName, setViewerFirstName] = useState<string | undefined>();
 
   useEffect(() => {
     fetchMatches();
     fetchStreakData();
+    let cancelled = false;
+    fetch("/api/profile")
+      .then((r) => r.json())
+      .then((d) => {
+        if (cancelled || !d.success || !d.data?.user?.profile?.name) return;
+        const first = String(d.data.user.profile.name).trim().split(/\s+/)[0];
+        if (first) setViewerFirstName(first);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   async function fetchStreakData() {
@@ -304,6 +317,7 @@ export function MatchesGrid({ onMatchesLoaded }: MatchesGridProps = {}) {
         <MatchGrid
           matches={matches.filter((m) => !m.passed)}
           onPass={handlePass}
+          viewerFirstName={viewerFirstName}
         />
       </TabsContent>
 
@@ -311,6 +325,7 @@ export function MatchesGrid({ onMatchesLoaded }: MatchesGridProps = {}) {
         <MatchGrid
           matches={highAffinityMatches}
           onPass={handlePass}
+          viewerFirstName={viewerFirstName}
         />
       </TabsContent>
 
@@ -318,6 +333,7 @@ export function MatchesGrid({ onMatchesLoaded }: MatchesGridProps = {}) {
         <MatchGrid
           matches={strategicMatches}
           onPass={handlePass}
+          viewerFirstName={viewerFirstName}
         />
       </TabsContent>
       </Tabs>
@@ -328,9 +344,11 @@ export function MatchesGrid({ onMatchesLoaded }: MatchesGridProps = {}) {
 function MatchGrid({
   matches,
   onPass,
+  viewerFirstName,
 }: {
   matches: MatchWithUser[];
   onPass: (id: string) => void;
+  viewerFirstName?: string;
 }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -376,7 +394,7 @@ function MatchGrid({
               key={match.id}
               className="flex-shrink-0 w-[85vw] max-w-[340px] snap-start"
             >
-              <MatchCard match={match} onPass={onPass} />
+              <MatchCard match={match} onPass={onPass} viewerFirstName={viewerFirstName} />
             </div>
           ))}
         </div>
@@ -412,7 +430,7 @@ function MatchGrid({
             className="animate-fade-in"
             style={{ animationDelay: `${index * 100}ms` }}
           >
-            <MatchCard match={match} onPass={onPass} />
+            <MatchCard match={match} onPass={onPass} viewerFirstName={viewerFirstName} />
           </div>
         ))}
       </div>
