@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth";
 import { users, userMatches } from "@/lib/stores";
 import { cookies } from "next/headers";
 import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
+import { cache, CACHE_KEYS, CACHE_TTLS } from "@/lib/cache";
 import type { NetworkGraphData, NetworkNode, NetworkEdge, NetworkCluster, MatchType } from "@/types";
 
 async function fetchProfileBasics(
@@ -77,10 +78,13 @@ function buildNetworkFromMatches(userId: string): NetworkGraphData {
     });
   }
 
-  const matches = userMatches.get(userId) || [];
-  for (const match of matches) {
-    if (match.passed) continue;
+  // Top matches by score, cap 80 — performant with large attendee lists (friend’s optimization)
+  const matches = (userMatches.get(userId) || [])
+    .filter((m) => !m.passed)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 80);
 
+  for (const match of matches) {
     const matchType: MatchType = match.type;
     const commonalityDescriptions = match.commonalities.map((c) => c.description);
 
@@ -164,6 +168,16 @@ export async function GET(_request: NextRequest) {
           extendedNetwork: {} as Record<string, Array<{ id: string; name: string; title: string; company: string; reason: string }>>,
         },
       });
+    }
+
+    const cacheKey = CACHE_KEYS.NETWORK_DATA(currentUserId);
+    const cached = cache.get<{
+      network: NetworkGraphData;
+      insights: object;
+      extendedNetwork: object;
+    }>(cacheKey);
+    if (cached) {
+      return NextResponse.json({ success: true, data: cached });
     }
 
     let networkData = buildNetworkFromMatches(currentUserId);
@@ -291,13 +305,12 @@ export async function GET(_request: NextRequest) {
       });
     }
 
+    const responseData = { network: networkData, insights, extendedNetwork };
+    cache.set(cacheKey, responseData, CACHE_TTLS.NETWORK_DATA);
+
     return NextResponse.json({
       success: true,
-      data: {
-        network: networkData,
-        insights,
-        extendedNetwork,
-      },
+      data: responseData,
     });
   } catch (error) {
     console.error("Network data error:", error);

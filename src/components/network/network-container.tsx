@@ -367,7 +367,10 @@ export function NetworkContainer() {
             {/* Scrollable content */}
             <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-4">
               {/* Header */}
-              <div className="flex items-start gap-3">
+              <Link
+                href={`/user/${selectedNode.id}`}
+                className="flex items-start gap-3 rounded-xl hover:bg-white/5 -m-1 p-1 transition-colors"
+              >
                 <Avatar className="h-14 w-14 border-2 border-white/20 shrink-0">
                   <AvatarFallback className={cn(
                     "text-black font-semibold text-lg",
@@ -379,7 +382,7 @@ export function NetworkContainer() {
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-lg text-white">{selectedNode.name}</p>
+                  <p className="font-semibold text-lg text-white hover:text-cyan-300">{selectedNode.name}</p>
                   <p className="text-sm text-white/60">{selectedNode.title}</p>
                   {selectedNode.company && (
                     <p className="text-sm text-cyan-400">{selectedNode.company}</p>
