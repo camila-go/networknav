@@ -2,6 +2,7 @@
 
 import { Suspense, useState, useEffect } from "react";
 import { ProfileForm } from "@/components/profile/profile-form";
+import { PhotoGallery } from "@/components/profile/photo-gallery";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -187,6 +188,19 @@ export default function ProfilePage() {
             <ProfileForm />
           </Suspense>
         </div>
+
+        {/* Photo Gallery */}
+        {currentUserId && (
+          <div className="rounded-xl bg-white/5 border border-white/10 p-6">
+            <div className="mb-4">
+              <h2 className="text-lg font-semibold text-white">Photo Gallery</h2>
+              <p className="text-sm text-white/50">
+                Share photos from your leadership journey
+              </p>
+            </div>
+            <PhotoGallery userId={currentUserId} isOwner={true} />
+          </div>
+        )}
 
         {/* Activity Stats */}
         {stats && (

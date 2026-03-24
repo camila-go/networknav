@@ -70,6 +70,11 @@ export interface Database {
         Update: UserStreakUpdate;
         Relationships: [];
       };
+      user_photos: {
+        Row: UserPhotoRow;
+        Insert: UserPhotoInsert;
+        Update: UserPhotoUpdate;
+      };
     };
     Functions: {
       match_profiles: {
@@ -560,6 +565,35 @@ export interface UserStreakUpdate {
   streak_frozen_until?: string | null;
   freezes_used_this_week?: number;
   updated_at?: string;
+}
+
+// ============================================
+// User Photos Table
+// ============================================
+
+export interface UserPhotoRow {
+  id: string;
+  user_id: string;
+  storage_key: string;
+  url: string;
+  caption: string | null;
+  display_order: number;
+  created_at: string;
+}
+
+export interface UserPhotoInsert {
+  id?: string;
+  user_id: string;
+  storage_key: string;
+  url: string;
+  caption?: string | null;
+  display_order?: number;
+  created_at?: string;
+}
+
+export interface UserPhotoUpdate {
+  caption?: string | null;
+  display_order?: number;
 }
 
 // ============================================

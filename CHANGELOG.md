@@ -4,7 +4,18 @@ All notable changes to NetworkNav (Jynx) will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+- Fix 413 Payload Too Large on avatar/gallery uploads: switched from proxying files through Vercel API routes (4.5 MB limit) to direct browser-to-Supabase uploads via signed URLs; max file size increased to 10 MB (`src/app/api/profile/avatar/upload-url/route.ts`, `src/app/api/profile/photos/upload-url/route.ts`)
+- Fix 500 on user photo gallery: added `user_photos` table migration (`supabase/migrations/20260318_add_user_photos_table.sql`) with RLS policies; updated `SUPABASE_SETUP.md` with table setup, storage bucket creation instructions, and migration reference
+
+### Changed
+- Photo uploads now use a 3-step flow: server generates signed upload URL → browser uploads directly to Supabase Storage → server confirms and updates DB; removes `experimental.serverActions.bodySizeLimit` from `next.config.js` since files no longer pass through Vercel
+
 ### Added
+- Profile picture upload: replaced photo URL text input in profile form with a file picker that validates (JPG/PNG/WebP/GIF, max 10 MB), shows a live preview with upload spinner, and stores the Supabase Storage public URL in `users.photo_url` (`src/components/profile/profile-form.tsx`, `src/app/api/profile/avatar/route.ts`)
+- Photo gallery: users can upload up to 12 photos per profile, reorder via up/down arrows, add/edit captions inline, and delete with a confirm step; displayed as a grid on own profile and other users' public profiles with a lightbox modal (keyboard-navigable) for full-size viewing (`src/components/profile/photo-gallery.tsx`, `src/app/api/profile/photos/route.ts`, `src/app/api/profile/photos/[photoId]/route.ts`, `src/app/api/users/[userId]/photos/route.ts`)
+- `user_photos` table: `id, user_id, storage_key, url, caption, display_order, created_at` (UUID PK, CASCADE delete on user); Drizzle schema docs in `src/db/schema.ts`, DB types in `src/types/database.ts`, domain type `UserPhoto` in `src/types/index.ts`
+- Rate limit entries `upload-avatar` (10/hr) and `upload-gallery-photo` (20/hr) in `src/lib/security/rateLimit.ts`
 - Vercel deployment: app is now live at `https://networknav-camilas-projects-1b1733dc.vercel.app`; `typescript.ignoreBuildErrors: true` added to `next.config.js` to bypass pre-existing type errors in gamification/SAML/socket routes that do not affect runtime behavior
 - Microsoft Teams deep link helpers `teamsChartUrl()` and `teamsMeetingUrl()` in `src/lib/utils.ts` for constructing org-aware Teams chat and meeting URLs
 - `email` field (optional) added to `PublicUser` type; populated from Supabase and in-memory stores in the matches and attendee search APIs so Teams links can be constructed client-side

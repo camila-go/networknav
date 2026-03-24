@@ -16,6 +16,7 @@ import {
 } from "@/components/profile/interest-chips-panel";
 import type { UserBadge } from "@/types";
 import { parseBadgesFromApi } from "@/lib/gamification";
+import { PhotoGallery } from "@/components/profile/photo-gallery";
 
 interface UserInterests {
   rechargeActivities: string[];
@@ -455,6 +456,9 @@ export default function UserProfilePage() {
           </p>
         </div>
       )}
+
+      {/* Photo Gallery — self-hides when empty and isOwner=false */}
+      <PhotoGallery userId={userId} isOwner={isOwnProfile} withContainer={true} />
 
       {/* Connections Section */}
       {userConnections.length > 0 && (

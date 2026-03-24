@@ -57,6 +57,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   meetingIntegrations: many(meetingIntegrations),
   submittedReports: many(reports, { relationName: "submittedReports" }),
   receivedReports: many(reports, { relationName: "receivedReports" }),
+  photos: many(userPhotos),
 }));
 
 // ============================================
@@ -397,6 +398,29 @@ export const reportsRelations = relations(reports, ({ one }) => ({
     fields: [reports.reportedUserId],
     references: [users.id],
     relationName: "receivedReports",
+  }),
+}));
+
+// ============================================
+// User Photos Table
+// ============================================
+
+export const userPhotos = pgTable("user_photos", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  storageKey: text("storage_key").notNull(),
+  url: text("url").notNull(),
+  caption: text("caption"),
+  displayOrder: integer("display_order").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const userPhotosRelations = relations(userPhotos, ({ one }) => ({
+  user: one(users, {
+    fields: [userPhotos.userId],
+    references: [users.id],
   }),
 }));
 

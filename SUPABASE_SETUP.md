@@ -301,7 +301,24 @@ CREATE INDEX idx_reports_status ON reports(status);
 CREATE INDEX idx_reports_reported_user ON reports(reported_user_id);
 ```
 
-### I. Create Database Functions
+### I. Create User Photos Table
+
+```sql
+-- User photo gallery table
+CREATE TABLE IF NOT EXISTS user_photos (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id         UUID NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
+  storage_key     TEXT NOT NULL,
+  url             TEXT NOT NULL,
+  caption         TEXT,
+  display_order   INTEGER NOT NULL DEFAULT 0,
+  created_at      TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_photos_user_id ON user_photos(user_id);
+```
+
+### J. Create Database Functions
 
 ```sql
 -- Function to find similar profiles using vector similarity
@@ -375,7 +392,7 @@ END;
 $$;
 ```
 
-### J. Enable Row Level Security (RLS)
+### K. Enable Row Level Security (RLS)
 
 ```sql
 -- Enable RLS on all tables
@@ -386,6 +403,7 @@ ALTER TABLE matches ENABLE ROW LEVEL SECURITY;
 ALTER TABLE meeting_integrations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE scheduled_meetings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE reports ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_photos ENABLE ROW LEVEL SECURITY;
 
 -- User Profiles Policies
 CREATE POLICY "Profiles are viewable by authenticated users"
@@ -462,9 +480,57 @@ CREATE POLICY "Users view own reports"
       AND user_id = auth.uid()
     )
   );
+
+-- User Photos Policies
+CREATE POLICY "Anyone can view photos"
+  ON user_photos FOR SELECT
+  TO authenticated, anon
+  USING (true);
+
+CREATE POLICY "Users can insert own photos"
+  ON user_photos FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM user_profiles
+      WHERE id = user_photos.user_id
+      AND user_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Users can update own photos"
+  ON user_photos FOR UPDATE
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM user_profiles
+      WHERE id = user_photos.user_id
+      AND user_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Users can delete own photos"
+  ON user_photos FOR DELETE
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM user_profiles
+      WHERE id = user_photos.user_id
+      AND user_id = auth.uid()
+    )
+  );
 ```
 
-## Step 3: Enable Supabase Authentication
+## Step 3: Create Storage Bucket
+
+In your Supabase Dashboard:
+
+1. Go to **Storage** > **New Bucket**
+2. Create a bucket named `profile-photos`
+3. Set it to **Public** (so photo URLs are accessible without auth tokens)
+4. Both avatar images (`{userId}/avatar`) and gallery photos (`{userId}/gallery/{photoId}`) are stored in this bucket
+
+## Step 4: Enable Supabase Authentication
 
 In your Supabase Dashboard:
 
@@ -472,7 +538,7 @@ In your Supabase Dashboard:
 2. Enable Email provider (for email/password signup)
 3. Optionally enable OAuth providers (Google, Microsoft)
 
-## Step 4: Test the Setup
+## Step 5: Test the Setup
 
 After running all SQL commands:
 
@@ -512,13 +578,15 @@ Once configured, these endpoints are available:
 
 This means one or more tables are missing from your Supabase project (the database schema is behind the application code).
 
-Run the migration script to create the missing tables:
+Run the migration scripts to create the missing tables:
 
 1. Open **Supabase Dashboard → SQL Editor → New Query**
-2. Paste the contents of `supabase/migrations/20260225_add_missing_tables.sql`
+2. Paste the contents of the relevant migration file from `supabase/migrations/`:
+   - `20260225_add_missing_tables.sql` — notifications, notification_preferences, sessions
+   - `20260318_add_user_photos_table.sql` — user_photos (photo gallery)
 3. Click **Run**
 
-The script is idempotent (`IF NOT EXISTS`) so it is safe to run even if some tables already exist.
+The scripts are idempotent (`IF NOT EXISTS`) so they are safe to run even if some tables already exist.
 
 ### "Supabase not configured"
 - Ensure `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are set in `.env.local`

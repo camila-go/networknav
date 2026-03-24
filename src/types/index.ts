@@ -28,6 +28,16 @@ export interface PublicUser {
   questionnaireCompleted: boolean;
 }
 
+export interface UserPhoto {
+  id: string;
+  userId: string;
+  storageKey: string;
+  url: string;
+  caption?: string;
+  displayOrder: number;
+  createdAt: Date;
+}
+
 // ============================================
 // Questionnaire Types
 // ============================================
