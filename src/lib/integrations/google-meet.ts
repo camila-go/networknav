@@ -175,7 +175,7 @@ export async function createGoogleMeetMeeting(
 
   const event = {
     summary: title,
-    description: 'Meeting scheduled via Jynx - Leadership Networking',
+        description: 'Meeting scheduled via GS26 — Leadership Networking',
     start: {
       dateTime: startTime.toISOString(),
       timeZone: 'America/New_York',

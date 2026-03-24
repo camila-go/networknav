@@ -164,7 +164,7 @@ export function RegisterForm() {
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="px-3 rounded-lg bg-white/5 border border-white/20 text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+            className="px-3 rounded-full bg-white/5 border border-white/20 text-white/60 hover:text-white hover:bg-white/10 transition-colors"
           >
             {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
           </button>
@@ -205,7 +205,7 @@ export function RegisterForm() {
           <button
             type="button"
             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-            className="px-3 rounded-lg bg-white/5 border border-white/20 text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+            className="px-3 rounded-full bg-white/5 border border-white/20 text-white/60 hover:text-white hover:bg-white/10 transition-colors"
           >
             {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
           </button>

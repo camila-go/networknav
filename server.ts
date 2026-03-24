@@ -9,7 +9,9 @@ const dev = process.env.NODE_ENV !== "production";
 const hostname = "localhost";
 const port = parseInt(process.env.PORT || "3000", 10);
 
-const app = next({ dev, hostname, port });
+// Only pass supported Next options here (hostname/port belong on httpServer.listen).
+// Extra keys can confuse dev asset URLs / HMR in edge cases.
+const app = next({ dev });
 const handler = app.getRequestHandler();
 
 app.prepare().then(() => {

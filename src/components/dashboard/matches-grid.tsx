@@ -33,102 +33,6 @@ const ENCOURAGEMENT_MESSAGES = {
   ],
 };
 
-// Mock data - replace with real data fetch
-const mockMatches: MatchWithUser[] = [
-  {
-    id: "1",
-    userId: "current-user",
-    matchedUserId: "user-1",
-    matchedUser: {
-      id: "user-1",
-      profile: {
-        name: "Sarah Chen",
-        position: "VP of Engineering",
-        title: "Engineering Leader",
-        company: "TechCorp",
-        photoUrl: undefined,
-      },
-      questionnaireCompleted: true,
-    },
-    type: "high-affinity",
-    commonalities: [
-      { category: "professional", description: "Both in Technology industry", weight: 0.9 },
-      { category: "professional", description: "Similar team scaling challenges", weight: 0.85 },
-      { category: "hobby", description: "Both enjoy hiking and outdoor adventures", weight: 0.7 },
-      { category: "values", description: "Share servant leadership philosophy", weight: 0.8 },
-    ],
-    conversationStarters: [
-      "Ask Sarah about her experience scaling engineering teams from 20 to 100+",
-      "Compare notes on your approaches to talent retention in tech",
-    ],
-    score: 0.92,
-    generatedAt: new Date(),
-    viewed: false,
-    passed: false,
-  },
-  {
-    id: "2",
-    userId: "current-user",
-    matchedUserId: "user-2",
-    matchedUser: {
-      id: "user-2",
-      profile: {
-        name: "Marcus Johnson",
-        position: "Chief People Officer",
-        title: "HR Executive",
-        company: "GrowthStartup",
-        photoUrl: undefined,
-      },
-      questionnaireCompleted: true,
-    },
-    type: "strategic",
-    commonalities: [
-      { category: "professional", description: "Complementary expertise: Tech + People", weight: 0.85 },
-      { category: "professional", description: "Both focused on organizational transformation", weight: 0.8 },
-      { category: "lifestyle", description: "Both value work-life integration", weight: 0.6 },
-    ],
-    conversationStarters: [
-      "Marcus's people expertise could help with your talent retention challenges",
-      "Discuss the intersection of tech and culture in scaling organizations",
-    ],
-    score: 0.78,
-    generatedAt: new Date(),
-    viewed: true,
-    passed: false,
-  },
-  {
-    id: "3",
-    userId: "current-user",
-    matchedUserId: "user-3",
-    matchedUser: {
-      id: "user-3",
-      profile: {
-        name: "Elena Rodriguez",
-        position: "CEO",
-        title: "Founder & CEO",
-        company: "InnovateCo",
-        photoUrl: undefined,
-      },
-      questionnaireCompleted: true,
-    },
-    type: "high-affinity",
-    commonalities: [
-      { category: "professional", description: "Both founders/entrepreneurs", weight: 0.95 },
-      { category: "professional", description: "Similar growth stage challenges", weight: 0.85 },
-      { category: "hobby", description: "Passionate about mentorship", weight: 0.75 },
-      { category: "values", description: "Data-informed decision making", weight: 0.7 },
-    ],
-    conversationStarters: [
-      "Elena just closed Series B - ask about her fundraising journey",
-      "Compare your approaches to building executive teams",
-    ],
-    score: 0.89,
-    generatedAt: new Date(),
-    viewed: false,
-    passed: false,
-  },
-];
-
 interface MatchesGridProps {
   onMatchesLoaded?: (count: number, avgScore: number) => void;
 }
@@ -238,17 +142,16 @@ export function MatchesGrid({ onMatchesLoaded }: MatchesGridProps = {}) {
           onMatchesLoaded(fetchedMatches.length, avgScore);
         }
       } else {
-        // Use mock data as fallback
-        setMatches(mockMatches);
+        setMatches([]);
         if (onMatchesLoaded) {
-          onMatchesLoaded(mockMatches.length, 85);
+          onMatchesLoaded(0, 0);
         }
       }
     } catch (error) {
       console.error("Failed to fetch matches:", error);
-      setMatches(mockMatches);
+      setMatches([]);
       if (onMatchesLoaded) {
-        onMatchesLoaded(mockMatches.length, 85);
+        onMatchesLoaded(0, 0);
       }
     } finally {
       setIsLoading(false);

@@ -53,7 +53,7 @@ function setupUserForDemoMatches() {
   });
   questionnaireResponses.set("user-1", {
     userId: "user-1",
-    responses: { industry: "technology", leadershipLevel: "director" },
+    responses: { leadershipLevel: "director", yearsExperience: "6-10" },
     completedAt: new Date(),
     updatedAt: new Date(),
   });

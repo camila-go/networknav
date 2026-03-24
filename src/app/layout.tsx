@@ -1,26 +1,19 @@
 import type { Metadata } from "next";
-import { DM_Sans, Fraunces } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 
-// DM Sans - Clean, geometric sans-serif for body text (excellent readability)
-const dmSans = DM_Sans({ 
+// Inter - single clean sans for UI + headings (matches Global Summit 2026 creative)
+const inter = Inter({
   subsets: ["latin"],
   variable: "--font-sans",
   display: "swap",
 });
 
-// Fraunces - Distinctive serif for headings (elegant, professional)
-const fraunces = Fraunces({ 
-  subsets: ["latin"],
-  variable: "--font-display",
-  display: "swap",
-});
-
 export const metadata: Metadata = {
-  title: "Jynx - Leadership Conference Networking",
+  title: "GS26 — Leadership Conference Networking",
   description:
-    "Intelligent networking for leadership conferences. Find your perfect professional connections through data-driven matching.",
+    "Global Summit 2026 networking (powered by JYNX). Find your professional matches through data-driven matching.",
   keywords: [
     "leadership",
     "networking",
@@ -36,7 +29,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${dmSans.variable} ${fraunces.variable}`}>
+    <html lang="en" className={inter.variable}>
       <body className="min-h-screen bg-background font-sans antialiased">
         {children}
         <Toaster />

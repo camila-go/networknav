@@ -117,7 +117,7 @@ export function generateMatches(
     allSelected = [...allSelected, ...remaining.slice(0, totalNeeded - allSelected.length)];
   }
 
-  // Ensure diversity (not all from same industry if possible)
+  // Ensure diversity (vary leadership context where possible)
   allSelected = ensureMatchDiversity(allSelected);
 
   // Convert to Match objects
@@ -125,7 +125,7 @@ export function generateMatches(
 }
 
 /**
- * Ensure diversity in matches (industry, leadership level, etc.)
+ * Ensure diversity in matches (organization size, leadership level, etc.)
  */
 function ensureMatchDiversity(candidates: MatchCandidate[]): MatchCandidate[] {
   if (candidates.length <= 3) return candidates;
@@ -135,9 +135,9 @@ function ensureMatchDiversity(candidates: MatchCandidate[]): MatchCandidate[] {
 
   // First pass: add unique matches
   for (const candidate of candidates) {
-    const industry = candidate.user.responses.industry;
+    const org = candidate.user.responses.organizationSize ?? "";
     const level = candidate.user.responses.leadershipLevel;
-    const key = `${industry}-${level}`;
+    const key = `${org}-${level}`;
 
     if (!seenAttributes.has(key)) {
       result.push(candidate);

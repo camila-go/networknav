@@ -92,8 +92,9 @@
   /* Exclude icon buttons (min-h-0), buttons inside relative containers, etc. */
 
   /* Skip link for keyboard navigation */
+  /* z-[100] so focused skip link stacks above fixed header (z-50) */
   .skip-link {
-    @apply sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-lg;
+    @apply sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-lg;
   }
 
   /* Override browser autofill styles for dark theme */

@@ -4,7 +4,9 @@ import { connections, messages, users } from "@/lib/stores";
 import { messageSchema } from "@/lib/validations";
 import type { Message, Connection } from "@/types";
 import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
+import { isLiveDatabaseMode } from "@/lib/supabase/data-mode";
 import { updateStreaks } from "@/lib/gamification/streaks";
+import { applyGamificationUnlockNotifications } from "@/lib/gamification/unlock-notifications";
 
 type SimpleUser = { id: string; name: string; position: string; company?: string };
 
@@ -20,7 +22,9 @@ function getUserById(userId: string): SimpleUser | null {
       };
     }
   }
-  // Check for demo users
+  if (isLiveDatabaseMode()) {
+    return null;
+  }
   const demoUsers: Record<string, SimpleUser> = {
     "demo-sarah": { id: "demo-sarah", name: "Sarah Chen", position: "VP of Engineering", company: "TechCorp" },
     "demo-marcus": { id: "demo-marcus", name: "Marcus Johnson", position: "Chief People Officer", company: "GrowthStartup" },
@@ -208,6 +212,11 @@ async function logMessageActivity(userId: string, messageId: string, recipientId
       .select('*')
       .eq('user_id', userId)
       .single();
+
+    const prevTotalPoints = Number(
+      (existingStats as { total_points?: number } | null)?.total_points ?? 0
+    );
+    const newTotalPoints = prevTotalPoints + 5;
     
     if (existingStats) {
       await supabaseAdmin
@@ -235,6 +244,12 @@ async function logMessageActivity(userId: string, messageId: string, recipientId
     
     // Update daily and weekly streaks
     await updateStreaks(userId);
+    await applyGamificationUnlockNotifications(
+      userId,
+      prevTotalPoints,
+      newTotalPoints,
+      "message_sent"
+    );
     
     console.log('[Messages API] Activity logged for user:', userId);
   } catch (error) {
@@ -413,7 +428,7 @@ export async function POST(request: NextRequest) {
           requesterId: userId,
           recipientId: targetUserId,
           status: "accepted",
-          message: "Connected via Jynx",
+          message: "Connected via GS26",
           createdAt: new Date(),
           updatedAt: new Date(),
         };

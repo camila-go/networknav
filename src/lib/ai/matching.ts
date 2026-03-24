@@ -193,13 +193,18 @@ export function determineMatchType(
     return 'high-affinity';
   }
 
-  // Medium similarity could be strategic if industries differ but challenges align
+  // Medium similarity: strategic when organization context differs (broader perspective)
   const userQuestionnaire = userProfile.questionnaire_data as Record<string, unknown> | undefined;
   const matchQuestionnaire = matchProfile.questionnaire_data as Record<string, unknown> | undefined;
-  const userIndustry = userQuestionnaire?.industry;
-  const matchIndustry = matchQuestionnaire?.industry;
+  const userOrg = userQuestionnaire?.organizationSize;
+  const matchOrg = matchQuestionnaire?.organizationSize;
 
-  if (userIndustry !== matchIndustry && similarity >= 0.5) {
+  if (
+    userOrg &&
+    matchOrg &&
+    userOrg !== matchOrg &&
+    similarity >= 0.5
+  ) {
     return 'strategic';
   }
 

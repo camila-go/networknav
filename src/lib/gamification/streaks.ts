@@ -2,6 +2,7 @@ import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
 import type { StreakStatus, UserStreak } from "@/types";
 
 // Constants
+export const MAX_DAILY_STREAK = 30;
 const DEFAULT_WEEKLY_GOAL = 25; // More attainable default
 const DAYS_IN_WEEK = 7;
 
@@ -193,8 +194,12 @@ export async function calculateStreakStatus(userId: string): Promise<StreakStatu
     }
 
     dailyStatus = {
-      current: isActive ? daily.currentStreak : (hasActivityToday ? 1 : 0),
-      longest: daily.longestStreak,
+      current: isActive
+        ? Math.min(MAX_DAILY_STREAK, daily.currentStreak)
+        : hasActivityToday
+          ? 1
+          : 0,
+      longest: Math.min(MAX_DAILY_STREAK, daily.longestStreak),
       lastActivity: daily.lastActivityDate || lastActivityDate,
       isActive,
       hoursUntilExpiry,
@@ -294,7 +299,24 @@ async function updateDailyStreak(
     const daysDiff = daysBetween(lastDate, todayDate);
     
     if (daysDiff === 0) {
-      // Already active today, no change needed
+      const clampedCurrent = Math.min(MAX_DAILY_STREAK, existing.currentStreak);
+      const clampedLongest = Math.min(MAX_DAILY_STREAK, existing.longestStreak);
+      if (clampedCurrent !== existing.currentStreak || clampedLongest !== existing.longestStreak) {
+        await supabaseAdmin
+          .from("user_streaks")
+          .update({
+            current_streak: clampedCurrent,
+            longest_streak: clampedLongest,
+          })
+          .eq("id", existing.id);
+        await supabaseAdmin
+          .from("user_gamification_stats")
+          .update({
+            current_daily_streak: clampedCurrent,
+            longest_daily_streak: clampedLongest,
+          })
+          .eq("user_id", userId);
+      }
       return;
     } else if (daysDiff === 1) {
       // Consecutive day, increment streak
@@ -308,7 +330,11 @@ async function updateDailyStreak(
     }
   }
 
-  const newLongest = Math.max(newStreak, existing.longestStreak);
+  newStreak = Math.min(MAX_DAILY_STREAK, newStreak);
+  const newLongest = Math.min(
+    MAX_DAILY_STREAK,
+    Math.max(newStreak, existing.longestStreak)
+  );
 
   await supabaseAdmin
     .from("user_streaks")

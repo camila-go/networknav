@@ -32,7 +32,6 @@ export async function POST(request: NextRequest) {
 
     // Calculate completion percentage
     const requiredFields = [
-      "industry",
       "yearsExperience",
       "leadershipLevel",
       "organizationSize",

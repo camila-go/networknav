@@ -184,7 +184,7 @@ All notable changes to NetworkNav (Jynx) will be documented in this file.
 
 - Rebranded from "NetworkNav" to "Jynx" across all pages and components
 - Updated hero copy with Jynx tagline
-- Replaced Geist/Cal Sans fonts with DM Sans (body) and Fraunces (headings)
+- Typography uses Inter app-wide (replaces DM Sans + Fraunces)
 
 ### Fixed
 

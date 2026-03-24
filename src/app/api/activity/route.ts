@@ -7,8 +7,13 @@ import type {
   GamificationStats,
   ActivitySummary,
 } from "@/types";
-import { calculateStreakStatus, updateStreaks } from "@/lib/gamification/streaks";
-import { checkAndAwardBadges, getUserBadges } from "@/lib/gamification/badges";
+import {
+  calculateStreakStatus,
+  MAX_DAILY_STREAK,
+  updateStreaks,
+} from "@/lib/gamification/streaks";
+import { getUserBadges } from "@/lib/gamification/badges";
+import { applyGamificationUnlockNotifications } from "@/lib/gamification/unlock-notifications";
 import { getEncouragementMessage } from "@/lib/gamification/encouragement";
 
 // Point values for each activity type
@@ -80,9 +85,9 @@ function mapRowToStats(row: StatsRow): GamificationStats {
     connectionsMade: row.connections_made,
     introsRequested: row.intros_requested,
     explorePasses: row.explore_passes ?? 0,
-    currentDailyStreak: row.current_daily_streak,
+    currentDailyStreak: Math.min(MAX_DAILY_STREAK, row.current_daily_streak),
     currentWeeklyStreak: row.current_weekly_streak,
-    longestDailyStreak: row.longest_daily_streak,
+    longestDailyStreak: Math.min(MAX_DAILY_STREAK, row.longest_daily_streak),
     longestWeeklyStreak: row.longest_weekly_streak,
     lastActiveAt: row.last_active_at ? new Date(row.last_active_at) : null,
     createdAt: new Date(row.created_at),
@@ -172,6 +177,17 @@ async function logActivity(
   if (!isSupabaseConfigured || !supabaseAdmin) return null;
 
   const points = POINTS[activityType];
+
+  const { data: statsBeforeRow } = await supabaseAdmin
+    .from("user_gamification_stats")
+    .select("total_points")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  const prevTotalPoints = Number(
+    (statsBeforeRow as { total_points?: number } | null)?.total_points ?? 0
+  );
+  const newTotalPoints = prevTotalPoints + points;
 
   // Insert activity record
   const { data: activityData, error: activityError } = await supabaseAdmin
@@ -266,7 +282,12 @@ async function logActivity(
   }
 
   await updateStreaks(userId);
-  await checkAndAwardBadges(userId, activityType);
+  await applyGamificationUnlockNotifications(
+    userId,
+    prevTotalPoints,
+    newTotalPoints,
+    activityType
+  );
 
   return mapRowToActivity(activityData as ActivityRow);
 }
@@ -339,8 +360,7 @@ export async function GET(request: NextRequest) {
         getUserBadges(userId),
       ]);
 
-      // Generate demo stats if no real stats exist
-      let publicStats = {
+      const publicStats = {
         totalPoints: stats.totalPoints,
         messagesSent: stats.messagesSent,
         connectionsMade: stats.connectionsMade,
@@ -349,21 +369,7 @@ export async function GET(request: NextRequest) {
         lastActiveAt: stats.lastActiveAt,
       };
 
-      // If stats are empty, generate deterministic demo stats based on userId
-      if (publicStats.totalPoints === 0 && publicStats.messagesSent === 0) {
-        const seed = userId.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
-        const daysActive = (seed % 30) + 5;
-        publicStats = {
-          totalPoints: 50 + (seed % 500),
-          messagesSent: 10 + (seed % 50),
-          connectionsMade: 3 + (seed % 15),
-          meetingsScheduled: seed % 8,
-          currentDailyStreak: seed % 10,
-          lastActiveAt: new Date(Date.now() - (seed % 7) * 24 * 60 * 60 * 1000),
-        };
-      }
-
-      // Return only public activity data for other users
+      // Return only public activity data for other users (real DB rows only)
       return NextResponse.json({
         stats: publicStats,
         badges,

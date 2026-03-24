@@ -199,7 +199,6 @@ export function createMockQuestionnaireData(
   overrides?: Partial<QuestionnaireData>
 ): QuestionnaireData {
   return {
-    industry: "technology",
     yearsExperience: "10-15",
     leadershipLevel: "senior-director",
     organizationSize: "1000-5000",

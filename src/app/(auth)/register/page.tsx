@@ -10,8 +10,8 @@ import {
 import Link from "next/link";
 
 export const metadata = {
-  title: "Create Account | Jynx",
-  description: "Create your Jynx account and start networking with leaders",
+  title: "Create Account | GS26",
+  description: "Create your GS26 conference account (powered by JYNX) and start networking with leaders",
 };
 
 export default function RegisterPage() {

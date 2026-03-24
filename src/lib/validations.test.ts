@@ -192,7 +192,7 @@ describe("Validation Schemas", () => {
   describe("questionnaireResponseSchema", () => {
     it("should accept valid questionnaire data", () => {
       const result = questionnaireResponseSchema.safeParse({
-        industry: "technology",
+        yearsExperience: "6-10",
         leadershipPriorities: ["innovation", "growth"],
         rechargeActivities: ["hiking", "reading"],
       });

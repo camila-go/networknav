@@ -24,13 +24,19 @@ export function SingleSelect({ options, value, onChange }: SingleSelectProps) {
             aria-checked={isSelected}
             onClick={() => onChange(option.value)}
             className={cn(
-              "relative flex items-center gap-3 p-4 rounded-xl border-2 text-left transition-all duration-200",
+              "relative flex items-center gap-3 p-4 rounded-full border-2 text-left transition-all duration-200",
               "hover:border-cyan-400/50 hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2 focus-visible:ring-offset-black",
               isSelected
                 ? "border-cyan-500 bg-cyan-500/10 shadow-lg shadow-cyan-500/10"
                 : "border-white/20 bg-white/5"
             )}
           >
+            {option.icon && (
+              <span className="text-xl flex-shrink-0" aria-hidden="true">
+                {option.icon}
+              </span>
+            )}
+
             {/* Selection indicator */}
             <div
               className={cn(

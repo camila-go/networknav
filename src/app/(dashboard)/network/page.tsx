@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { NetworkContainer } from "@/components/network/network-container";
 
 export const metadata = {
-  title: "Network Map | Jynx",
+  title: "Network Map | GS26",
   description: "Visualize your conference network and discover connection patterns",
 };
 

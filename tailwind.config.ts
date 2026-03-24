@@ -111,6 +111,11 @@ const config = {
           from: { opacity: "0", transform: "translateY(10px)" },
           to: { opacity: "1", transform: "translateY(0)" },
         },
+        /** Use on elements that already use transform (e.g. -translate-x-1/2 -translate-y-1/2) */
+        "fade-in-opacity": {
+          from: { opacity: "0" },
+          to: { opacity: "1" },
+        },
         "slide-in-right": {
           from: { opacity: "0", transform: "translateX(20px)" },
           to: { opacity: "1", transform: "translateX(0)" },
@@ -123,18 +128,27 @@ const config = {
           "0%": { backgroundPosition: "-200% 0" },
           "100%": { backgroundPosition: "200% 0" },
         },
+        /** Hero radiant SVG — scale from center only; parent keeps fixed visual origin */
+        "radiant-breathe": {
+          "0%, 100%": { transform: "scale(1)" },
+          "50%": { transform: "scale(1.09)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "fade-in": "fade-in 0.3s ease-out",
+        "fade-in-opacity": "fade-in-opacity 0.35s ease-out",
         "slide-in-right": "slide-in-right 0.3s ease-out",
         "pulse-soft": "pulse-soft 2s ease-in-out infinite",
         shimmer: "shimmer 2s linear infinite",
+        /** ~7s cycle + slightly wider peak scale — readable “breath”, not frantic */
+        "radiant-breathe": "radiant-breathe 7s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite",
       },
       fontFamily: {
         sans: ["var(--font-sans)", "system-ui", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "sans-serif"],
-        display: ["var(--font-display)", "Georgia", "Times New Roman", "serif"],
+        // Kept for existing `font-display` classes; same face as body for a cleaner all-sans look
+        display: ["var(--font-sans)", "system-ui", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "sans-serif"],
       },
     },
   },

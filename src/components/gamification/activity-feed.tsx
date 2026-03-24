@@ -103,7 +103,7 @@ export function ActivityFeed({ activities, maxItems = 10 }: ActivityFeedProps) {
 
       {activities.length > maxItems && (
         <div className="mt-4 pt-4 border-t border-white/10 text-center">
-          <button className="text-sm text-cyan-400 hover:text-cyan-300 transition-colors">
+          <button type="button" className="text-sm text-cyan-400 hover:text-cyan-300 transition-colors rounded-full px-2 py-1 hover:bg-white/5">
             View all activity
           </button>
         </div>

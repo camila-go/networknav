@@ -41,8 +41,7 @@ export interface QuestionnaireResponse {
 }
 
 export interface QuestionnaireData {
-  // Section 1: Your Leadership Context (4 questions)
-  industry?: string;
+  // Section 1: Your Leadership Context
   yearsExperience?: string;
   leadershipLevel?: string;
   organizationSize?: string;
@@ -204,7 +203,9 @@ export type NotificationType =
   | "meeting_declined"
   | "new_message"
   | "request_reminder"
-  | "questionnaire_reminder";
+  | "questionnaire_reminder"
+  | "badge_earned"
+  | "profile_frame_unlocked";
 
 export interface Notification {
   id: string;
@@ -295,7 +296,6 @@ export interface MeetingWithUsers extends Meeting {
 // ============================================
 
 export interface SearchFilters {
-  industries?: string[];
   leadershipLevels?: string[];
   organizationSizes?: string[];
   yearsExperience?: string[];
@@ -577,8 +577,8 @@ export const BADGE_DEFINITIONS: BadgeDefinition[] = [
     icon: "Flame",
     tiers: {
       bronze: { requirement: 7, description: "7-day streak" },
-      silver: { requirement: 30, description: "30-day streak" },
-      gold: { requirement: 90, description: "90-day streak" },
+      silver: { requirement: 14, description: "14-day streak" },
+      gold: { requirement: 30, description: "30-day streak (max)" },
     },
   },
   {

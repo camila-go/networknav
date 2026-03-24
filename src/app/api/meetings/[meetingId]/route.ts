@@ -4,6 +4,8 @@ import { meetings, users } from "@/lib/stores";
 import { cookies } from "next/headers";
 import type { PublicUser, MeetingStatus } from "@/types";
 import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
+import { isLiveDatabaseMode } from "@/lib/supabase/data-mode";
+import { applyGamificationUnlockNotifications } from "@/lib/gamification/unlock-notifications";
 
 // Helper to get user profile by ID
 function getUserById(userId: string): PublicUser | null {
@@ -23,7 +25,46 @@ function getUserById(userId: string): PublicUser | null {
       };
     }
   }
+  if (isLiveDatabaseMode()) {
+    return null;
+  }
   return getDemoUser(userId);
+}
+
+async function getUserFromSupabase(userId: string): Promise<PublicUser | null> {
+  if (!isSupabaseConfigured || !supabaseAdmin) return null;
+
+  const { data, error } = await supabaseAdmin
+    .from("user_profiles")
+    .select("id, name, position, title, company, photo_url, location, questionnaire_completed")
+    .eq("id", userId)
+    .single();
+
+  if (error || !data) return null;
+
+  const row = data as {
+    id: string;
+    name: string;
+    position?: string;
+    title?: string;
+    company?: string;
+    photo_url?: string;
+    location?: string;
+    questionnaire_completed?: boolean;
+  };
+
+  return {
+    id: row.id,
+    profile: {
+      name: row.name,
+      position: row.position || "",
+      title: row.title || "",
+      company: row.company,
+      photoUrl: row.photo_url,
+      location: row.location,
+    },
+    questionnaireCompleted: row.questionnaire_completed || false,
+  };
 }
 
 function getDemoUser(userId: string): PublicUser | null {
@@ -61,6 +102,11 @@ async function logMeetingActivity(userId: string, meetingId: string, otherUserId
       .select('*')
       .eq('user_id', userId)
       .single();
+
+    const prevTotalPoints = Number(
+      (existingStats as { total_points?: number } | null)?.total_points ?? 0
+    );
+    const newTotalPoints = prevTotalPoints + 25;
     
     if (existingStats) {
       await supabaseAdmin
@@ -85,6 +131,13 @@ async function logMeetingActivity(userId: string, meetingId: string, otherUserId
           last_active_at: new Date().toISOString(),
         });
     }
+
+    await applyGamificationUnlockNotifications(
+      userId,
+      prevTotalPoints,
+      newTotalPoints,
+      "meeting_scheduled"
+    );
     
     console.log('[Meetings API] Activity logged for user:', userId);
   } catch (error) {
@@ -126,8 +179,10 @@ export async function GET(
       );
     }
 
-    const requester = getUserById(meeting.requesterId);
-    const recipient = getUserById(meeting.recipientId);
+    const requester =
+      getUserById(meeting.requesterId) || (await getUserFromSupabase(meeting.requesterId));
+    const recipient =
+      getUserById(meeting.recipientId) || (await getUserFromSupabase(meeting.recipientId));
 
     return NextResponse.json({
       success: true,
@@ -305,8 +360,10 @@ export async function PATCH(
       logMeetingActivity(meeting.requesterId, params.meetingId, meeting.recipientId);
     }
 
-    const requester = getUserById(meeting.requesterId);
-    const recipient = getUserById(meeting.recipientId);
+    const requester =
+      getUserById(meeting.requesterId) || (await getUserFromSupabase(meeting.requesterId));
+    const recipient =
+      getUserById(meeting.recipientId) || (await getUserFromSupabase(meeting.recipientId));
 
     return NextResponse.json({
       success: true,

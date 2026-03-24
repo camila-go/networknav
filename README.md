@@ -34,7 +34,7 @@ A Next.js application that leverages market basket analysis to intelligently mat
 | AI — Generative | Gemini 2.0 Flash via @google/genai |
 | Testing | Vitest + Testing Library |
 | Icons | Lucide React |
-| Fonts | DM Sans (body) + Fraunces (display headings) |
+| Fonts | Inter (UI + headings) |
 
 ## Getting Started
 

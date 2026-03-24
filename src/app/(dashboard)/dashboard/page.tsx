@@ -3,6 +3,7 @@
 import { Suspense, useState, useCallback } from "react";
 import { MatchesGrid } from "@/components/dashboard/matches-grid";
 import { StatsCards } from "@/components/dashboard/stats-cards";
+import { BadgeProgressModal } from "@/components/gamification/badge-progress-modal";
 import { OnboardingModal } from "@/components/onboarding";
 
 export default function DashboardPage() {
@@ -18,13 +19,16 @@ export default function DashboardPage() {
       <OnboardingModal />
 
       {/* Welcome header */}
-      <div>
-        <h1 className="text-3xl font-display font-bold text-white">
-          Your Matches
-        </h1>
-        <p className="text-white/60 mt-1">
-          Discover leaders who share your challenges, interests, and goals
-        </p>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-3xl font-display font-bold text-white">
+            Your Matches
+          </h1>
+          <p className="text-white/60 mt-1">
+            Discover leaders who share your challenges, interests, and goals
+          </p>
+        </div>
+        <BadgeProgressModal />
       </div>
 
       {/* Stats overview */}

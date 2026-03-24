@@ -21,6 +21,9 @@ async function enrichReply(row: {
     content: row.content,
     createdAt: row.created_at,
     authorName: a.name,
+    authorPhotoUrl: a.photoUrl,
+    reactionCounts: {},
+    myReaction: null as string | null,
   };
 }
 

@@ -78,11 +78,11 @@ export async function GET(req: NextRequest) {
       if (similarity >= 0.75) {
         matchType = 'high-affinity';
       } else if (similarity >= 0.5) {
-        // Check if different industries for strategic match
         const userQuestionnaire = profile.questionnaire_data as Record<string, unknown> | null;
         const matchQuestionnaire = matchedUser?.questionnaire_data as Record<string, unknown> | null;
-        
-        if (userQuestionnaire?.industry !== matchQuestionnaire?.industry) {
+        const uo = userQuestionnaire?.organizationSize;
+        const mo = matchQuestionnaire?.organizationSize;
+        if (uo && mo && uo !== mo) {
           matchType = 'strategic';
         }
       } else {

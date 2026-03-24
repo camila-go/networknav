@@ -1,5 +1,5 @@
 import type { AppSocket } from "./types";
-import { verifyAccessToken } from "@/lib/auth";
+import { verifyAccessToken } from "@/lib/auth/jwt";
 
 /**
  * Socket.io authentication middleware.

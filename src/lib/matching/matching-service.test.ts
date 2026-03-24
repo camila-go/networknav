@@ -26,7 +26,6 @@ function createUserWithResponses(
 describe("Matching Service", () => {
   // Create diverse test users
   const mainUser = createUserWithResponses("user-main", "Main User", {
-    industry: "technology",
     leadershipLevel: "senior-director",
     leadershipPriorities: ["innovation", "talent-development"],
     leadershipChallenges: ["scaling-teams", "change-management"],
@@ -35,7 +34,6 @@ describe("Matching Service", () => {
   });
 
   const similarUser = createUserWithResponses("user-similar", "Similar User", {
-    industry: "technology",
     leadershipLevel: "senior-director",
     leadershipPriorities: ["innovation", "talent-development"],
     leadershipChallenges: ["scaling-teams"],
@@ -44,7 +42,6 @@ describe("Matching Service", () => {
   });
 
   const complementaryUser = createUserWithResponses("user-complement", "Complementary User", {
-    industry: "healthcare",
     leadershipLevel: "c-suite",
     leadershipPriorities: ["operational-excellence", "digital-transformation"],
     leadershipChallenges: ["regulatory-compliance"],
@@ -53,7 +50,6 @@ describe("Matching Service", () => {
   });
 
   const lowMatchUser = createUserWithResponses("user-low", "Low Match User", {
-    industry: "construction",
     leadershipLevel: "team-lead",
     leadershipPriorities: ["safety"],
     leadershipChallenges: ["recruitment"],
@@ -135,7 +131,7 @@ describe("Matching Service", () => {
       // Generate many candidates
       const manyCandidates = Array.from({ length: 20 }, (_, i) =>
         createUserWithResponses(`user-${i}`, `User ${i}`, {
-          industry: i % 2 === 0 ? "technology" : "healthcare",
+          organizationSize: i % 2 === 0 ? "startup" : "enterprise",
           leadershipLevel: i % 3 === 0 ? "senior-director" : "c-suite",
         })
       );
@@ -252,7 +248,7 @@ describe("Matching Service", () => {
       const matches: Match[] = [
         createMockMatch({
           commonalities: [
-            { category: "professional", description: "Same industry", weight: 0.8 },
+            { category: "professional", description: "Same leadership level", weight: 0.8 },
             { category: "hobby", description: "Both hike", weight: 0.6 },
           ],
         }),

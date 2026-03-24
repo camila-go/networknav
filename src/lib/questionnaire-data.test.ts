@@ -13,12 +13,12 @@ describe("QUESTIONNAIRE_SECTIONS", () => {
     expect(QUESTIONNAIRE_SECTIONS).toHaveLength(3);
   });
 
-  it("should have 10 total questions across all sections", () => {
+  it("should have 9 total questions across all sections", () => {
     const total = QUESTIONNAIRE_SECTIONS.reduce(
       (sum, section) => sum + section.questions.length,
       0
     );
-    expect(total).toBe(10);
+    expect(total).toBe(9);
   });
 
   it("should have unique section IDs", () => {
@@ -45,8 +45,8 @@ describe("QUESTIONNAIRE_SECTIONS", () => {
       expect(section.title).toBe("Your Leadership Context");
     });
 
-    it("should have 3 questions", () => {
-      expect(section.questions).toHaveLength(3);
+    it("should have 2 questions", () => {
+      expect(section.questions).toHaveLength(2);
     });
 
     it("should have all required questions", () => {
@@ -54,9 +54,8 @@ describe("QUESTIONNAIRE_SECTIONS", () => {
       expect(allRequired).toBe(true);
     });
 
-    it("should include industry, yearsExperience, leadershipLevel", () => {
+    it("should include yearsExperience, leadershipLevel", () => {
       const questionIds = section.questions.map((q) => q.id);
-      expect(questionIds).toContain("industry");
       expect(questionIds).toContain("yearsExperience");
       expect(questionIds).toContain("leadershipLevel");
     });
@@ -159,16 +158,16 @@ describe("QUESTIONNAIRE_SECTIONS", () => {
 });
 
 describe("getTotalQuestions", () => {
-  it("should return 10 total questions", () => {
-    expect(getTotalQuestions()).toBe(10);
+  it("should return 9 total questions", () => {
+    expect(getTotalQuestions()).toBe(9);
   });
 });
 
 describe("getRequiredQuestions", () => {
   it("should return the correct number of required questions", () => {
     const required = getRequiredQuestions();
-    // All 10 questions are required: Section 1 (3) + Section 2 (3) + Section 3 (4) = 10
-    expect(required).toBe(10);
+    // All 9 questions are required: Section 1 (2) + Section 2 (3) + Section 3 (4) = 9
+    expect(required).toBe(9);
   });
 
   it("should be less than or equal to total questions", () => {
@@ -222,9 +221,9 @@ describe("getSectionById", () => {
 
 describe("getQuestionById", () => {
   it("should return the correct question and its section", () => {
-    const result = getQuestionById("industry");
+    const result = getQuestionById("yearsExperience");
     expect(result).toBeDefined();
-    expect(result?.question.id).toBe("industry");
+    expect(result?.question.id).toBe("yearsExperience");
     expect(result?.section.id).toBe("leadership-context");
   });
 
@@ -235,7 +234,7 @@ describe("getQuestionById", () => {
 
   it("should find questions from different sections", () => {
     // Section 1
-    expect(getQuestionById("industry")?.section.id).toBe("leadership-context");
+    expect(getQuestionById("leadershipLevel")?.section.id).toBe("leadership-context");
 
     // Section 2
     expect(getQuestionById("leadershipPriorities")?.section.id).toBe(

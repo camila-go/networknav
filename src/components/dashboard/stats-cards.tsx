@@ -159,7 +159,7 @@ export function StatsCards({ matchCount, matchScore }: StatsCardsProps = {}) {
             {/* Close button */}
             <button 
               onClick={dismissCelebration}
-              className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-white/10 text-white/60 hover:text-white transition-colors"
+              className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors"
             >
               <X className="h-5 w-5" />
             </button>
@@ -199,7 +199,7 @@ export function StatsCards({ matchCount, matchScore }: StatsCardsProps = {}) {
                     dismissCelebration();
                     window.location.href = '/explore';
                   }}
-                  className="px-5 py-2.5 bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white font-medium rounded-xl hover:from-violet-400 hover:to-fuchsia-400 transition-all shadow-lg shadow-violet-500/25"
+                  className="px-5 py-2.5 bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white font-medium rounded-full hover:from-violet-400 hover:to-fuchsia-400 transition-all shadow-lg shadow-violet-500/25"
                 >
                   <span className="flex items-center gap-2">
                     <Sparkles className="h-4 w-4" />
@@ -208,7 +208,7 @@ export function StatsCards({ matchCount, matchScore }: StatsCardsProps = {}) {
                 </button>
                 <button
                   onClick={dismissCelebration}
-                  className="px-5 py-2.5 bg-white/10 text-white font-medium rounded-xl hover:bg-white/20 transition-colors"
+                  className="px-5 py-2.5 bg-white/10 text-white font-medium rounded-full hover:bg-white/20 transition-colors"
                 >
                   Continue
                 </button>
@@ -238,7 +238,7 @@ export function StatsCards({ matchCount, matchScore }: StatsCardsProps = {}) {
           </div>
           <button 
             onClick={() => window.location.href = '/explore'}
-            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-green-500/20 text-green-300 rounded-lg hover:bg-green-500/30 transition-colors border border-green-500/30"
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-green-500/20 text-green-300 rounded-full hover:bg-green-500/30 transition-colors border border-green-500/30"
           >
             <Sparkles className="h-3.5 w-3.5" />
             Find more matches
@@ -324,7 +324,7 @@ export function StatsCards({ matchCount, matchScore }: StatsCardsProps = {}) {
             {/* Settings button */}
             <button
               onClick={() => setShowGoalPicker(!showGoalPicker)}
-              className="p-1.5 rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-colors"
+              className="p-1.5 rounded-full hover:bg-white/10 text-white/40 hover:text-white transition-colors"
               title="Change weekly goal"
             >
               <Settings2 className="h-4 w-4" />
@@ -344,9 +344,9 @@ export function StatsCards({ matchCount, matchScore }: StatsCardsProps = {}) {
             </div>
           )}
 
-          {/* Goal Picker Dropdown */}
+          {/* Goal Picker Dropdown — left column on mobile: right-0 would place w-64 mostly off-screen left */}
           {showGoalPicker && (
-            <div className="absolute right-0 top-full mt-2 z-50 w-64 bg-gray-900 border border-white/20 rounded-xl shadow-xl overflow-hidden">
+            <div className="absolute left-0 right-auto top-full mt-2 z-50 w-64 max-w-[min(16rem,calc(100vw-1.5rem))] lg:left-auto lg:right-0 bg-gray-900 border border-white/20 rounded-xl shadow-xl overflow-hidden">
               <div className="px-3 py-2 border-b border-white/10">
                 <p className="text-xs font-medium text-white/50 uppercase tracking-wider">Set Weekly Goal</p>
               </div>
@@ -409,7 +409,7 @@ export function StatsCards({ matchCount, matchScore }: StatsCardsProps = {}) {
           </div>
           <button 
             onClick={() => window.location.href = '/messages'}
-            className="px-3 py-1.5 text-xs font-medium bg-orange-500 text-white rounded-lg hover:bg-orange-400 transition-colors"
+            className="px-3 py-1.5 text-xs font-medium bg-orange-500 text-white rounded-full hover:bg-orange-400 transition-colors"
           >
             Keep it going
           </button>

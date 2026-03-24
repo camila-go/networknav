@@ -1,3 +1,5 @@
+import { removeReplyReactions, removeReplyReactionsMany } from "./explore-reactions-store";
+
 export interface ExploreReply {
   id: string;
   userId: string;
@@ -64,6 +66,8 @@ export function deleteExplorePost(
 ): boolean {
   const i = posts.findIndex((p) => p.id === postId && p.userId === userId);
   if (i === -1) return false;
+  const replyIds = posts[i].replies.map((r) => r.id);
+  removeReplyReactionsMany(replyIds);
   posts.splice(i, 1);
   return true;
 }
@@ -80,5 +84,11 @@ export function deleteExploreReply(
   );
   if (i === -1) return false;
   p.replies.splice(i, 1);
+  removeReplyReactions(replyId);
   return true;
+}
+
+/** Whether an in-memory reply id exists on any post (for reaction API). */
+export function exploreReplyExists(replyId: string): boolean {
+  return posts.some((p) => p.replies.some((r) => r.id === replyId));
 }

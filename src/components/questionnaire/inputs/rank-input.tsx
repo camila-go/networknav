@@ -86,7 +86,7 @@ export function RankInput({
                     onClick={() => handleMoveUp(index)}
                     disabled={index === 0}
                     className={cn(
-                      "p-2 rounded text-white/60 hover:bg-white/10 hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-cyan-500",
+                      "p-2 rounded-full text-white/60 hover:bg-white/10 hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-cyan-500",
                       index === 0 && "opacity-30 cursor-not-allowed"
                     )}
                     aria-label="Move up"
@@ -111,7 +111,7 @@ export function RankInput({
                     onClick={() => handleMoveDown(index)}
                     disabled={index === selectedOptions.length - 1}
                     className={cn(
-                      "p-2 rounded text-white/60 hover:bg-white/10 hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-cyan-500",
+                      "p-2 rounded-full text-white/60 hover:bg-white/10 hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-cyan-500",
                       index === selectedOptions.length - 1 &&
                         "opacity-30 cursor-not-allowed"
                     )}
@@ -138,7 +138,7 @@ export function RankInput({
                 <button
                   type="button"
                   onClick={() => handleRemove(option.value)}
-                  className="p-2 text-white/60 hover:text-coral-400 transition-colors focus-visible:ring-2 focus-visible:ring-coral-500"
+                  className="p-2 rounded-full text-white/60 hover:text-coral-400 transition-colors focus-visible:ring-2 focus-visible:ring-coral-500"
                   aria-label={`Remove ${option.label}`}
                 >
                   <X className="h-4 w-4" />
@@ -162,7 +162,7 @@ export function RankInput({
                 type="button"
                 onClick={() => handleSelect(option.value)}
                 className={cn(
-                  "flex items-center gap-3 p-4 rounded-xl border-2 text-left transition-all duration-200",
+                  "flex items-center gap-3 p-4 rounded-full border-2 text-left transition-all duration-200",
                   "border-white/20 bg-white/5 hover:border-cyan-400/50 hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
                 )}
               >

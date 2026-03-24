@@ -43,7 +43,7 @@ vi.mock("./filter-sidebar", () => ({
       <span data-testid="result-count">{resultCount}</span>
       <button
         data-testid="apply-filter"
-        onClick={() => onFiltersChange({ industries: ["technology"] })}
+        onClick={() => onFiltersChange({ leadershipLevels: ["vp"] })}
       >
         Apply Filter
       </button>

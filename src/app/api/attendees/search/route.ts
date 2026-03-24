@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import type { SearchFilters, AttendeeSearchResult, Commonality, PublicUser } from "@/types";
 import { QUESTIONNAIRE_SECTIONS } from "@/lib/questionnaire-data";
 import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
+import { isLiveDatabaseMode } from "@/lib/supabase/data-mode";
 import type { UserProfileRow } from "@/types/database";
 
 // Get label for a value from questionnaire options
@@ -27,19 +28,6 @@ function calculateMatchData(
   const commonalities: Commonality[] = [];
   let matchPoints = 0;
   let totalPoints = 0;
-
-  // Industry match (high weight)
-  if (currentResponses.industry && candidateResponses.industry) {
-    totalPoints += 15;
-    if (currentResponses.industry === candidateResponses.industry) {
-      matchPoints += 15;
-      commonalities.push({
-        category: "professional",
-        description: `Both in ${getLabel("industry", currentResponses.industry as string)}`,
-        weight: 0.9,
-      });
-    }
-  }
 
   // Leadership level proximity
   const levelOrder = ["emerging", "manager", "director", "vp", "senior-executive", "c-suite", "founder"];
@@ -198,13 +186,6 @@ function matchesFilters(
   userProfile: { location?: string },
   filters: SearchFilters
 ): boolean {
-  // Industry filter
-  if (filters.industries && filters.industries.length > 0) {
-    if (!responses.industry || !filters.industries.includes(responses.industry as string)) {
-      return false;
-    }
-  }
-
   // Leadership level filter
   if (filters.leadershipLevels && filters.leadershipLevels.length > 0) {
     if (!responses.leadershipLevel || !filters.leadershipLevels.includes(responses.leadershipLevel as string)) {
@@ -331,7 +312,6 @@ function fullSearchBlob(
   ];
   const labelKeys = [
     ...INTEREST_FIELD_IDS,
-    "industry",
     "leadershipLevel",
     "organizationSize",
     "leadershipPriorities",
@@ -430,7 +410,6 @@ function getDemoUsers(currentResponses: Record<string, unknown>): AttendeeSearch
       company: "TechCorp",
       location: "San Francisco, CA",
       responses: {
-        industry: "technology",
         leadershipLevel: "vp",
         organizationSize: "1000-5000",
         leadershipPriorities: ["innovation", "scaling", "talent-development"],
@@ -446,7 +425,6 @@ function getDemoUsers(currentResponses: Record<string, unknown>): AttendeeSearch
       company: "FinanceFlow",
       location: "New York, NY",
       responses: {
-        industry: "finance",
         leadershipLevel: "c-suite",
         organizationSize: "5000+",
         leadershipPriorities: ["digital-transformation", "culture", "profitability"],
@@ -462,7 +440,6 @@ function getDemoUsers(currentResponses: Record<string, unknown>): AttendeeSearch
       company: "MedConnect AI",
       location: "Austin, TX",
       responses: {
-        industry: "healthcare",
         leadershipLevel: "founder",
         organizationSize: "startup",
         leadershipPriorities: ["innovation", "fundraising", "product-market-fit"],
@@ -478,7 +455,6 @@ function getDemoUsers(currentResponses: Record<string, unknown>): AttendeeSearch
       company: "McKinsey & Company",
       location: "Chicago, IL",
       responses: {
-        industry: "consulting",
         leadershipLevel: "director",
         organizationSize: "5000+",
         leadershipPriorities: ["mentoring", "culture", "client-impact"],
@@ -495,7 +471,6 @@ function getDemoUsers(currentResponses: Record<string, unknown>): AttendeeSearch
       company: "NeuralScale",
       location: "Seattle, WA",
       responses: {
-        industry: "technology",
         leadershipLevel: "c-suite",
         organizationSize: "50-200",
         leadershipPriorities: ["innovation", "talent-development", "technical-excellence"],
@@ -512,7 +487,6 @@ function getDemoUsers(currentResponses: Record<string, unknown>): AttendeeSearch
       company: "CloudScale Enterprise",
       location: "Denver, CO",
       responses: {
-        industry: "technology",
         leadershipLevel: "vp",
         organizationSize: "1000-5000",
         leadershipPriorities: ["revenue-growth", "team-building", "customer-success"],
@@ -528,7 +502,6 @@ function getDemoUsers(currentResponses: Record<string, unknown>): AttendeeSearch
       company: "GameStudio Interactive",
       location: "Los Angeles, CA",
       responses: {
-        industry: "media",
         leadershipLevel: "director",
         organizationSize: "200-500",
         leadershipPriorities: ["innovation", "strategy", "culture"],
@@ -559,7 +532,6 @@ function getDemoUsers(currentResponses: Record<string, unknown>): AttendeeSearch
         { category: "professional", description: "Leadership experience", weight: 0.8 },
       ],
       questionnaire: {
-        industry: demo.responses.industry,
         leadershipLevel: demo.responses.leadershipLevel,
         organizationSize: demo.responses.organizationSize,
         leadershipPriorities: demo.responses.leadershipPriorities,
@@ -709,7 +681,6 @@ export async function POST(request: NextRequest) {
           topCommonalities: commonalities,
           searchMatchLabels,
           questionnaire: {
-            industry: candidateResponses.responses.industry as string,
             leadershipLevel: candidateResponses.responses.leadershipLevel as string,
             organizationSize: candidateResponses.responses.organizationSize as string,
             leadershipPriorities: candidateResponses.responses.leadershipPriorities as string[],
@@ -719,8 +690,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // If still no results and no filters/keywords applied, provide demo users
-    if (results.length === 0 && (!filters || Object.keys(filters).length === 0) && (!keywords || keywords.trim() === "")) {
+    if (
+      !isLiveDatabaseMode() &&
+      results.length === 0 &&
+      (!filters || Object.keys(filters).length === 0) &&
+      (!keywords || keywords.trim() === "")
+    ) {
       const demoUsers = getDemoUsers(currentResponses);
       results.push(...demoUsers);
     }
@@ -883,7 +858,6 @@ async function searchSupabaseUsers(
         topCommonalities: commonalities,
         searchMatchLabels,
         questionnaire: {
-          industry: (candidateResponses.industry as string) || '',
           leadershipLevel: (candidateResponses.leadershipLevel as string) || '',
           organizationSize: (candidateResponses.organizationSize as string) || '',
           leadershipPriorities: (candidateResponses.leadershipPriorities as string[]) || [],
@@ -916,9 +890,6 @@ export async function GET() {
   
   // Build filter options from questionnaire data
   const filterOptions = {
-    industries: QUESTIONNAIRE_SECTIONS[0].questions
-      .find((q) => q.id === "industry")
-      ?.options?.map((o) => ({ value: o.value, label: o.label, icon: o.icon })) || [],
     leadershipLevels: QUESTIONNAIRE_SECTIONS[0].questions
       .find((q) => q.id === "leadershipLevel")
       ?.options?.map((o) => ({ value: o.value, label: o.label, icon: o.icon })) || [],

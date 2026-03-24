@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { QuestionnaireWizard } from "@/components/questionnaire/wizard";
 
 export const metadata = {
-  title: "Complete Your Profile | Jynx",
+  title: "Complete Your Profile | GS26",
   description: "Answer a few questions to help us find your perfect leadership matches",
 };
 

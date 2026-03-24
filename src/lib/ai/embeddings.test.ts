@@ -92,13 +92,11 @@ describe("Embeddings", () => {
     it("should include questionnaire leadership context", () => {
       const text = createProfileText({
         questionnaireData: {
-          industry: "technology",
           leadershipLevel: "senior-director",
           organizationSize: "1000-5000",
           yearsExperience: "10-15",
         },
       });
-      expect(text).toContain("Industry: technology");
       expect(text).toContain("Leadership Level: senior-director");
       expect(text).toContain("Organization Size: 1000-5000");
       expect(text).toContain("Years Experience: 10-15");

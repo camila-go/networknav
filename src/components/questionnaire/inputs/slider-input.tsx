@@ -61,7 +61,7 @@ export function SliderInput({ options, value, onChange }: SliderInputProps) {
               type="button"
               onClick={() => onChange(option.value)}
               className={cn(
-                "text-center max-w-[100px] px-1 transition-colors",
+                "text-center max-w-[100px] px-2 py-1 rounded-full transition-colors",
                 value === option.value
                   ? "text-cyan-400 font-bold"
                   : "text-white/60 hover:text-white font-medium"

@@ -27,7 +27,7 @@ Intelligent networking platform for leadership conferences. Uses market basket a
 | Utilities          | date-fns 3.6 (dates), nuqs (URL state)              |
 | Testing            | Vitest 4.0.18 + Testing Library 14                  |
 | Icons              | Lucide React                                       |
-| Fonts              | DM Sans (body) + Fraunces (display headings)        |
+| Fonts              | Inter (body + display / headings)                 |
 
 ## Commands
 

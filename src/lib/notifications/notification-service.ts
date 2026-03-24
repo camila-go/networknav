@@ -218,6 +218,16 @@ const NOTIFICATION_TEMPLATES: Record<
     title: "Complete your profile",
     body: "Finish your questionnaire to start receiving personalized matches.",
   }),
+
+  badge_earned: (data) => ({
+    title: "New badge earned",
+    body: `You unlocked ${(data?.badgeLabel as string) || "a new badge"}. View it on your profile.`,
+  }),
+
+  profile_frame_unlocked: (data) => ({
+    title: "New profile frame unlocked",
+    body: `You reached ${String(data?.minPoints ?? "")} connection points. The "${(data?.frameName as string) || "new"}" profile frame is now available on your profile.`,
+  }),
 };
 
 // ============================================
@@ -519,5 +529,29 @@ export function notifyMeetingDeclined(
 ): Notification {
   return createNotification(requesterId, "meeting_declined", {
     recipientName,
+  });
+}
+
+export function notifyBadgeEarned(
+  userId: string,
+  badgeLabel: string,
+  badgeType: string,
+  tier: string
+): Notification {
+  return createNotification(userId, "badge_earned", {
+    badgeLabel,
+    badgeType,
+    tier,
+  });
+}
+
+export function notifyProfileFrameUnlocked(
+  userId: string,
+  frameName: string,
+  minPoints: number
+): Notification {
+  return createNotification(userId, "profile_frame_unlocked", {
+    frameName,
+    minPoints,
   });
 }

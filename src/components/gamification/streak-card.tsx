@@ -99,7 +99,7 @@ export function StreakCard({ streaks, onFreezeStreak }: StreakCardProps) {
 
           {/* Streak milestones */}
           <div className="mt-3 flex gap-1">
-            {[7, 30, 90].map((milestone) => (
+            {[7, 14, 30].map((milestone) => (
               <div
                 key={milestone}
                 className={cn(
@@ -113,8 +113,8 @@ export function StreakCard({ streaks, onFreezeStreak }: StreakCardProps) {
           </div>
           <div className="mt-1 flex justify-between text-[10px] text-white/40">
             <span>7d</span>
+            <span>14d</span>
             <span>30d</span>
-            <span>90d</span>
           </div>
         </div>
 

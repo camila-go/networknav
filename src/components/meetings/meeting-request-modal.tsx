@@ -313,7 +313,7 @@ export function MeetingRequestModal({
                   type="button"
                   onClick={() => setMeetingType(type.value)}
                   className={cn(
-                    "flex items-center gap-3 p-3 rounded-lg border-2 text-left transition-all",
+                    "flex items-center gap-3 p-3 rounded-full border-2 text-left transition-all",
                     meetingType === type.value
                       ? "border-cyan-500 bg-cyan-500/10"
                       : "border-white/20 hover:border-white/40 bg-white/5"

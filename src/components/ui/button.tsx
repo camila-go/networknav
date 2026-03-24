@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 const buttonVariants = cva(
   [
     // Base styles
-    "inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-semibold",
+    "inline-flex items-center justify-center whitespace-nowrap rounded-full text-sm font-semibold",
     // Transition
     "transition-all duration-200",
     // Focus - high visibility ring for keyboard navigation
@@ -47,7 +47,7 @@ const buttonVariants = cva(
           "text-white/70 hover:bg-white/10 hover:text-white",
         // Link - text-only with underline
         link: 
-          "text-cyan-400 underline-offset-4 hover:underline hover:text-cyan-300 focus-visible:ring-offset-0",
+          "rounded-full text-cyan-400 underline-offset-4 hover:underline hover:text-cyan-300 focus-visible:ring-offset-0",
         // Success - for confirmations
         success:
           "bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:from-emerald-400 hover:to-teal-400 shadow-lg shadow-emerald-500/25",
@@ -57,8 +57,8 @@ const buttonVariants = cva(
       },
       size: {
         default: "h-10 px-4 py-2 min-w-[44px]",
-        sm: "h-9 rounded-md px-3 text-sm min-w-[44px]",
-        lg: "h-12 rounded-xl px-8 text-base min-w-[44px]",
+        sm: "h-9 rounded-full px-3 text-sm min-w-[44px]",
+        lg: "h-12 rounded-full px-8 text-base min-w-[44px]",
         icon: "h-10 w-10 p-0",
       },
     },

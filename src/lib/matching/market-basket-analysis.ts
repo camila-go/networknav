@@ -41,7 +41,6 @@ interface MatchScore {
 
 const ATTRIBUTE_WEIGHTS: Record<keyof QuestionnaireData, { weight: number; category: CommonalityCategory }> = {
   // Section 1: Leadership Context (high weight for professional matching)
-  industry: { weight: 0.9, category: "professional" },
   yearsExperience: { weight: 0.6, category: "professional" },
   leadershipLevel: { weight: 0.85, category: "professional" },
   organizationSize: { weight: 0.5, category: "professional" },
@@ -75,11 +74,6 @@ const ATTRIBUTE_WEIGHTS: Record<keyof QuestionnaireData, { weight: number; categ
 // ============================================
 
 const COMPLEMENTARY_PAIRS: Record<string, string[]> = {
-  // Industry complements
-  "industry:technology": ["industry:finance", "industry:healthcare", "industry:consulting"],
-  "industry:finance": ["industry:technology", "industry:consulting", "industry:real-estate"],
-  "industry:healthcare": ["industry:technology", "industry:nonprofit", "industry:consulting"],
-  
   // Leadership level complements (mentorship opportunities)
   "leadershipLevel:c-suite": ["leadershipLevel:director", "leadershipLevel:vp"],
   "leadershipLevel:vp": ["leadershipLevel:c-suite", "leadershipLevel:manager"],
@@ -341,7 +335,6 @@ export function determineMatchType(
 
 function generateCommonalityDescription(item: AttributeItem): string {
   const descriptions: Record<string, (value: string) => string> = {
-    industry: (v) => `Both work in ${formatValue(v)}`,
     yearsExperience: (v) => `Similar leadership experience (${v} years)`,
     leadershipLevel: (v) => `Both at ${formatValue(v)} level`,
     organizationSize: (v) => `Both lead in ${formatValue(v)} organizations`,
@@ -379,9 +372,6 @@ function generateStrategicDescription(
   const val = formatValue(item.value);
   const compVal = formatValue(complementValue);
 
-  if (attr === "industry") {
-    return `Complementary industries: ${val} + ${compVal}`;
-  }
   if (attr === "leadershipLevel") {
     return `Cross-level connection: ${val} ↔ ${compVal}`;
   }

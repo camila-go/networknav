@@ -195,7 +195,7 @@ export async function createTeamsMeeting(
       subject: title,
       body: {
         contentType: 'HTML',
-        content: `<p>Meeting scheduled via Jynx - Leadership Networking</p>
+        content: `<p>Meeting scheduled via GS26 — Leadership Networking</p>
                   <p><a href="${meeting.joinWebUrl}">Join Microsoft Teams Meeting</a></p>`,
       },
       start: {

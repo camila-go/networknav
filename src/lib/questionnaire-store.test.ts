@@ -32,21 +32,21 @@ describe("Questionnaire Store", () => {
   describe("setResponse", () => {
     it("should set a single response", () => {
       const store = useQuestionnaireStore.getState();
-      store.setResponse("industry", "technology");
+      store.setResponse("yearsExperience", "6-10");
 
-      expect(useQuestionnaireStore.getState().responses.industry).toBe(
-        "technology"
+      expect(useQuestionnaireStore.getState().responses.yearsExperience).toBe(
+        "6-10"
       );
     });
 
     it("should set multiple responses", () => {
       const store = useQuestionnaireStore.getState();
-      store.setResponse("industry", "technology");
       store.setResponse("yearsExperience", "6-10");
+      store.setResponse("leadershipLevel", "vp");
 
       const responses = useQuestionnaireStore.getState().responses;
-      expect(responses.industry).toBe("technology");
       expect(responses.yearsExperience).toBe("6-10");
+      expect(responses.leadershipLevel).toBe("vp");
     });
 
     it("should handle array responses for multi-select", () => {
@@ -59,11 +59,11 @@ describe("Questionnaire Store", () => {
 
     it("should override existing responses", () => {
       const store = useQuestionnaireStore.getState();
-      store.setResponse("industry", "technology");
-      store.setResponse("industry", "finance");
+      store.setResponse("yearsExperience", "6-10");
+      store.setResponse("yearsExperience", "11-15");
 
-      expect(useQuestionnaireStore.getState().responses.industry).toBe(
-        "finance"
+      expect(useQuestionnaireStore.getState().responses.yearsExperience).toBe(
+        "11-15"
       );
     });
   });
@@ -81,7 +81,7 @@ describe("Questionnaire Store", () => {
     it("should move to the next section when at the last question", () => {
       const store = useQuestionnaireStore.getState();
 
-      // Move to the last question of the first section (3 questions, so advance 2 times)
+      // Move to the last question of the first section (2 questions, so advance 1 time)
       const firstSectionQuestions = QUESTIONNAIRE_SECTIONS[0].questions.length;
       for (let i = 0; i < firstSectionQuestions - 1; i++) {
         store.nextQuestion();
@@ -181,23 +181,23 @@ describe("Questionnaire Store", () => {
       const progress = store.getProgress();
 
       expect(progress.currentQuestion).toBe(1);
-      expect(progress.totalQuestions).toBe(10);
-      expect(progress.percentage).toBe(10);
+      expect(progress.totalQuestions).toBe(9);
+      expect(progress.percentage).toBe(11);
       expect(progress.sectionProgress).toBe("Section 1 of 3");
     });
 
     it("should return correct progress after moving", () => {
       const store = useQuestionnaireStore.getState();
 
-      // Move to question 4 (second section, first question)
-      // Section 1 has 3 questions, so advance 3 times
-      for (let i = 0; i < 3; i++) {
+      // Move to question 3 (second section, first question)
+      // Section 1 has 2 questions, so advance 2 times
+      for (let i = 0; i < 2; i++) {
         store.nextQuestion();
       }
 
       const progress = store.getProgress();
-      expect(progress.currentQuestion).toBe(4);
-      expect(progress.percentage).toBe(40);
+      expect(progress.currentQuestion).toBe(3);
+      expect(progress.percentage).toBe(33);
       expect(progress.sectionProgress).toBe("Section 2 of 3");
     });
   });
@@ -212,7 +212,7 @@ describe("Questionnaire Store", () => {
 
     it("should return true for required question with response", () => {
       const store = useQuestionnaireStore.getState();
-      store.setResponse("industry", "technology");
+      store.setResponse("yearsExperience", "6-10");
       const canProceed = store.canProceed();
 
       expect(canProceed).toBe(true);
@@ -221,7 +221,7 @@ describe("Questionnaire Store", () => {
     it("should require responses for all questions since all are required", () => {
       const store = useQuestionnaireStore.getState();
 
-      // All 10 questions are required, so without a response canProceed should be false
+      // All 9 questions are required, so without a response canProceed should be false
       for (const section of QUESTIONNAIRE_SECTIONS) {
         for (const question of section.questions) {
           expect(question.required).toBe(true);
@@ -236,8 +236,8 @@ describe("Questionnaire Store", () => {
       const store = useQuestionnaireStore.getState();
 
       // Move to leadershipPriorities (first question of section 2)
-      // Section 1 has 3 questions, so advance 3 times
-      for (let i = 0; i < 3; i++) {
+      // Section 1 has 2 questions, so advance 2 times
+      for (let i = 0; i < 2; i++) {
         store.nextQuestion();
       }
 
@@ -268,7 +268,7 @@ describe("Questionnaire Store", () => {
       const store = useQuestionnaireStore.getState();
 
       // Make some changes
-      store.setResponse("industry", "technology");
+      store.setResponse("yearsExperience", "6-10");
       store.nextQuestion();
       store.nextQuestion();
       store.setSubmitting(true);

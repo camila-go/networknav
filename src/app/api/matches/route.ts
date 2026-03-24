@@ -4,6 +4,7 @@ import { generateMatches, calculateMatchQualityMetrics } from "@/lib/matching";
 import { calculateMatchScore, determineMatchType, generateConversationStarters } from "@/lib/matching/market-basket-analysis";
 import { users, questionnaireResponses, userMatches } from "@/lib/stores";
 import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
+import { isLiveDatabaseMode } from "@/lib/supabase/data-mode";
 import { generateConversationStartersAI } from "@/lib/ai/generative";
 import type { Match, QuestionnaireData } from "@/types";
 
@@ -32,16 +33,12 @@ export async function GET(request: NextRequest) {
 
     // If no matches or matches are stale, generate new ones
     if (!matches || matches.length === 0) {
-      // First try to get from Supabase if configured
-      if (isSupabaseConfigured && supabaseAdmin) {
+      if (isLiveDatabaseMode() && supabaseAdmin) {
         matches = await generateMatchesFromSupabase(userId, userEmail);
         if (matches.length > 0) {
           userMatches.set(userId, matches);
         }
-      }
-      
-      // Fall back to in-memory matching if no Supabase matches
-      if (!matches || matches.length === 0) {
+      } else {
         matches = await generateMatchesForUser(userId, userEmail);
         userMatches.set(userId, matches);
       }
@@ -76,8 +73,12 @@ export async function POST() {
       );
     }
 
-    // Force regenerate matches
-    const matches = await generateMatchesForUser(session.userId, session.email);
+    let matches: Match[];
+    if (isLiveDatabaseMode() && supabaseAdmin) {
+      matches = await generateMatchesFromSupabase(session.userId, session.email);
+    } else {
+      matches = await generateMatchesForUser(session.userId, session.email);
+    }
     userMatches.set(session.userId, matches);
 
     const metrics = calculateMatchQualityMetrics(matches);
@@ -401,7 +402,7 @@ function generateDemoMatches(userId: string): Match[] {
       },
       type: "high-affinity",
       commonalities: [
-        { category: "professional", description: "Both in Technology industry", weight: 0.9 },
+        { category: "professional", description: "Both at VP / executive director level", weight: 0.9 },
         { category: "professional", description: "Similar team scaling challenges", weight: 0.85 },
         { category: "hobby", description: "Both enjoy hiking and outdoor adventures", weight: 0.7 },
         { category: "values", description: "Share servant leadership philosophy", weight: 0.8 },
@@ -518,13 +519,13 @@ function generateDemoMatches(userId: string): Match[] {
       },
       type: "strategic",
       commonalities: [
-        { category: "professional", description: "Complementary industries: Tech + Finance", weight: 0.85 },
+        { category: "professional", description: "Complementary roles: engineering + people leadership", weight: 0.85 },
         { category: "professional", description: "Both driving digital transformation", weight: 0.8 },
         { category: "values", description: "Data-driven decision making", weight: 0.7 },
       ],
       conversationStarters: [
         "I'm curious how you navigate fintech compliance — seems like a unique challenge",
-        "Would love a cross-industry perspective on digital transformation",
+        "Would love an outside perspective on digital transformation",
       ],
       score: 0.76,
       generatedAt: now,

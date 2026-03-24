@@ -10,8 +10,8 @@ import {
 import Link from "next/link";
 
 export const metadata = {
-  title: "Log In | Jynx",
-  description: "Log in to your Jynx account",
+  title: "Log In | GS26",
+  description: "Log in to your GS26 conference account (powered by JYNX)",
 };
 
 export default function LoginPage() {

@@ -131,7 +131,6 @@ export type BlockUserInput = z.infer<typeof blockUserSchema>;
 // ============================================
 
 export const searchFiltersSchema = z.object({
-  industries: z.array(z.string()).optional(),
   leadershipLevels: z.array(z.string()).optional(),
   organizationSizes: z.array(z.string()).optional(),
   yearsExperience: z.array(z.string()).optional(),

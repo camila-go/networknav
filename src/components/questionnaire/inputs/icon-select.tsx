@@ -23,7 +23,7 @@ export function IconSelect({ options, value, onChange }: IconSelectProps) {
             aria-checked={isSelected}
             onClick={() => onChange(option.value)}
             className={cn(
-              "relative flex flex-col items-center gap-3 p-5 rounded-2xl border-2 text-center transition-all duration-200",
+              "relative flex flex-col items-center gap-3 p-5 rounded-full border-2 text-center transition-all duration-200",
               "hover:border-cyan-400/50 hover:bg-white/10 hover:scale-105 focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2 focus-visible:ring-offset-black",
               isSelected
                 ? "border-cyan-500 bg-cyan-500/10 shadow-lg shadow-cyan-500/20 scale-105"

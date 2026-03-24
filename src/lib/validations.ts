@@ -67,7 +67,6 @@ export const profileSchema = z.object({
 
 export const questionnaireResponseSchema = z.object({
   // Section 1: Leadership Context
-  industry: z.string().optional(),
   yearsExperience: z.string().optional(),
   leadershipLevel: z.string().optional(),
   organizationSize: z.string().optional(),

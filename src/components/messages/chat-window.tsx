@@ -81,6 +81,8 @@ export function ChatWindow({
       .toUpperCase()
       .slice(0, 2) || "?";
 
+  const otherProfileHref = otherUser?.id ? `/user/${otherUser.id}` : null;
+
   // Join/leave conversation room via Socket.io
   useEffect(() => {
     if (!socket || !connectionId) return;
@@ -350,21 +352,36 @@ export function ChatWindow({
           </Button>
         )}
 
-        <Link href={otherUser?.id ? `/user/${otherUser.id}` : "#"} className="flex-shrink-0">
-          <Avatar className="h-10 w-10 border-2 border-white/20 hover:ring-2 hover:ring-cyan-500 hover:ring-offset-2 hover:ring-offset-black transition-all cursor-pointer">
-            <AvatarImage src={undefined} />
-            <AvatarFallback className="bg-gradient-to-br from-cyan-500 to-teal-500 text-black font-semibold">
-              {initials}
-            </AvatarFallback>
-          </Avatar>
-        </Link>
+        {otherProfileHref ? (
+          <Link href={otherProfileHref} className="flex-shrink-0">
+            <Avatar className="h-10 w-10 border-2 border-white/20 hover:ring-2 hover:ring-cyan-500 hover:ring-offset-2 hover:ring-offset-black transition-all cursor-pointer">
+              <AvatarImage src={undefined} />
+              <AvatarFallback className="bg-gradient-to-br from-cyan-500 to-teal-500 text-black font-semibold">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+          </Link>
+        ) : (
+          <div className="flex-shrink-0">
+            <Avatar className="h-10 w-10 border-2 border-white/20 transition-all">
+              <AvatarImage src={undefined} />
+              <AvatarFallback className="bg-gradient-to-br from-cyan-500 to-teal-500 text-black font-semibold">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+          </div>
+        )}
 
         <div className="flex-1 min-w-0">
-          <Link href={otherUser?.id ? `/user/${otherUser.id}` : "#"}>
-            <h3 className="font-semibold text-white truncate hover:text-cyan-400 transition-colors cursor-pointer">
-              {otherUser?.name || "Unknown"}
-            </h3>
-          </Link>
+          {otherProfileHref ? (
+            <Link href={otherProfileHref}>
+              <h3 className="font-semibold text-white truncate hover:text-cyan-400 transition-colors cursor-pointer">
+                {otherUser?.name || "Unknown"}
+              </h3>
+            </Link>
+          ) : (
+            <h3 className="font-semibold text-white truncate">{otherUser?.name || "Unknown"}</h3>
+          )}
           <p className="text-sm text-white/60 truncate">
             {isOtherTyping ? (
               <span className="text-cyan-400">typing...</span>

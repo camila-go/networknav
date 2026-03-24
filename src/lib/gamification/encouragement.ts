@@ -171,10 +171,14 @@ export function getActivityTip(currentPoints: number, dailyStreak: number): stri
   if (dailyStreak < 7) {
     return `${7 - dailyStreak} more days to earn your first streak badge!`;
   }
-  
-  if (dailyStreak >= 7 && dailyStreak < 30) {
+
+  if (dailyStreak >= 7 && dailyStreak < 14) {
     return `Amazing ${dailyStreak}-day streak! Keep going for Silver!`;
   }
-  
-  return `Incredible ${dailyStreak}-day streak! You're a networking legend!`;
+
+  if (dailyStreak >= 14 && dailyStreak < 30) {
+    return `Amazing ${dailyStreak}-day streak! Keep going for Gold!`;
+  }
+
+  return `Incredible ${dailyStreak}-day streak! You've hit the 30-day max!`;
 }

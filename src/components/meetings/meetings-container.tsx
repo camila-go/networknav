@@ -205,7 +205,7 @@ export function MeetingsContainer() {
           </p>
         </div>
         {/* View Toggle */}
-        <div className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-lg p-1 shrink-0">
+        <div className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-full p-1 shrink-0">
           <Button
             variant="ghost"
             size="sm"
@@ -340,7 +340,7 @@ export function MeetingsContainer() {
                   key={dateKey}
                   onClick={() => (hasMeetings || hasExternalEvents) && setSelectedDay(day)}
                   className={cn(
-                    "aspect-square p-1 rounded-lg relative transition-colors cursor-pointer",
+                    "aspect-square p-1 rounded-full relative transition-colors cursor-pointer",
                     isToday && "bg-cyan-500/20 border border-cyan-500/50",
                     !isToday && hasScheduledMeetings && "bg-cyan-500/10 hover:bg-cyan-500/20",
                     !isToday && hasPendingMeetings && !hasScheduledMeetings && "bg-amber-500/10 hover:bg-amber-500/20",
@@ -920,7 +920,7 @@ function RequestCard({
                       key={index}
                       onClick={() => setSelectedTime(time.toString())}
                       className={cn(
-                        "px-3 py-2 rounded-lg border text-sm transition-all",
+                        "px-3 py-2 rounded-full border text-sm transition-all",
                         isSelected
                           ? "border-cyan-500 bg-cyan-500/20 text-cyan-400"
                           : "border-white/20 text-white/70 hover:border-cyan-500/50"

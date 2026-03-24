@@ -22,7 +22,6 @@ interface FilterOption {
 }
 
 interface FilterOptions {
-  industries: FilterOption[];
   leadershipLevels: FilterOption[];
   organizationSizes: FilterOption[];
   yearsExperience: FilterOption[];
@@ -46,9 +45,11 @@ export function FilterSidebar({
 }: FilterSidebarProps) {
   const [filterOptions, setFilterOptions] = useState<FilterOptions | null>(null);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
-    industries: true,
     leadershipLevels: true,
+    organizationSizes: false,
+    yearsExperience: false,
     leadershipChallenges: false,
+    leadershipPriorities: false,
     interests: false,
   });
 
@@ -152,21 +153,6 @@ export function FilterSidebar({
       {/* Filter sections */}
       <ScrollArea className="flex-1">
         <div className="p-4 space-y-4">
-          {/* Industry */}
-          <FilterSection
-            title="Industry"
-            expanded={expandedSections.industries}
-            onToggle={() => toggleSection("industries")}
-            activeCount={(filters.industries || []).length}
-            onClear={() => clearFilter("industries")}
-          >
-            <FilterOptionList
-              options={filterOptions.industries}
-              selectedValues={filters.industries || []}
-              onToggle={(value) => toggleFilter("industries", value)}
-            />
-          </FilterSection>
-
           {/* Leadership Level */}
           <FilterSection
             title="Leadership Level"
@@ -318,7 +304,7 @@ function FilterSection({
                 e.stopPropagation();
                 onClear();
               }}
-              className="p-1 hover:bg-white/10 rounded"
+              className="p-1 hover:bg-white/10 rounded-full"
               aria-label={`Clear ${title} filters`}
             >
               <X className="h-3 w-3 text-white/50" />
@@ -357,7 +343,7 @@ function FilterOptionList({
               key={option.value}
               onClick={() => onToggle(option.value)}
               className={cn(
-                "w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm text-left transition-colors",
+                "w-full flex items-center gap-2 px-2 py-1.5 rounded-full text-sm text-left transition-colors",
                 isSelected
                   ? "bg-cyan-500/20 text-cyan-400"
                   : "hover:bg-white/10 text-white/70"

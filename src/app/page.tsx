@@ -1,72 +1,9 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight, Users, Sparkles, MessageCircle, Calendar } from "lucide-react";
+import { Gs26LockupLink } from "@/components/brand/gs26-lockup-link";
 import { Button } from "@/components/ui/button";
-
-// Generate dot data for the radial matrix
-function generateDots() {
-  const rings = 12;
-  const dots: { x: number; y: number; color: string; size: number; delay: number; floatDuration: number; twinkleDuration: number }[] = [];
-  
-  for (let ring = 1; ring <= rings; ring++) {
-    const dotsInRing = ring * 8;
-    const radius = ring * 35;
-    
-    for (let i = 0; i < dotsInRing; i++) {
-      const angle = (i / dotsInRing) * Math.PI * 2;
-      const x = 50 + Math.cos(angle) * radius / 4;
-      const y = 50 + Math.sin(angle) * radius / 4;
-      
-      // Color spectrum based on angle (rainbow effect)
-      const hue = (angle * 180 / Math.PI + ring * 15) % 360;
-      const saturation = 100 - ring * 3;
-      const lightness = 60 - ring * 2;
-      const opacity = Math.max(0.3, 1 - ring * 0.06);
-      
-      dots.push({
-        x,
-        y,
-        color: `hsla(${hue}, ${saturation}%, ${lightness}%, ${opacity})`,
-        size: Math.max(2, 6 - ring * 0.3),
-        delay: (ring * 0.3) + (i * 0.02),
-        floatDuration: 4 + (ring % 3),
-        twinkleDuration: 6 + (i % 4),
-      });
-    }
-  }
-  return dots;
-}
-
-// Radial dot matrix component with subtle floating animation
-function RadialDotMatrix() {
-  const dots = generateDots();
-
-  return (
-    <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
-      <svg 
-        className="absolute inset-0 w-full h-full"
-        viewBox="0 0 100 100"
-        preserveAspectRatio="xMidYMid slice"
-      >
-        {/* Animated dots with floating effect */}
-        {dots.map((dot, index) => (
-          <circle
-            key={index}
-            cx={dot.x}
-            cy={dot.y}
-            r={dot.size / 10}
-            fill={dot.color}
-            className="animate-dot"
-            style={{ 
-              '--animation-delay': `${dot.delay}s`,
-              '--float-duration': `${dot.floatDuration}s`,
-              '--twinkle-duration': `${dot.twinkleDuration}s`,
-            } as React.CSSProperties}
-          />
-        ))}
-      </svg>
-    </div>
-  );
-}
 
 export default function HomePage() {
   return (
@@ -77,24 +14,27 @@ export default function HomePage() {
       </a>
 
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 glass" role="banner">
-        <nav className="container mx-auto px-4 py-4 flex items-center justify-between" aria-label="Main navigation">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-cyan-400 to-teal-500 flex items-center justify-center shadow-lg shadow-cyan-500/30">
-              <span className="font-bold text-black text-lg">J</span>
-            </div>
-            <span className="font-display text-xl font-bold tracking-wide">
-              JYNX
-            </span>
-          </div>
-          <div className="flex items-center gap-3">
-            <Link href="/login">
-              <Button variant="ghost" className="text-white/80 hover:text-white hover:bg-white/10">
+      <header className="fixed top-0 left-0 right-0 z-50 glass pt-[env(safe-area-inset-top)]" role="banner">
+        <nav
+          className="container mx-auto flex flex-wrap items-center justify-between gap-x-3 gap-y-3 px-4 py-3 sm:gap-y-4 sm:py-4"
+          aria-label="Main navigation"
+        >
+          <Gs26LockupLink className="max-w-[55%] sm:max-w-none" />
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
+            <Link href="/login" className="min-h-[44px] min-w-[44px] sm:min-w-0">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-10 px-3 text-sm text-white/80 hover:text-white hover:bg-white/10 sm:h-11 sm:px-4 sm:text-base"
+              >
                 Log In
               </Button>
             </Link>
-            <Link href="/register">
-              <Button className="bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-black font-semibold shadow-lg shadow-cyan-500/30">
+            <Link href="/register" className="min-h-[44px]">
+              <Button
+                size="sm"
+                className="h-10 bg-gradient-to-r from-cyan-500 to-teal-500 px-3 text-sm font-semibold text-black shadow-lg shadow-cyan-500/30 hover:from-cyan-400 hover:to-teal-400 sm:h-11 sm:px-4 sm:text-base"
+              >
                 Get Started
               </Button>
             </Link>
@@ -102,66 +42,127 @@ export default function HomePage() {
         </nav>
       </header>
 
-      {/* Hero Section with Radial Dots */}
-      <section id="main-content" className="relative min-h-screen flex items-center justify-center overflow-hidden" role="main">
-        <RadialDotMatrix />
-        
-        {/* Content overlay with backdrop for legibility */}
-        <div className="relative z-10 container mx-auto px-4 py-32 text-center">
-          {/* Content card with dark backdrop for legibility */}
-          <div className="relative mx-auto max-w-3xl rounded-3xl bg-black/60 backdrop-blur-md p-8 md:p-12 border border-white/10">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-cyan-400/50 bg-cyan-500/20 text-cyan-300 text-sm font-medium mb-8 animate-fade-in">
-              <Sparkles className="h-4 w-4" aria-hidden="true" />
-              <span>GLOBAL LEADERSHIP SUMMIT 2026</span>
+      {/*
+        Hero / WCAG: lockup in pale disk only; headline + body live together (navy band mobile, zinc card md+).
+        Body copy never on the dot field without an opaque surface.
+      */}
+      <section
+        id="main-content"
+        className="relative flex min-h-[100dvh] flex-col items-center justify-center overflow-x-hidden overflow-y-visible scroll-mt-28 pb-16 pt-[max(6.5rem,calc(env(safe-area-inset-top)+5.25rem))] md:scroll-mt-36 md:justify-center md:pb-20 md:pt-[max(9rem,calc(env(safe-area-inset-top)+8rem))] lg:pt-[max(9.5rem,calc(env(safe-area-inset-top)+8.5rem))]"
+        role="main"
+      >
+        {/* Desktop: heavy scrim so intro/CTAs sit over near-black (AA with white type) */}
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-0 z-[5] hidden h-[min(65vh,680px)] bg-gradient-to-t from-black via-black/95 to-black/20 backdrop-blur-md md:block"
+          aria-hidden
+        />
+
+        <div className="relative z-20 mx-auto flex w-full max-w-4xl flex-col items-center px-4 pb-[env(safe-area-inset-bottom)] text-center sm:px-5">
+          {/*
+            Badge min-height matches orb scale; lockup centered on the white disk.
+          */}
+          <div className="relative mb-0 w-full max-w-[min(100vw,860px)] min-h-[min(100vw,480px)] md:mb-8 md:min-h-[min(58vh,640px)] lg:min-h-[min(56vh,660px)]">
+            <div
+              className="pointer-events-none absolute left-1/2 top-1/2 z-0 -translate-x-1/2 -translate-y-1/2"
+              aria-hidden
+            >
+              <div className="aspect-square w-[min(290vw,2500px)] max-w-none origin-center animate-radiant-breathe motion-reduce:animate-none md:w-[min(172vmin,3000px)]">
+                {/* eslint-disable-next-line @next/next/no-img-element -- large decorative path SVG */}
+                <img
+                  src="/brand/radiant-colors-reference.svg"
+                  alt=""
+                  className="h-full w-full object-cover object-center"
+                  width={3245}
+                  height={3245}
+                  decoding="async"
+                  fetchPriority="high"
+                />
+              </div>
             </div>
-            
-            <h1 className="font-display text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight tracking-tight animate-fade-in [animation-delay:100ms]">
-              <span className="block text-white drop-shadow-lg">
-                Jynx: Because Great Minds Connect Alike
-              </span>
+            <div
+              className="pointer-events-none absolute left-1/2 top-1/2 z-[1] h-[min(100vw,680px)] w-[min(100vw,680px)] -translate-x-1/2 -translate-y-1/2 animate-fade-in-opacity motion-reduce:animate-none rounded-full shadow-[0_0_80px_rgba(255,255,255,0.35)] md:h-[min(min(62vh,74vw),760px)] md:w-[min(min(62vh,74vw),760px)]"
+              style={{
+                background:
+                  "radial-gradient(circle at 50% 50%, #ffffff 0%, #ffffff 58%, #f0fdfa 85%, #e0f2fe 100%)",
+              }}
+              aria-hidden
+            />
+            <div className="absolute left-1/2 top-1/2 z-[2] flex w-[min(88vw,360px)] -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center gap-3 px-4 py-2 animate-fade-in-opacity motion-reduce:animate-none sm:w-[min(84vw,380px)] md:w-[min(44vmin,400px)] md:gap-4 md:px-6 lg:w-[min(42vmin,400px)]">
+              <Image
+                src="/brand/hero-lockup.svg"
+                alt="Global Summit 2026, powered by JYNX"
+                width={524}
+                height={490}
+                priority
+                className="h-auto w-full max-w-[min(72vw,48vmin,288px)] drop-shadow-[0_12px_28px_rgba(0,0,0,0.12)] sm:max-w-[min(70vw,46vmin,300px)] md:max-w-[min(40vmin,340px)] lg:max-w-[min(38vmin,360px)]"
+              />
+            </div>
+          </div>
+
+          <div className="relative z-20 -mx-4 mt-5 w-[calc(100%+2rem)] bg-[#0a1628] px-6 py-7 text-center sm:-mx-5 sm:mt-6 sm:w-[calc(100%+2.5rem)] md:hidden">
+            <h1 className="mx-auto max-w-md font-display text-xl font-bold leading-snug tracking-tight text-lime-300 sm:text-2xl">
+              Transform your conference experience
             </h1>
-            
-            <p className="text-xl md:text-2xl lg:text-3xl font-semibold text-cyan-300 mb-8 animate-fade-in [animation-delay:150ms]">
-              Find Your Perfect Leadership Connections
+            <p className="mx-auto mt-4 max-w-md text-pretty text-sm font-medium leading-relaxed text-white antialiased sm:max-w-lg sm:text-base">
+              Take a 1-minute questionnaire to unlock AI-powered matches with peers and leaders who
+              complement your expertise – so you can connect, strategize and get more from the conference.
             </p>
-            
-            <p className="text-lg md:text-xl text-white/90 mb-12 max-w-2xl mx-auto animate-fade-in [animation-delay:200ms] leading-relaxed">
-              Our AI-powered matching identifies high-affinity peers who share your challenges 
-              and strategic connections who complement your expertise.
-            </p>
+          </div>
 
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in [animation-delay:300ms]">
-              <Link href="/register">
-                <Button size="lg" className="w-full sm:w-auto text-lg px-10 h-14 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-black font-semibold shadow-xl shadow-cyan-500/30 border-0">
-                  Start Networking
-                  <ArrowRight className="ml-2 h-5 w-5" aria-hidden="true" />
+
+          {/*
+            md+: single opaque surface (zinc-950 ≈ #09090b) behind intro + CTAs + meta — white on dots fails AA without this.
+            z-30 over radiant overflow.
+          */}
+          <div className="relative z-30 mt-6 flex w-full max-w-lg flex-col items-center sm:mt-7 md:mt-5 md:max-w-2xl md:rounded-2xl md:border md:border-white/15 md:bg-zinc-950 md:px-6 md:pb-6 md:pt-6 md:shadow-[0_12px_48px_rgba(0,0,0,0.75)]">
+            <h1 className="hidden w-full text-pretty text-center font-display text-2xl font-bold leading-snug tracking-tight text-lime-300 sm:text-[1.65rem] md:mb-4 md:block">
+              Transform your conference experience
+            </h1>
+            <p className="hidden w-full text-pretty text-center text-sm font-medium leading-relaxed text-white antialiased sm:text-[0.95rem] md:mb-6 md:block">
+              Take a 1-minute questionnaire to unlock AI-powered matches with peers and leaders who
+              complement your expertise – so you can connect, strategize and get more from the conference.
+            </p>
+            <div className="mb-10 flex w-full max-w-md flex-col items-stretch justify-center gap-4 sm:max-w-none sm:flex-row sm:items-center sm:justify-center animate-fade-in [animation-delay:200ms] md:mb-10">
+              <Link href="/register" className="w-full min-h-[48px] sm:w-auto sm:min-w-[12rem]">
+                <Button
+                  size="lg"
+                  className="h-12 min-h-[48px] w-full border-0 px-8 text-base font-semibold text-black shadow-xl shadow-cyan-500/30 sm:h-14 sm:px-10 sm:text-lg bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400"
+                >
+                  Get Started
+                  <ArrowRight className="ml-2 h-5 w-5 shrink-0" aria-hidden="true" />
                 </Button>
               </Link>
-              <Link href="#how-it-works">
-                <Button size="lg" variant="outline" className="w-full sm:w-auto text-lg px-10 h-14 border-white/30 text-white hover:bg-white/10 hover:border-white/50">
-                  How It Works
+              <Link href="#how-it-works" className="w-full min-h-[48px] sm:w-auto sm:min-w-[12rem]">
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="h-12 min-h-[48px] w-full border-white/30 px-8 text-base text-white hover:border-white/50 hover:bg-white/10 sm:h-14 sm:px-10 sm:text-lg"
+                >
+                  How it works
                 </Button>
               </Link>
             </div>
 
-            {/* Event details badge */}
-            <div className="mt-10 animate-fade-in [animation-delay:400ms]">
-              <div className="inline-flex flex-col sm:flex-row items-center gap-4 sm:gap-8 text-sm text-white/80">
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-cyan-400" />
-                  <span>APRIL 30 – MAY 2, 2026</span>
+            <div className="animate-fade-in [animation-delay:260ms]">
+              <div className="inline-flex max-w-full flex-col items-center gap-4 text-sm text-white sm:flex-row sm:gap-8">
+                <div className="flex items-center justify-center gap-2 text-center">
+                  <Calendar className="h-4 w-4 shrink-0 text-cyan-400" aria-hidden="true" />
+                  <span className="text-balance">April 30 – May 2, 2026</span>
                 </div>
-                <div className="hidden sm:block w-px h-4 bg-white/30" />
-                <span>Disney&apos;s Grand Floridian Resort</span>
+                <div className="hidden h-4 w-px bg-white/25 sm:block" />
+                <span className="text-balance text-center">Disney&apos;s Grand Floridian Resort</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Scroll indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
-          <div className="w-6 h-10 rounded-full border-2 border-white/30 flex items-start justify-center p-2">
-            <div className="w-1 h-2 rounded-full bg-white/50" />
+        {/* Decorative only — never intercept taps or block CTAs */}
+        <div
+          className="pointer-events-none absolute bottom-4 left-1/2 z-[5] -translate-x-1/2 max-sm:bottom-3 sm:bottom-6"
+          aria-hidden="true"
+        >
+          <div className="flex h-10 w-6 animate-bounce items-start justify-center rounded-full border-2 border-white/25 p-2">
+            <div className="h-2 w-1 rounded-full bg-white/45" />
           </div>
         </div>
       </section>
@@ -182,7 +183,7 @@ export default function HomePage() {
             <FeatureCard
               icon={<Users className="h-8 w-8" />}
               title="High-Affinity Matches"
-              description="Connect with leaders who share your industry, challenges, and interests for peer support and mutual understanding."
+              description="Connect with leaders who share your challenges and interests for peer support and mutual understanding."
               color="cyan"
               delay={0}
             />
@@ -238,12 +239,15 @@ export default function HomePage() {
       <footer className="border-t border-white/10 py-12" role="contentinfo">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-cyan-400 to-teal-500 flex items-center justify-center">
-                <span className="font-bold text-black text-sm">J</span>
-              </div>
-              <span className="font-display font-bold tracking-wide">JYNX</span>
-            </div>
+            <Link href="/" className="flex shrink-0 items-center opacity-90 hover:opacity-100">
+              <Image
+                src="/brand/header-logo.svg"
+                alt="Disney Institute"
+                width={255}
+                height={50}
+                className="h-7 w-auto max-w-[180px] brightness-0 invert sm:h-8 sm:max-w-[200px]"
+              />
+            </Link>
             <p className="text-sm text-white/40">
               © {new Date().getFullYear()} Strategic Education. Proprietary and confidential.
             </p>
@@ -255,7 +259,7 @@ export default function HomePage() {
 }
 
 interface FeatureCardProps {
-  icon: React.ReactNode;
+  icon: ReactNode;
   title: string;
   description: string;
   color: "cyan" | "teal" | "emerald";

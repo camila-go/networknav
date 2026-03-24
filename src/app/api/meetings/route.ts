@@ -6,6 +6,7 @@ import type { Meeting, MeetingWithUsers, PublicUser } from "@/types";
 import { checkRateLimit } from "@/lib/security/rateLimit";
 import { notifyMeetingRequest } from "@/lib/notifications/notification-service";
 import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
+import { isLiveDatabaseMode } from "@/lib/supabase/data-mode";
 
 // Helper to get user profile by ID
 function getUserById(userId: string): PublicUser | null {
@@ -25,7 +26,9 @@ function getUserById(userId: string): PublicUser | null {
       };
     }
   }
-  // Return demo user data if not found in users store
+  if (isLiveDatabaseMode()) {
+    return null;
+  }
   return getDemoUser(userId);
 }
 

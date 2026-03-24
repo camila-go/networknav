@@ -22,9 +22,7 @@ import {
   Search,
   ChevronDown,
   ChevronUp,
-  Award,
   Trophy,
-  Flame,
   MessageSquare,
   Calendar,
   LogOut,
@@ -37,6 +35,9 @@ import {
   InterestChipsPanel,
   hasProfileInterestContent,
 } from "@/components/profile/interest-chips-panel";
+import { BadgeDisplay } from "@/components/gamification/badge-display";
+import { type BadgeProgress, parseBadgesFromApi } from "@/lib/gamification";
+import type { UserBadge } from "@/types";
 
 interface UserInterests {
   rechargeActivities: string[];
@@ -47,13 +48,6 @@ interface UserInterests {
   idealWeekend: string | null;
   leadershipPriorities: string[];
   networkingGoals: string[];
-}
-
-interface UserBadge {
-  id: string;
-  badgeType: string;
-  earnedAt: Date;
-  metadata?: Record<string, unknown>;
 }
 
 interface ConnectionSummary {
@@ -76,6 +70,7 @@ interface ActivityStats {
 export default function ProfilePage() {
   const [interests, setInterests] = useState<UserInterests | null>(null);
   const [badges, setBadges] = useState<UserBadge[]>([]);
+  const [badgeProgress, setBadgeProgress] = useState<BadgeProgress[]>([]);
   const [connections, setConnections] = useState<ConnectionSummary[]>([]);
   const [stats, setStats] = useState<ActivityStats | null>(null);
   const [connectionSearch, setConnectionSearch] = useState("");
@@ -134,8 +129,13 @@ export default function ProfilePage() {
             !!interestsData.data.questionnaireCompleted
           );
         }
-        if (badgesData.success) {
-          setBadges(badgesData.badges || []);
+        if (badgesData.badges !== undefined) {
+          setBadges(parseBadgesFromApi(badgesData.badges));
+        }
+        if (Array.isArray(badgesData.progress)) {
+          setBadgeProgress(badgesData.progress);
+        } else {
+          setBadgeProgress([]);
         }
         if (connectionsData.success) {
           setConnections(connectionsData.data?.matches || []);
@@ -161,15 +161,6 @@ export default function ProfilePage() {
 
   const toggleSection = (section: string) => {
     setExpandedSection(expandedSection === section ? null : section);
-  };
-
-  const BADGE_INFO: Record<string, { icon: typeof Trophy; label: string; color: string }> = {
-    "conversation-starter": { icon: MessageSquare, label: "Conversation Starter", color: "text-cyan-400" },
-    "networking-streak": { icon: Flame, label: "Networking Streak", color: "text-orange-400" },
-    "super-connector": { icon: Users, label: "Super Connector", color: "text-violet-400" },
-    "weekly-warrior": { icon: Trophy, label: "Weekly Warrior", color: "text-amber-400" },
-    "first-meeting": { icon: Calendar, label: "First Meeting", color: "text-teal-400" },
-    "mentor": { icon: Award, label: "Mentor", color: "text-pink-400" },
   };
 
   return (
@@ -229,30 +220,13 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {/* Badges */}
-        {badges.length > 0 && (
-          <div className="rounded-xl bg-white/5 border border-white/10 p-6">
-            <h2 className="text-xs font-semibold text-white/50 uppercase tracking-wider flex items-center gap-2 mb-4">
-              <Award className="h-4 w-4 text-violet-400" />
-              Your Badges
-            </h2>
-            <div className="flex flex-wrap gap-2">
-              {badges.map((badge) => {
-                const info = BADGE_INFO[badge.badgeType] || { icon: Award, label: badge.badgeType, color: "text-white" };
-                const IconComponent = info.icon;
-                return (
-                  <div
-                    key={badge.id}
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-violet-500/20 to-purple-500/20 border border-violet-500/30"
-                  >
-                    <IconComponent className={cn("h-4 w-4", info.color)} />
-                    <span className="text-sm font-medium text-white">{info.label}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
+        {/* Badges — same grid + styles as achievements modal; data from Supabase via API */}
+        <BadgeDisplay
+          badges={badges}
+          progress={badgeProgress}
+          showProgress
+          heading="Your Badges"
+        />
 
         {/* Your Connections */}
         <div className="rounded-xl bg-white/5 border border-white/10 p-6">
@@ -384,7 +358,7 @@ export default function ProfilePage() {
             className="w-full flex items-center justify-between p-6 hover:bg-white/5 transition-colors"
           >
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-violet-500/20">
+              <div className="p-2 rounded-full bg-violet-500/20">
                 <Shield className="h-5 w-5 text-violet-400" />
               </div>
               <div className="text-left">
@@ -477,7 +451,7 @@ export default function ProfilePage() {
             className="w-full flex items-center justify-between p-6 hover:bg-white/5 transition-colors"
           >
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-cyan-500/20">
+              <div className="p-2 rounded-full bg-cyan-500/20">
                 <Bell className="h-5 w-5 text-cyan-400" />
               </div>
               <div className="text-left">
@@ -555,7 +529,7 @@ export default function ProfilePage() {
             className="w-full flex items-center justify-between p-6 hover:bg-white/5 transition-colors"
           >
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-amber-500/20">
+              <div className="p-2 rounded-full bg-amber-500/20">
                 <Settings className="h-5 w-5 text-amber-400" />
               </div>
               <div className="text-left">
@@ -572,7 +546,7 @@ export default function ProfilePage() {
           
           {expandedSection === "account" && (
             <div className="px-6 pb-6 space-y-4 border-t border-white/10 pt-4">
-              <div className="flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors cursor-pointer">
+              <div className="flex items-center justify-between p-3 rounded-full bg-white/5 hover:bg-white/10 transition-colors cursor-pointer">
                 <div className="flex items-center gap-3">
                   <Lock className="h-4 w-4 text-white/50" />
                   <div>
@@ -582,7 +556,7 @@ export default function ProfilePage() {
                 </div>
                 <ChevronDown className="h-4 w-4 text-white/50 -rotate-90" />
               </div>
-              <div className="flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors cursor-pointer">
+              <div className="flex items-center justify-between p-3 rounded-full bg-white/5 hover:bg-white/10 transition-colors cursor-pointer">
                 <div className="flex items-center gap-3">
                   <Shield className="h-4 w-4 text-white/50" />
                   <div>
@@ -592,7 +566,7 @@ export default function ProfilePage() {
                 </div>
                 <Badge variant="outline" className="text-xs text-white/50 border-white/20">Coming Soon</Badge>
               </div>
-              <div className="flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors cursor-pointer">
+              <div className="flex items-center justify-between p-3 rounded-full bg-white/5 hover:bg-white/10 transition-colors cursor-pointer">
                 <div className="flex items-center gap-3">
                   <EyeOff className="h-4 w-4 text-white/50" />
                   <div>
@@ -626,12 +600,12 @@ export default function ProfilePage() {
             className="w-full flex items-center justify-between p-6 hover:bg-white/5 transition-colors"
           >
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-cyan-500/20">
+              <div className="p-2 rounded-full bg-cyan-500/20">
                 <HelpCircle className="h-5 w-5 text-cyan-400" />
               </div>
               <div className="text-left">
                 <h2 className="text-lg font-semibold text-white">Help & Support</h2>
-                <p className="text-sm text-white/50">Learn how to use Jynx</p>
+                <p className="text-sm text-white/50">Learn how to use GS26</p>
               </div>
             </div>
             {expandedSection === "help" ? (
@@ -648,7 +622,7 @@ export default function ProfilePage() {
                   resetOnboarding();
                   window.location.reload();
                 }}
-                className="w-full flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+                className="w-full flex items-center justify-between p-3 rounded-full bg-white/5 hover:bg-white/10 transition-colors"
               >
                 <div className="flex items-center gap-3">
                   <BookOpenCheck className="h-4 w-4 text-cyan-400" />
@@ -659,7 +633,7 @@ export default function ProfilePage() {
                 </div>
                 <ChevronDown className="h-4 w-4 text-white/50 -rotate-90" />
               </button>
-              <div className="flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors cursor-pointer">
+              <div className="flex items-center justify-between p-3 rounded-full bg-white/5 hover:bg-white/10 transition-colors cursor-pointer">
                 <div className="flex items-center gap-3">
                   <MessageSquare className="h-4 w-4 text-white/50" />
                   <div>

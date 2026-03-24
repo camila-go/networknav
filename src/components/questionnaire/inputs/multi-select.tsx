@@ -59,7 +59,7 @@ export function MultiSelect({
               onClick={() => handleToggle(option.value)}
               disabled={isDisabled}
               className={cn(
-                "relative flex items-center gap-3 p-4 rounded-xl border-2 text-left transition-all duration-200",
+                "relative flex items-center gap-3 p-4 rounded-full border-2 text-left transition-all duration-200",
                 isDisabled && "opacity-50 cursor-not-allowed",
                 !isDisabled && "hover:border-cyan-400/50 hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2 focus-visible:ring-offset-black",
                 isSelected

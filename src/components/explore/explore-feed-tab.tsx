@@ -21,6 +21,13 @@ import {
   Trash2,
 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
 interface ExploreReply {
@@ -29,6 +36,9 @@ interface ExploreReply {
   content: string;
   createdAt: string;
   authorName?: string;
+  authorPhotoUrl?: string | null;
+  reactionCounts?: Record<string, number>;
+  myReaction?: string | null;
 }
 
 interface ExplorePost {
@@ -38,6 +48,7 @@ interface ExplorePost {
   createdAt: string;
   authorName?: string;
   authorEmail?: string | null;
+  authorPhotoUrl?: string | null;
   imageUrls?: string[];
   replies?: ExploreReply[];
   reactionCounts?: Record<string, number>;
@@ -61,6 +72,325 @@ const REACTION_OPTIONS = [
   { key: "clap", emoji: "👏", label: "Clap" },
   { key: "laugh", emoji: "😂", label: "Funny" },
 ] as const;
+
+/** Rounded value + small “%” on second line so long decimals never collide with the ring */
+function DonutPercentLabel({
+  value,
+  className,
+}: {
+  value: number;
+  className?: string;
+}) {
+  const n = Math.min(100, Math.max(0, Math.round(Number(value))));
+  return (
+    <div
+      className={cn(
+        "flex flex-col items-center justify-center tabular-nums leading-none px-1 max-w-full min-w-0",
+        className
+      )}
+    >
+      <span
+        className={cn(
+          "font-bold leading-none tracking-tight",
+          n >= 100 ? "text-[9px]" : "text-[11px]"
+        )}
+      >
+        {n}
+      </span>
+      <span className="text-[7px] font-semibold opacity-85 leading-none -mt-px">
+        %
+      </span>
+    </div>
+  );
+}
+
+function NetworkPulseCard({
+  layout,
+  className,
+  totalUsers,
+  headline,
+  topThree,
+}: {
+  layout: "horizontal" | "vertical";
+  className?: string;
+  totalUsers: number;
+  headline: string | null;
+  topThree: InterestStat[];
+}) {
+  const interestCards = topThree.map((s, idx) => (
+    <div
+      key={s.interest}
+      className={cn(
+        "relative rounded-xl p-2.5 sm:p-3 border transition-transform hover:scale-[1.02]",
+        idx === 0
+          ? "bg-gradient-to-r from-amber-500/20 to-orange-500/10 border-amber-500/30"
+          : idx === 1
+            ? "bg-white/5 border-white/15"
+            : "bg-white/[0.03] border-white/10",
+        layout === "horizontal" && "snap-start shrink-0 w-[min(82vw,280px)] sm:w-[260px]"
+      )}
+    >
+      <div className="flex items-center gap-3">
+        <div
+          className="relative h-[3.25rem] w-[3.25rem] shrink-0 rounded-full grid place-items-center"
+          style={{
+            background: `conic-gradient(rgb(34 211 238) ${Math.min(100, s.percentage) * 3.6}deg, rgba(255,255,255,0.08) 0deg)`,
+          }}
+        >
+          <div className="h-10 w-10 rounded-full bg-zinc-950 flex items-center justify-center text-cyan-300 min-w-0">
+            <DonutPercentLabel value={s.percentage} />
+          </div>
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span
+              className={cn(
+                "text-xs font-bold px-1.5 py-0.5 rounded",
+                idx === 0
+                  ? "bg-amber-500/30 text-amber-200"
+                  : "bg-white/10 text-white/60"
+              )}
+            >
+              #{idx + 1}
+            </span>
+            <span className="font-medium text-white truncate">{s.interest}</span>
+          </div>
+          <p className="text-xs text-white/45 mt-0.5">
+            {s.count} of {totalUsers} members
+          </p>
+        </div>
+      </div>
+    </div>
+  ));
+
+  return (
+    <div
+      className={cn(
+        "rounded-2xl border border-cyan-500/20 bg-gradient-to-br from-cyan-950/40 via-black to-teal-950/30 p-4 sm:p-5 shadow-lg shadow-cyan-900/10",
+        className
+      )}
+    >
+      <div className="flex items-center gap-2 mb-1.5 sm:mb-2">
+        <TrendingUp className="h-5 w-5 text-cyan-400 shrink-0" />
+        <h2 className="text-base font-semibold text-white">Network pulse</h2>
+      </div>
+      <p className="text-xl sm:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-teal-300">
+        {totalUsers} member{totalUsers !== 1 ? "s" : ""}
+      </p>
+      {headline && (
+        <p className="text-sm text-white/70 mt-2 sm:mt-3 leading-relaxed border-l-2 border-cyan-500/50 pl-3">
+          {headline}
+        </p>
+      )}
+      {topThree.length > 0 &&
+        (layout === "horizontal" ? (
+          <div className="mt-3 sm:mt-4">
+            <p className="text-xs font-medium text-white/40 uppercase tracking-wider mb-2">
+              Top shared interests
+            </p>
+            <div className="overflow-x-auto pb-1 -mx-1 px-1 scroll-smooth overscroll-x-contain [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/20">
+              <div className="flex gap-3 snap-x snap-mandatory w-max pr-1">
+                {interestCards}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="mt-3 sm:mt-5 space-y-2 sm:space-y-3">
+            <p className="text-xs font-medium text-white/40 uppercase tracking-wider">
+              Top shared interests
+            </p>
+            {interestCards}
+          </div>
+        ))}
+    </div>
+  );
+}
+
+function formatInterestTitle(raw: string) {
+  return raw
+    .split(/[-_]/)
+    .map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1) : ""))
+    .join(" ");
+}
+
+function InterestMembersModal({
+  stat,
+  open,
+  onClose,
+  totalUsers,
+}: {
+  stat: InterestStat | undefined;
+  open: boolean;
+  onClose: () => void;
+  totalUsers: number;
+}) {
+  const members = stat?.members ?? [];
+
+  return (
+    <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
+      <DialogContent className="max-h-[min(88vh,540px)] gap-0 overflow-hidden border-white/10 bg-[#0a1628] p-0 sm:max-w-md">
+        {stat && (
+          <>
+            <DialogHeader className="space-y-2 px-6 pb-3 pt-6 pr-14 text-left">
+              <DialogTitle className="text-lg font-semibold text-white">
+                {formatInterestTitle(stat.interest)}
+              </DialogTitle>
+              <DialogDescription className="text-sm text-white/60">
+                {stat.count} member{stat.count !== 1 ? "s" : ""} share this
+                {totalUsers > 0 && (
+                  <>
+                    {" "}
+                    · {Math.round(stat.percentage)}% of{" "}
+                    {totalUsers} member{totalUsers !== 1 ? "s" : ""}
+                  </>
+                )}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="max-h-[min(320px,52vh)] overflow-y-auto overscroll-contain px-6 pb-6">
+              <ul className="space-y-2">
+                {members.map((m) => (
+                  <li key={m.userId}>
+                    <Link
+                      href={`/user/${m.userId}`}
+                      onClick={() => onClose()}
+                      className="block rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm font-medium text-white/90 transition-colors hover:border-teal-500/35 hover:bg-teal-500/10 hover:text-teal-200"
+                    >
+                      {m.name}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function MoreInCommonSection({
+  layout,
+  className,
+  restStats,
+  onOpenMembers,
+  statsLength,
+  loading,
+}: {
+  layout: "scroll" | "stack";
+  className?: string;
+  restStats: InterestStat[];
+  onOpenMembers: (interest: string) => void;
+  statsLength: number;
+  loading: boolean;
+}) {
+  const showEmptyHint = statsLength === 0 && !loading;
+
+  const renderStatBlock = (s: InterestStat, opts: { inScrollStrip: boolean }) => {
+    return (
+      <div
+        className={cn(
+          "text-sm",
+          opts.inScrollStrip &&
+            "snap-start shrink-0 w-[min(82vw,260px)] rounded-xl border border-white/10 bg-black/20 p-3"
+        )}
+      >
+        <div className="flex items-center gap-2 mb-1">
+          <div
+            className="relative h-[3.25rem] w-[3.25rem] shrink-0 rounded-full grid place-items-center"
+            style={{
+              background: `conic-gradient(rgb(45 212 191) ${Math.min(100, s.percentage) * 3.6}deg, rgba(255,255,255,0.06) 0deg)`,
+            }}
+          >
+            <div className="h-10 w-10 rounded-full bg-zinc-950 flex items-center justify-center text-teal-200 min-w-0">
+              <DonutPercentLabel value={s.percentage} />
+            </div>
+          </div>
+          <div className="flex-1 min-w-0">
+            <span className="font-medium text-white/90 truncate block">
+              {s.interest}
+            </span>
+            <div className="h-1.5 rounded-full bg-white/10 overflow-hidden mt-1">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-teal-500 to-cyan-500"
+                style={{
+                  width: `${Math.min(100, s.percentage)}%`,
+                }}
+              />
+            </div>
+          </div>
+        </div>
+        <p
+          className={cn(
+            "text-[11px] text-white/40",
+            opts.inScrollStrip ? "pl-0" : "ps-[3.75rem]"
+          )}
+        >
+          {s.count} member{s.count !== 1 ? "s" : ""} share this
+        </p>
+        {(s.members?.length ?? 0) > 0 && (
+          <button
+            type="button"
+            onClick={() => onOpenMembers(s.interest)}
+            className={cn(
+              "mt-1 text-xs font-medium text-teal-400 hover:text-teal-300 hover:underline",
+              opts.inScrollStrip ? "" : "ms-[3.75rem]"
+            )}
+          >
+            See who
+          </button>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div
+      className={cn(
+        "rounded-xl border border-white/10 bg-white/5 p-3 sm:p-4",
+        className
+      )}
+    >
+      <h2 className="text-sm font-semibold text-white flex items-center gap-2 mb-2 sm:mb-3">
+        <Users className="h-4 w-4 text-teal-400" />
+        More in common
+      </h2>
+      {layout === "scroll" ? (
+        restStats.length === 0 ? (
+          showEmptyHint && (
+            <p className="text-xs text-white/40">
+              Register more members to see shared interests.
+            </p>
+          )
+        ) : (
+          <div className="overflow-x-auto pb-1 -mx-1 px-1 scroll-smooth overscroll-x-contain [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/20">
+            <div className="flex gap-3 snap-x snap-mandatory w-max pr-1">
+              {restStats.map((s) => (
+                <div key={s.interest} className="snap-start shrink-0">
+                  {renderStatBlock(s, { inScrollStrip: true })}
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      ) : (
+        <>
+          <ul className="space-y-3">
+            {restStats.map((s) => (
+              <li key={s.interest} className="text-sm">
+                {renderStatBlock(s, { inScrollStrip: false })}
+              </li>
+            ))}
+          </ul>
+          {statsLength === 0 && !loading && (
+            <p className="text-xs text-white/40">
+              Register more members to see shared interests.
+            </p>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
 
 function PostImage({ url, alt }: { url: string; alt: string }) {
   const isData = url.startsWith("data:");
@@ -98,7 +428,7 @@ export function ExploreFeedTab() {
   const [posting, setPosting] = useState(false);
   const [draft, setDraft] = useState("");
   const [feedQuery, setFeedQuery] = useState("");
-  const [expanded, setExpanded] = useState<string | null>(null);
+  const [seeWhoInterest, setSeeWhoInterest] = useState<string | null>(null);
   const [replyOpen, setReplyOpen] = useState<string | null>(null);
   const [replyDraft, setReplyDraft] = useState<Record<string, string>>({});
   const [replySending, setReplySending] = useState<string | null>(null);
@@ -155,8 +485,10 @@ export function ExploreFeedTab() {
     if (!q) return posts;
     return posts.filter((p) => {
       const name = (p.authorName || "").toLowerCase();
-      const inReplies = (p.replies || []).some((r) =>
-        (r.content || "").toLowerCase().includes(q)
+      const inReplies = (p.replies || []).some(
+        (r) =>
+          (r.content || "").toLowerCase().includes(q) ||
+          (r.authorName || "").toLowerCase().includes(q)
       );
       return (
         p.content.toLowerCase().includes(q) ||
@@ -258,6 +590,51 @@ export function ExploreFeedTab() {
     } catch {
       toast({ variant: "destructive", title: "Could not delete" });
     }
+  }
+
+  async function toggleReplyReaction(replyId: string, key: string) {
+    if (!viewerId) {
+      toast({ title: "Sign in to react" });
+      return;
+    }
+    const reply = posts.flatMap((p) => p.replies || []).find((r) => r.id === replyId);
+    const was = reply?.myReaction;
+    try {
+      if (was === key) {
+        const res = await fetch(`/api/explore/replies/${replyId}/reactions`, {
+          method: "DELETE",
+          credentials: "include",
+        });
+        const j = await res.json();
+        if (!j.success) throw new Error(j.error);
+      } else {
+        const res = await fetch(`/api/explore/replies/${replyId}/reactions`, {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reaction: key }),
+        });
+        const j = await res.json();
+        if (!j.success) throw new Error(j.error);
+      }
+      await load({ silent: true });
+    } catch {
+      toast({
+        variant: "destructive",
+        title: "Could not update reaction",
+      });
+    }
+  }
+
+  function beginReplyToAuthor(postId: string, authorName: string) {
+    setReplyOpen(postId);
+    const tag = `@${authorName.trim() || "Member"} `;
+    setReplyDraft((d) => {
+      const prev = (d[postId] || "").trim();
+      if (!prev) return { ...d, [postId]: tag };
+      if (prev.startsWith("@")) return { ...d, [postId]: prev };
+      return { ...d, [postId]: `${tag}\n\n${prev}` };
+    });
   }
 
   async function toggleReaction(postId: string, key: string) {
@@ -365,10 +742,35 @@ export function ExploreFeedTab() {
 
   const topThree = stats.slice(0, 3);
   const restStats = stats.slice(3);
+  const hideMobileMoreInCommon = restStats.length === 0 && stats.length > 0;
+
+  const membersModalStat = useMemo(() => {
+    if (!seeWhoInterest) return undefined;
+    return restStats.find((s) => s.interest === seeWhoInterest);
+  }, [seeWhoInterest, restStats]);
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 p-4 max-w-7xl mx-auto w-full">
-      <div className="flex-1 min-w-0 space-y-6 order-2 lg:order-1">
+    <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 p-3 pt-2 sm:p-4 max-w-7xl mx-auto w-full">
+      <NetworkPulseCard
+        layout="horizontal"
+        className="lg:hidden shrink-0"
+        totalUsers={totalUsers}
+        headline={headline}
+        topThree={topThree}
+      />
+
+      {!hideMobileMoreInCommon && (
+        <MoreInCommonSection
+          layout="scroll"
+          className="lg:hidden shrink-0"
+          restStats={restStats}
+          onOpenMembers={setSeeWhoInterest}
+          statsLength={stats.length}
+          loading={loading}
+        />
+      )}
+
+      <div className="flex-1 min-w-0 space-y-4 sm:space-y-6 order-2 lg:order-1">
         <div className="rounded-xl border border-white/10 bg-gradient-to-br from-white/[0.07] to-white/[0.02] p-4">
           <h2 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-cyan-400" />
@@ -489,9 +891,9 @@ export function ExploreFeedTab() {
                 >
                   <div className="p-4 space-y-3">
                     <div className="flex items-start gap-3">
-                      <Link href={`/user/${post.userId}`}>
-                        <Avatar className="h-10 w-10 border border-white/10 shrink-0">
-                          <AvatarImage src={undefined} />
+                      <Link href={`/user/${post.userId}`} className="shrink-0">
+                        <Avatar className="h-10 w-10 border border-white/10">
+                          <AvatarImage src={photo} alt="" />
                           <AvatarFallback className="bg-cyan-500/20 text-cyan-300 text-xs">
                             {initials}
                           </AvatarFallback>
@@ -608,41 +1010,120 @@ export function ExploreFeedTab() {
                             const isMine = Boolean(
                               viewerId && r.userId === viewerId
                             );
+                            const rName = r.authorName || "Member";
+                            const rPhoto = r.authorPhotoUrl?.trim() || undefined;
+                            const rInitials = rName
+                              .split(" ")
+                              .map((n) => n[0])
+                              .join("")
+                              .slice(0, 2)
+                              .toUpperCase();
                             return (
                               <li
                                 key={r.id}
-                                className="text-sm group/reply relative pr-8"
+                                className="text-sm group/reply relative pr-2 sm:pr-8"
                               >
-                                <div className="flex items-start justify-between gap-2">
-                                  <div className="min-w-0 flex-1">
-                                    <span className="font-medium text-cyan-300/90">
-                                      {r.authorName || "Member"}
-                                    </span>
-                                    <span className="text-white/35 text-xs ml-2">
-                                      {new Date(r.createdAt).toLocaleString()}
-                                    </span>
-                                    <p className="text-white/75 mt-0.5 whitespace-pre-wrap">
-                                      {r.content}
-                                    </p>
-                                  </div>
-                                  {isMine && (
-                                    <button
-                                      type="button"
-                                      title="Delete reply"
-                                      disabled={replyDeleting === r.id}
-                                      onClick={() =>
-                                        void deleteReply(post.id, r.id)
-                                      }
-                                      className="shrink-0 p-1 rounded-md text-white/30 hover:text-red-400 hover:bg-red-500/10 opacity-70 sm:opacity-0 sm:group-hover/reply:opacity-100 transition-opacity disabled:opacity-40"
-                                      aria-label="Delete reply"
-                                    >
-                                      {replyDeleting === r.id ? (
-                                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                      ) : (
-                                        <Trash2 className="h-3.5 w-3.5" />
+                                <div className="flex items-start gap-2">
+                                  <Link
+                                    href={`/user/${r.userId}`}
+                                    className="shrink-0 mt-0.5"
+                                  >
+                                    <Avatar className="h-8 w-8 border border-white/10">
+                                      <AvatarImage src={rPhoto} alt="" />
+                                      <AvatarFallback className="bg-teal-500/25 text-teal-200 text-[10px]">
+                                        {rInitials}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                  </Link>
+                                  <div className="min-w-0 flex-1 space-y-1.5">
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div className="min-w-0">
+                                        <Link
+                                          href={`/user/${r.userId}`}
+                                          className="font-medium text-cyan-300/90 hover:text-cyan-200"
+                                        >
+                                          {rName}
+                                        </Link>
+                                        <span className="text-white/35 text-xs ml-2">
+                                          {new Date(r.createdAt).toLocaleString()}
+                                        </span>
+                                        <p className="text-white/75 mt-0.5 whitespace-pre-wrap">
+                                          {r.content}
+                                        </p>
+                                      </div>
+                                      {isMine && (
+                                        <button
+                                          type="button"
+                                          title="Delete reply"
+                                          disabled={replyDeleting === r.id}
+                                          onClick={() =>
+                                            void deleteReply(post.id, r.id)
+                                          }
+                                          className="shrink-0 p-1 rounded-full text-white/30 hover:text-red-400 hover:bg-red-500/10 opacity-70 sm:opacity-0 sm:group-hover/reply:opacity-100 transition-opacity disabled:opacity-40"
+                                          aria-label="Delete reply"
+                                        >
+                                          {replyDeleting === r.id ? (
+                                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                          ) : (
+                                            <Trash2 className="h-3.5 w-3.5" />
+                                          )}
+                                        </button>
                                       )}
-                                    </button>
-                                  )}
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-1.5">
+                                      <span className="text-[10px] text-white/30 uppercase tracking-wide">
+                                        React
+                                      </span>
+                                      {REACTION_OPTIONS.map(({ key, emoji, label }) => {
+                                        const count = r.reactionCounts?.[key] ?? 0;
+                                        const active = r.myReaction === key;
+                                        return (
+                                          <button
+                                            key={key}
+                                            type="button"
+                                            title={
+                                              viewerId
+                                                ? active
+                                                  ? `Remove ${label}`
+                                                  : label
+                                                : "Sign in to react"
+                                            }
+                                            disabled={!viewerId}
+                                            onClick={() =>
+                                              void toggleReplyReaction(r.id, key)
+                                            }
+                                            className={cn(
+                                              "inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs border transition-colors",
+                                              active
+                                                ? "bg-teal-500/20 border-teal-500/40"
+                                                : "border-white/10 bg-white/[0.03] hover:bg-white/10",
+                                              !viewerId && "opacity-50 cursor-not-allowed"
+                                            )}
+                                          >
+                                            <span aria-hidden>{emoji}</span>
+                                            {count > 0 && (
+                                              <span className="text-[10px] font-medium text-white/70 tabular-nums">
+                                                {count}
+                                              </span>
+                                            )}
+                                          </button>
+                                        );
+                                      })}
+                                      <button
+                                        type="button"
+                                        disabled={!viewerId}
+                                        onClick={() =>
+                                          beginReplyToAuthor(post.id, rName)
+                                        }
+                                        className={cn(
+                                          "text-[11px] font-medium text-cyan-400 hover:text-cyan-300 ml-1",
+                                          !viewerId && "opacity-50 cursor-not-allowed"
+                                        )}
+                                      >
+                                        Reply
+                                      </button>
+                                    </div>
+                                  </div>
                                 </div>
                               </li>
                             );
@@ -692,159 +1173,31 @@ export function ExploreFeedTab() {
         )}
       </div>
 
-      <aside className="w-full lg:w-[22rem] flex-shrink-0 space-y-4 order-1 lg:order-2">
-        <div className="rounded-2xl border border-cyan-500/20 bg-gradient-to-br from-cyan-950/40 via-black to-teal-950/30 p-5 shadow-lg shadow-cyan-900/10">
-          <div className="flex items-center gap-2 mb-2">
-            <TrendingUp className="h-5 w-5 text-cyan-400" />
-            <h2 className="text-base font-semibold text-white">
-              Network pulse
-            </h2>
-          </div>
-          <p className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-teal-300">
-            {totalUsers} member{totalUsers !== 1 ? "s" : ""}
-          </p>
-          {headline && (
-            <p className="text-sm text-white/70 mt-3 leading-relaxed border-l-2 border-cyan-500/50 pl-3">
-              {headline}
-            </p>
-          )}
-          {topThree.length > 0 && (
-            <div className="mt-5 space-y-3">
-              <p className="text-xs font-medium text-white/40 uppercase tracking-wider">
-                Top shared interests
-              </p>
-              {topThree.map((s, idx) => (
-                <div
-                  key={s.interest}
-                  className={cn(
-                    "relative rounded-xl p-3 border transition-transform hover:scale-[1.02]",
-                    idx === 0
-                      ? "bg-gradient-to-r from-amber-500/20 to-orange-500/10 border-amber-500/30"
-                      : idx === 1
-                        ? "bg-white/5 border-white/15"
-                        : "bg-white/[0.03] border-white/10"
-                  )}
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="relative h-12 w-12 shrink-0 rounded-full grid place-items-center"
-                      style={{
-                        background: `conic-gradient(rgb(34 211 238) ${Math.min(100, s.percentage) * 3.6}deg, rgba(255,255,255,0.08) 0deg)`,
-                      }}
-                    >
-                      <div className="h-9 w-9 rounded-full bg-zinc-950 flex items-center justify-center text-xs font-bold text-cyan-300">
-                        {s.percentage}%
-                      </div>
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={cn(
-                            "text-xs font-bold px-1.5 py-0.5 rounded",
-                            idx === 0
-                              ? "bg-amber-500/30 text-amber-200"
-                              : "bg-white/10 text-white/60"
-                          )}
-                        >
-                          #{idx + 1}
-                        </span>
-                        <span className="font-medium text-white truncate">
-                          {s.interest}
-                        </span>
-                      </div>
-                      <p className="text-xs text-white/45 mt-0.5">
-                        {s.count} of {totalUsers} members
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+      <aside className="w-full lg:w-[22rem] flex-shrink-0 space-y-3 sm:space-y-4 order-3 lg:order-2">
+        <NetworkPulseCard
+          layout="vertical"
+          className="hidden lg:block"
+          totalUsers={totalUsers}
+          headline={headline}
+          topThree={topThree}
+        />
 
-        <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-          <h2 className="text-sm font-semibold text-white flex items-center gap-2 mb-3">
-            <Users className="h-4 w-4 text-teal-400" />
-            More in common
-          </h2>
-          <ul className="space-y-3">
-            {restStats.map((s) => {
-              const isOpen = expanded === s.interest;
-              return (
-                <li key={s.interest} className="text-sm">
-                  <div className="flex items-center gap-2 mb-1">
-                    <div
-                      className="h-8 w-8 shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold text-teal-200"
-                      style={{
-                        background: `conic-gradient(rgb(45 212 191) ${Math.min(100, s.percentage) * 3.6}deg, rgba(255,255,255,0.06) 0deg)`,
-                      }}
-                    >
-                      <span className="h-6 w-6 rounded-full bg-zinc-950 flex items-center justify-center">
-                        {s.percentage}%
-                      </span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <span className="font-medium text-white/90 truncate block">
-                        {s.interest}
-                      </span>
-                      <div className="h-1.5 rounded-full bg-white/10 overflow-hidden mt-1">
-                        <div
-                          className="h-full rounded-full bg-gradient-to-r from-teal-500 to-cyan-500"
-                          style={{
-                            width: `${Math.min(100, s.percentage)}%`,
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  <p className="text-[11px] text-white/40 pl-10">
-                    {s.count} member{s.count !== 1 ? "s" : ""} share this
-                  </p>
-                  {(s.members?.length ?? 0) > 0 && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setExpanded(isOpen ? null : s.interest)
-                      }
-                      className="mt-1 ml-10 text-xs text-teal-400 hover:underline flex items-center gap-1"
-                    >
-                      {isOpen ? (
-                        <>
-                          Hide who <ChevronUp className="h-3 w-3" />
-                        </>
-                      ) : (
-                        <>
-                          See who <ChevronDown className="h-3 w-3" />
-                        </>
-                      )}
-                    </button>
-                  )}
-                  {isOpen && s.members && (
-                    <ul className="mt-2 ml-10 pl-2 space-y-1 border-l border-white/10">
-                      {s.members.map((m) => (
-                        <li key={m.userId}>
-                          <Link
-                            href={`/user/${m.userId}`}
-                            className="text-xs text-white/70 hover:text-teal-400"
-                          >
-                            {m.name}
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-          {stats.length === 0 && !loading && (
-            <p className="text-xs text-white/40">
-              Register more members to see shared interests.
-            </p>
-          )}
-        </div>
+        <MoreInCommonSection
+          layout="stack"
+          className="hidden lg:block"
+          restStats={restStats}
+          onOpenMembers={setSeeWhoInterest}
+          statsLength={stats.length}
+          loading={loading}
+        />
       </aside>
+
+      <InterestMembersModal
+        stat={membersModalStat}
+        open={Boolean(membersModalStat)}
+        onClose={() => setSeeWhoInterest(null)}
+        totalUsers={totalUsers}
+      />
     </div>
   );
 }

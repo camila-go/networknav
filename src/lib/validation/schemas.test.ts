@@ -282,7 +282,6 @@ describe("Extended Validation Schemas", () => {
   describe("searchFiltersSchema", () => {
     it("should accept valid filter combinations", () => {
       const result = searchFiltersSchema.safeParse({
-        industries: ["technology", "healthcare"],
         leadershipLevels: ["senior-director"],
         keywords: "innovation",
       });

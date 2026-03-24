@@ -60,7 +60,6 @@ export function createProfileText(profile: {
     const q = profile.questionnaireData;
 
     // Leadership context
-    if (q.industry) parts.push(`Industry: ${q.industry}`);
     if (q.leadershipLevel) parts.push(`Leadership Level: ${q.leadershipLevel}`);
     if (q.organizationSize) parts.push(`Organization Size: ${q.organizationSize}`);
     if (q.yearsExperience) parts.push(`Years Experience: ${q.yearsExperience}`);

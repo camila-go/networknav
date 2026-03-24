@@ -51,7 +51,6 @@ const seedUsers: SeedUser[] = [
     company: "TechCorp",
     location: "San Francisco, CA",
     responses: {
-      industry: "technology",
       yearsExperience: "10-15",
       leadershipLevel: "vp",
       organizationSize: "1000-5000",
@@ -82,7 +81,6 @@ const seedUsers: SeedUser[] = [
     company: "FinanceFlow",
     location: "New York, NY",
     responses: {
-      industry: "finance",
       yearsExperience: "20+",
       leadershipLevel: "c-suite",
       organizationSize: "5000+",
@@ -113,7 +111,6 @@ const seedUsers: SeedUser[] = [
     company: "MedConnect AI",
     location: "Austin, TX",
     responses: {
-      industry: "healthcare",
       yearsExperience: "6-10",
       leadershipLevel: "founder",
       organizationSize: "startup",
@@ -144,7 +141,6 @@ const seedUsers: SeedUser[] = [
     company: "McKinsey & Company",
     location: "Chicago, IL",
     responses: {
-      industry: "consulting",
       yearsExperience: "10-15",
       leadershipLevel: "director",
       organizationSize: "5000+",
@@ -175,7 +171,6 @@ const seedUsers: SeedUser[] = [
     company: "NeuralScale",
     location: "Seattle, WA",
     responses: {
-      industry: "technology",
       yearsExperience: "10-15",
       leadershipLevel: "c-suite",
       organizationSize: "50-200",
@@ -206,7 +201,6 @@ const seedUsers: SeedUser[] = [
     company: "CloudScale Enterprise",
     location: "Denver, CO",
     responses: {
-      industry: "technology",
       yearsExperience: "15-20",
       leadershipLevel: "vp",
       organizationSize: "1000-5000",

@@ -249,7 +249,7 @@ export function ExploreContainer() {
 
       <TabsContent
         value="feed"
-        className="flex-1 min-h-0 m-0 p-0 border-0 outline-none data-[state=inactive]:hidden overflow-y-auto"
+        className="flex-1 min-h-0 m-0 p-0 border-0 outline-none data-[state=inactive]:hidden overflow-y-auto overflow-x-hidden"
       >
         <ExploreFeedTab />
       </TabsContent>
@@ -350,12 +350,12 @@ export function ExploreContainer() {
             </Select>
 
             {/* View toggle */}
-            <div className="hidden sm:flex items-center border border-white/20 rounded-lg">
+            <div className="hidden sm:flex items-center gap-1 rounded-full border border-white/20 p-1">
               <Button
                 variant="ghost"
                 size="icon"
                 className={cn(
-                  "h-9 w-9 rounded-r-none text-white/70 hover:text-white hover:bg-white/10",
+                  "h-8 w-8 rounded-full text-white/70 hover:text-white hover:bg-white/10",
                   viewMode === "grid" && "bg-white/10 text-cyan-400"
                 )}
                 onClick={() => setViewMode("grid")}
@@ -366,7 +366,7 @@ export function ExploreContainer() {
                 variant="ghost"
                 size="icon"
                 className={cn(
-                  "h-9 w-9 rounded-l-none text-white/70 hover:text-white hover:bg-white/10",
+                  "h-8 w-8 rounded-full text-white/70 hover:text-white hover:bg-white/10",
                   viewMode === "list" && "bg-white/10 text-cyan-400"
                 )}
                 onClick={() => setViewMode("list")}

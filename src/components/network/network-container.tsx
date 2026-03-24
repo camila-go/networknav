@@ -348,7 +348,7 @@ export function NetworkContainer() {
           />
 
           {/* Instructions */}
-          <div className="absolute top-4 right-4 text-xs text-white/50 bg-black/60 backdrop-blur-sm rounded-lg px-3 py-2 border border-white/10 max-w-[220px]">
+          <div className="absolute top-4 right-4 text-xs text-white/50 bg-black/60 backdrop-blur-sm rounded-full px-3 py-2 border border-white/10 max-w-[220px]">
             <p>Click to select • Double-click bubble for profile • Drag • Scroll to zoom</p>
           </div>
         </div>
@@ -445,7 +445,7 @@ export function NetworkContainer() {
                       <Link
                         key={contact.id}
                         href={`/user/${contact.id}`}
-                        className="flex flex-col items-center gap-1.5 p-2 rounded-xl bg-white/5 border border-violet-500/20 hover:bg-white/10 hover:border-violet-500/40 transition-colors min-w-[90px]"
+                        className="flex flex-col items-center gap-1.5 p-2 rounded-full bg-white/5 border border-violet-500/20 hover:bg-white/10 hover:border-violet-500/40 transition-colors min-w-[90px]"
                       >
                         <Avatar className="h-10 w-10 border border-violet-400/30">
                           <AvatarFallback className="text-xs font-semibold bg-gradient-to-br from-violet-500 to-purple-500 text-white">
@@ -512,7 +512,7 @@ export function NetworkContainer() {
                   onClick={() => {
                     window.location.href = `/messages?userId=${selectedNode.id}&name=${encodeURIComponent(selectedNode.name)}`;
                   }}
-                  className="inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-sm font-medium text-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20 transition-colors"
+                  className="inline-flex items-center justify-center gap-1 px-3 py-2 rounded-full text-sm font-medium text-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20 transition-colors"
                 >
                   <MessageCircle className="h-4 w-4" />
                   Message
@@ -522,7 +522,7 @@ export function NetworkContainer() {
                     href={teamsMeetingUrl(selectedNode.email, `Meet: ${selectedNode.name}`)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center gap-1 px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-cyan-500 to-teal-500 text-black hover:from-cyan-400 hover:to-teal-400 transition-colors"
+                    className="inline-flex items-center justify-center gap-1 px-4 py-2 rounded-full text-sm font-medium bg-gradient-to-r from-cyan-500 to-teal-500 text-black hover:from-cyan-400 hover:to-teal-400 transition-colors"
                   >
                     <Calendar className="h-4 w-4" />
                     Meet
@@ -536,7 +536,7 @@ export function NetworkContainer() {
                         description: "Email isn’t available for this member yet. Open their profile to connect.",
                       })
                     }
-                    className="inline-flex items-center justify-center gap-1 px-4 py-2 rounded-lg text-sm font-medium bg-white/10 text-white/70"
+                    className="inline-flex items-center justify-center gap-1 px-4 py-2 rounded-full text-sm font-medium bg-white/10 text-white/70"
                   >
                     <Calendar className="h-4 w-4" />
                     Meet
@@ -601,7 +601,7 @@ export function NetworkContainer() {
                   </Button>
                 </div>
                 <div className="space-y-4">
-                  <Link href={`/user/${selectedNode.id}`} className="flex items-center gap-3 rounded-lg hover:bg-white/5 p-1 -m-1">
+                  <Link href={`/user/${selectedNode.id}`} className="flex items-center gap-3 rounded-full hover:bg-white/5 p-1 -m-1">
                     <Avatar className="h-12 w-12 border-2 border-white/20">
                       <AvatarFallback className={cn(
                         "text-black font-semibold",
@@ -631,7 +631,7 @@ export function NetworkContainer() {
                         href={teamsMeetingUrl(selectedNode.email, `Meet: ${selectedNode.name}`)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex-1 inline-flex items-center justify-center gap-1 rounded-md text-sm font-medium bg-gradient-to-r from-cyan-500 to-teal-500 text-black hover:from-cyan-400 hover:to-teal-400 px-3 py-2"
+                        className="flex-1 inline-flex items-center justify-center gap-1 rounded-full text-sm font-medium bg-gradient-to-r from-cyan-500 to-teal-500 text-black hover:from-cyan-400 hover:to-teal-400 px-3 py-2"
                       >
                         <Calendar className="h-4 w-4" />
                         Meet
@@ -772,7 +772,7 @@ export function NetworkContainer() {
                       <Link
                         key={contact.id}
                         href={`/user/${contact.id}`}
-                        className="flex items-start gap-2 p-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 hover:border-violet-500/30 transition-colors"
+                        className="flex items-start gap-2 p-2 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 hover:border-violet-500/30 transition-colors"
                       >
                         <Avatar className="h-9 w-9 border border-violet-400/30">
                           <AvatarFallback className="text-xs font-semibold bg-gradient-to-br from-violet-500 to-purple-500 text-white">
@@ -804,7 +804,7 @@ export function NetworkContainer() {
                       <Link
                         key={conn.id}
                         href={`/user/${conn.id}`}
-                        className="flex items-center gap-2 p-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
+                        className="flex items-center gap-2 p-2 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
                       >
                         <Avatar className="h-8 w-8 border border-white/20">
                           <AvatarFallback className={cn(
@@ -836,7 +836,7 @@ export function NetworkContainer() {
                     href={teamsMeetingUrl(selectedNode.email, `Meet: ${selectedNode.name}`)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-1 inline-flex items-center justify-center gap-1 rounded-md text-sm font-medium bg-gradient-to-r from-cyan-500 to-teal-500 text-black hover:from-cyan-400 hover:to-teal-400 px-3 py-2"
+                    className="flex-1 inline-flex items-center justify-center gap-1 rounded-full text-sm font-medium bg-gradient-to-r from-cyan-500 to-teal-500 text-black hover:from-cyan-400 hover:to-teal-400 px-3 py-2"
                   >
                     <Calendar className="h-4 w-4" />
                     Meet
@@ -935,7 +935,7 @@ export function NetworkContainer() {
                   {networkData.clusters.map((cluster) => (
                     <div
                       key={cluster.id}
-                      className="p-2 rounded-lg border border-white/10 hover:bg-white/5 transition-colors"
+                      className="p-2 rounded-full border border-white/10 hover:bg-white/5 transition-colors"
                     >
                       <p className="font-medium text-sm text-white">{cluster.name}</p>
                       <p className="text-xs text-white/50">
@@ -1127,7 +1127,7 @@ function NetworkMobileCards({
                       <Link
                         key={conn.id}
                         href={`/user/${conn.id}`}
-                        className="flex-1 flex flex-col items-center gap-1 p-2 rounded-xl bg-violet-500/10 border border-violet-500/20 hover:bg-violet-500/20 transition-colors"
+                        className="flex-1 flex flex-col items-center gap-1 p-2 rounded-full bg-violet-500/10 border border-violet-500/20 hover:bg-violet-500/20 transition-colors"
                       >
                         <Avatar className="h-9 w-9 border border-violet-400/30">
                           <AvatarFallback className="text-xs font-semibold bg-gradient-to-br from-violet-500/80 to-purple-500/80 text-white">
@@ -1159,14 +1159,14 @@ function NetworkMobileCards({
               <div className="border-t border-violet-500/20 bg-violet-500/5 flex gap-2 p-3">
                 <Link
                   href={`/user/${node.id}`}
-                  className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-medium bg-white/10 text-white hover:bg-white/20 transition-colors"
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-full text-sm font-medium bg-white/10 text-white hover:bg-white/20 transition-colors"
                 >
                   <Eye className="h-4 w-4" />
                   View Profile
                 </Link>
                 <button
                   onClick={() => onMeet(node)}
-                  className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-medium bg-gradient-to-r from-violet-500 to-purple-500 text-white hover:from-violet-400 hover:to-purple-400 transition-colors"
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-full text-sm font-medium bg-gradient-to-r from-violet-500 to-purple-500 text-white hover:from-violet-400 hover:to-purple-400 transition-colors"
                 >
                   <UserPlus className="h-4 w-4" />
                   Request Intro

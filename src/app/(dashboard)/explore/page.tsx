@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { ExploreContainer } from "@/components/explore/explore-container";
 
 export const metadata = {
-  title: "Explore Attendees | Jynx",
+  title: "Explore Attendees | GS26",
   description: "Search and discover conference attendees to connect with",
 };
 

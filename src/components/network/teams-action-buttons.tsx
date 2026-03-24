@@ -44,7 +44,7 @@ export function TeamsActionButtons({
   };
 
   const linkBase =
-    "inline-flex flex-1 min-w-[7rem] items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors";
+    "inline-flex flex-1 min-w-[7rem] items-center justify-center gap-2 px-3 py-2.5 rounded-full text-sm font-medium transition-colors";
 
   return (
     <div className={cn("flex flex-wrap items-stretch gap-2", className)}>
@@ -52,7 +52,7 @@ export function TeamsActionButtons({
         <button
           type="button"
           onClick={handlePass}
-          className="inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-white/50 hover:text-white/80 hover:bg-white/5 transition-colors order-1 sm:order-none"
+          className="inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-full text-sm font-medium text-white/50 hover:text-white/80 hover:bg-white/5 transition-colors order-1 sm:order-none"
         >
           <span>Pass</span>
           <X className="h-4 w-4 opacity-70 shrink-0" strokeWidth={2.5} aria-hidden />

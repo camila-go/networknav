@@ -116,7 +116,7 @@ export function MultiSelectCustom({
           onClick={handleAddCustom}
           disabled={!inputValue.trim() || isMaxSelected}
           className={cn(
-            "flex-shrink-0 h-10 w-10 rounded-lg flex items-center justify-center transition-all",
+            "flex-shrink-0 h-10 w-10 rounded-full flex items-center justify-center transition-all",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2 focus-visible:ring-offset-black",
             inputValue.trim() && !isMaxSelected
               ? "bg-cyan-500 text-black hover:bg-cyan-400 cursor-pointer"
@@ -167,7 +167,7 @@ export function MultiSelectCustom({
               onClick={() => handleToggle(option.value)}
               disabled={isDisabled}
               className={cn(
-                "relative flex items-center gap-3 p-4 rounded-xl border-2 text-left transition-all duration-200",
+                "relative flex items-center gap-3 p-4 rounded-full border-2 text-left transition-all duration-200",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-black",
                 isDisabled && "opacity-50 cursor-not-allowed",
                 isSelected

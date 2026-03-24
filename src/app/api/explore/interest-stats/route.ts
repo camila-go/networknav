@@ -77,9 +77,6 @@ function collectLabels(responses: QuestionnaireData): string[] {
       }
     }
   }
-  if (responses.industry && typeof responses.industry === "string") {
-    out.push(responses.industry);
-  }
   return out;
 }
 

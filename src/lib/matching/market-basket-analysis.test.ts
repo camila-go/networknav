@@ -17,7 +17,6 @@ import type { QuestionnaireData } from "@/types";
 describe("Market Basket Analysis", () => {
   // Sample user responses for testing
   const user1Responses: Partial<QuestionnaireData> = {
-    industry: "technology",
     yearsExperience: "6-10",
     leadershipLevel: "vp",
     organizationSize: "mid-size",
@@ -32,7 +31,6 @@ describe("Market Basket Analysis", () => {
   };
 
   const user2SimilarResponses: Partial<QuestionnaireData> = {
-    industry: "technology",
     yearsExperience: "6-10",
     leadershipLevel: "director",
     organizationSize: "mid-size",
@@ -47,7 +45,6 @@ describe("Market Basket Analysis", () => {
   };
 
   const user3DifferentResponses: Partial<QuestionnaireData> = {
-    industry: "healthcare",
     yearsExperience: "16-20",
     leadershipLevel: "c-suite",
     organizationSize: "enterprise",
@@ -63,11 +60,11 @@ describe("Market Basket Analysis", () => {
 
   describe("extractItemsets", () => {
     it("should extract single-value attributes as items", () => {
-      const items = extractItemsets({ industry: "technology" });
+      const items = extractItemsets({ leadershipLevel: "vp" });
       expect(items).toHaveLength(1);
       expect(items[0]).toMatchObject({
-        attribute: "industry",
-        value: "technology",
+        attribute: "leadershipLevel",
+        value: "vp",
         category: "professional",
       });
     });
@@ -82,7 +79,7 @@ describe("Market Basket Analysis", () => {
     });
 
     it("should include weights from configuration", () => {
-      const items = extractItemsets({ industry: "technology" });
+      const items = extractItemsets({ leadershipLevel: "vp" });
       expect(items[0].weight).toBeGreaterThan(0);
       expect(items[0].weight).toBeLessThanOrEqual(1);
     });
@@ -94,9 +91,9 @@ describe("Market Basket Analysis", () => {
 
     it("should ignore null/undefined values", () => {
       const items = extractItemsets({
-        industry: "technology",
+        leadershipLevel: "vp",
         yearsExperience: undefined,
-        leadershipLevel: "",
+        organizationSize: "",
       });
       expect(items).toHaveLength(1);
     });
@@ -121,8 +118,8 @@ describe("Market Basket Analysis", () => {
     });
 
     it("should return 0 for completely different itemsets", () => {
-      const items1 = extractItemsets({ industry: "technology" });
-      const items2 = extractItemsets({ industry: "healthcare" });
+      const items1 = extractItemsets({ leadershipLevel: "vp" });
+      const items2 = extractItemsets({ leadershipLevel: "c-suite" });
       const similarity = calculateJaccardSimilarity(items1, items2);
       expect(similarity).toBe(0);
     });
@@ -137,7 +134,7 @@ describe("Market Basket Analysis", () => {
 
     it("should handle empty itemsets", () => {
       const items1 = extractItemsets({});
-      const items2 = extractItemsets({ industry: "technology" });
+      const items2 = extractItemsets({ leadershipLevel: "vp" });
       const similarity = calculateJaccardSimilarity(items1, items2);
       expect(similarity).toBe(0);
     });
@@ -151,20 +148,24 @@ describe("Market Basket Analysis", () => {
     });
 
     it("should weight high-priority attributes more", () => {
-      // Industry has weight 0.9, organizationSize has weight 0.5
-      const base = { industry: "technology" };
-      const matchIndustry = { industry: "technology", organizationSize: "small" };
-      const matchOrgSize = { industry: "healthcare", organizationSize: "small" };
+      // leadershipChallenges has weight 0.95, organizationSize has weight 0.5
+      const items1 = extractItemsets({
+        organizationSize: "small",
+        leadershipChallenges: ["talent"],
+      });
+      const items2 = extractItemsets({
+        organizationSize: "small",
+        leadershipChallenges: ["talent", "change"],
+      });
+      const items3 = extractItemsets({
+        organizationSize: "enterprise",
+        leadershipChallenges: ["talent"],
+      });
 
-      const items1 = extractItemsets({ ...base, organizationSize: "small" });
-      const items2 = extractItemsets(matchIndustry);
-      const items3 = extractItemsets(matchOrgSize);
+      const simSharedChallengeAndOrg = calculateWeightedSimilarity(items1, items2);
+      const simSharedChallengeOnly = calculateWeightedSimilarity(items1, items3);
 
-      const simWithIndustry = calculateWeightedSimilarity(items1, items2);
-      const simWithOrgSize = calculateWeightedSimilarity(items1, items3);
-
-      // Matching industry should give higher similarity than matching org size
-      expect(simWithIndustry).toBeGreaterThan(simWithOrgSize);
+      expect(simSharedChallengeAndOrg).toBeGreaterThan(simSharedChallengeOnly);
     });
 
     it("should handle similar users with high score", () => {
@@ -189,15 +190,12 @@ describe("Market Basket Analysis", () => {
       const shared = findSharedAttributes(items1, items2);
 
       expect(shared.length).toBeGreaterThan(0);
-      // Both have technology industry
-      expect(shared.some((s) => s.description.includes("Technology"))).toBe(
-        true
-      );
+      expect(shared.some((s) => s.description.includes("Mid Size"))).toBe(true);
     });
 
     it("should return empty array for completely different users", () => {
-      const items1 = extractItemsets({ industry: "technology" });
-      const items2 = extractItemsets({ industry: "healthcare" });
+      const items1 = extractItemsets({ communicationStyle: "direct" });
+      const items2 = extractItemsets({ communicationStyle: "warm" });
       const shared = findSharedAttributes(items1, items2);
 
       expect(shared).toHaveLength(0);
@@ -225,14 +223,14 @@ describe("Market Basket Analysis", () => {
   });
 
   describe("findComplementaryAttributes", () => {
-    it("should find complementary industry pairs", () => {
-      const items1 = extractItemsets({ industry: "technology" });
-      const items2 = extractItemsets({ industry: "finance" });
+    it("should find complementary leadership-level pairs", () => {
+      const items1 = extractItemsets({ leadershipLevel: "c-suite" });
+      const items2 = extractItemsets({ leadershipLevel: "director" });
       const complementary = findComplementaryAttributes(items1, items2);
 
       expect(complementary.length).toBeGreaterThan(0);
       expect(
-        complementary.some((c) => c.description.includes("Complementary"))
+        complementary.some((c) => c.description.includes("Cross-level"))
       ).toBe(true);
     });
 
@@ -245,13 +243,12 @@ describe("Market Basket Analysis", () => {
     });
 
     it("should return empty for non-complementary pairs", () => {
-      const items1 = extractItemsets({ industry: "technology" });
-      const items2 = extractItemsets({ industry: "technology" });
+      const items1 = extractItemsets({ leadershipLevel: "vp" });
+      const items2 = extractItemsets({ leadershipLevel: "vp" });
       const complementary = findComplementaryAttributes(items1, items2);
 
-      // Same industry is not complementary
       expect(
-        complementary.filter((c) => c.description.includes("industries"))
+        complementary.filter((c) => c.description.includes("Cross-level"))
       ).toHaveLength(0);
     });
   });
@@ -325,7 +322,7 @@ describe("Market Basket Analysis", () => {
       const commonalities = [
         {
           category: "professional" as const,
-          description: "Both work in Technology",
+          description: "Both at Vp level",
           weight: 0.9,
         },
         {
@@ -370,7 +367,6 @@ describe("Market Basket Analysis", () => {
 describe("Integration: Full Matching Pipeline", () => {
   it("should produce valid matches between real user profiles", () => {
     const leader1: Partial<QuestionnaireData> = {
-      industry: "technology",
       yearsExperience: "11-15",
       leadershipLevel: "vp",
       organizationSize: "large",
@@ -387,7 +383,6 @@ describe("Integration: Full Matching Pipeline", () => {
     };
 
     const leader2: Partial<QuestionnaireData> = {
-      industry: "technology",
       yearsExperience: "6-10",
       leadershipLevel: "director",
       organizationSize: "mid-size",
@@ -415,19 +410,17 @@ describe("Integration: Full Matching Pipeline", () => {
 
     // Verify commonalities make sense
     const descriptions = score.commonalities.map((c) => c.description);
-    expect(descriptions.some((d) => d.includes("Technology"))).toBe(true);
+    expect(descriptions.some((d) => d.includes("Servant"))).toBe(true);
   });
 
   it("should identify strategic matches for complementary profiles", () => {
     const techLeader: Partial<QuestionnaireData> = {
-      industry: "technology",
       leadershipLevel: "vp",
       organizationSize: "startup",
       decisionMakingStyle: "decisive",
     };
 
     const financeLeader: Partial<QuestionnaireData> = {
-      industry: "finance",
       leadershipLevel: "director",
       organizationSize: "enterprise",
       decisionMakingStyle: "collaborative",
@@ -435,10 +428,14 @@ describe("Integration: Full Matching Pipeline", () => {
 
     const score = calculateMatchScore(techLeader, financeLeader);
 
-    // Should find complementary attributes
     expect(score.strategicScore).toBeGreaterThan(0);
     expect(
-      score.commonalities.some((c) => c.description.includes("Complementary"))
+      score.commonalities.some(
+        (c) =>
+          c.description.includes("Complementary") ||
+          c.description.includes("Different scale") ||
+          c.description.includes("Cross-level")
+      )
     ).toBe(true);
   });
 });

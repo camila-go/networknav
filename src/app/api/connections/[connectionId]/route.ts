@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { connections } from "@/lib/stores";
 import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
+import { applyGamificationUnlockNotifications } from "@/lib/gamification/unlock-notifications";
 import type { Connection, ConnectionStatus } from "@/types";
 
 // ============================================
@@ -100,6 +101,11 @@ async function logConnectionActivity(userId: string, connectionId: string, other
       .select('*')
       .eq('user_id', userId)
       .single();
+
+    const prevTotalPoints = Number(
+      (existingStats as { total_points?: number } | null)?.total_points ?? 0
+    );
+    const newTotalPoints = prevTotalPoints + 15;
     
     if (existingStats) {
       await supabaseAdmin
@@ -124,6 +130,13 @@ async function logConnectionActivity(userId: string, connectionId: string, other
           last_active_at: new Date().toISOString(),
         });
     }
+
+    await applyGamificationUnlockNotifications(
+      userId,
+      prevTotalPoints,
+      newTotalPoints,
+      "connection_made"
+    );
     
     console.log('[Connections API] Activity logged for user:', userId);
   } catch (error) {

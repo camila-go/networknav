@@ -1,4 +1,5 @@
 import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
+import { MAX_DAILY_STREAK } from "@/lib/gamification/streaks";
 import type {
   ActivityType,
   BadgeType,
@@ -12,7 +13,7 @@ const BADGE_REQUIREMENTS: Record<BadgeType, Record<BadgeTier, number>> = {
   conversation_starter: { bronze: 10, silver: 50, gold: 100 },
   super_connector: { bronze: 5, silver: 25, gold: 50 },
   meeting_master: { bronze: 3, silver: 10, gold: 25 },
-  networking_streak: { bronze: 7, silver: 30, gold: 90 },
+  networking_streak: { bronze: 7, silver: 14, gold: MAX_DAILY_STREAK },
   weekly_warrior: { bronze: 4, silver: 12, gold: 52 },
   thoughtful_curator: { bronze: 5, silver: 25, gold: 100 },
 };
@@ -127,7 +128,10 @@ export async function checkAndAwardBadges(
     { type: "conversation_starter", progress: stats.messages_sent },
     { type: "super_connector", progress: stats.connections_made },
     { type: "meeting_master", progress: stats.meetings_scheduled },
-    { type: "networking_streak", progress: stats.longest_daily_streak },
+    {
+      type: "networking_streak",
+      progress: Math.min(MAX_DAILY_STREAK, stats.longest_daily_streak),
+    },
     { type: "weekly_warrior", progress: stats.longest_weekly_streak },
     { type: "thoughtful_curator", progress: stats.explore_passes ?? 0 },
   ];
@@ -212,68 +216,59 @@ export interface BadgeProgress {
   percentToNext: number;
 }
 
-export async function getBadgeProgress(userId: string): Promise<BadgeProgress[]> {
-  if (!isSupabaseConfigured || !supabaseAdmin) return [];
+const ZERO_STATS: StatsRow = {
+  messages_sent: 0,
+  meetings_scheduled: 0,
+  connections_made: 0,
+  intros_requested: 0,
+  explore_passes: 0,
+  current_daily_streak: 0,
+  current_weekly_streak: 0,
+  longest_daily_streak: 0,
+  longest_weekly_streak: 0,
+};
 
-  // Get stats
-  const { data: statsData } = await supabaseAdmin
-    .from("user_gamification_stats")
-    .select("messages_sent, meetings_scheduled, connections_made, explore_passes, longest_daily_streak, longest_weekly_streak")
-    .eq("user_id", userId)
-    .single();
+const BADGE_INFO: Record<BadgeType, { name: string; description: string; icon: string }> = {
+  conversation_starter: {
+    name: "Conversation Starter",
+    description: "Send messages to start meaningful conversations",
+    icon: "MessageCircle",
+  },
+  super_connector: {
+    name: "Super Connector",
+    description: "Build your network by making connections",
+    icon: "Users",
+  },
+  meeting_master: {
+    name: "Meeting Master",
+    description: "Schedule meetings to deepen relationships",
+    icon: "Calendar",
+  },
+  networking_streak: {
+    name: "Networking Streak",
+    description: "Stay consistent with daily engagement",
+    icon: "Flame",
+  },
+  weekly_warrior: {
+    name: "Weekly Warrior",
+    description: "Hit your weekly networking goals",
+    icon: "Trophy",
+  },
+  thoughtful_curator: {
+    name: "Thoughtful Curator",
+    description: "Pass on profiles to stay focused on great fits",
+    icon: "Filter",
+  },
+};
 
-  const stats = (statsData as StatsRow) || {
-    messages_sent: 0,
-    meetings_scheduled: 0,
-    connections_made: 0,
-    explore_passes: 0,
-    longest_daily_streak: 0,
-    longest_weekly_streak: 0,
-  };
-
-  // Get existing badges
-  const existingBadges = await getUserBadges(userId);
-
+function buildBadgeProgressList(stats: StatsRow, existingBadges: UserBadge[]): BadgeProgress[] {
   const progressMap: Record<BadgeType, number> = {
     conversation_starter: stats.messages_sent,
     super_connector: stats.connections_made,
     meeting_master: stats.meetings_scheduled,
-    networking_streak: stats.longest_daily_streak,
+    networking_streak: Math.min(MAX_DAILY_STREAK, stats.longest_daily_streak),
     weekly_warrior: stats.longest_weekly_streak,
     thoughtful_curator: stats.explore_passes ?? 0,
-  };
-
-  const badgeInfo: Record<BadgeType, { name: string; description: string; icon: string }> = {
-    conversation_starter: {
-      name: "Conversation Starter",
-      description: "Send messages to start meaningful conversations",
-      icon: "MessageCircle",
-    },
-    super_connector: {
-      name: "Super Connector",
-      description: "Build your network by making connections",
-      icon: "Users",
-    },
-    meeting_master: {
-      name: "Meeting Master",
-      description: "Schedule meetings to deepen relationships",
-      icon: "Calendar",
-    },
-    networking_streak: {
-      name: "Networking Streak",
-      description: "Stay consistent with daily engagement",
-      icon: "Flame",
-    },
-    weekly_warrior: {
-      name: "Weekly Warrior",
-      description: "Hit your weekly networking goals",
-      icon: "Trophy",
-    },
-    thoughtful_curator: {
-      name: "Thoughtful Curator",
-      description: "Pass on profiles to stay focused on great fits",
-      icon: "Filter",
-    },
   };
 
   const result: BadgeProgress[] = [];
@@ -281,26 +276,24 @@ export async function getBadgeProgress(userId: string): Promise<BadgeProgress[]>
   for (const [type, progress] of Object.entries(progressMap)) {
     const badgeType = type as BadgeType;
     const requirements = BADGE_REQUIREMENTS[badgeType];
-    const info = badgeInfo[badgeType];
-    
-    const earnedBadges = existingBadges.filter(b => b.badgeType === badgeType);
+    const info = BADGE_INFO[badgeType];
+
+    const earnedBadges = existingBadges.filter((b) => b.badgeType === badgeType);
     let currentTier: BadgeTier | null = null;
-    
-    if (earnedBadges.some(b => b.tier === "gold")) currentTier = "gold";
-    else if (earnedBadges.some(b => b.tier === "silver")) currentTier = "silver";
-    else if (earnedBadges.some(b => b.tier === "bronze")) currentTier = "bronze";
+
+    if (earnedBadges.some((b) => b.tier === "gold")) currentTier = "gold";
+    else if (earnedBadges.some((b) => b.tier === "silver")) currentTier = "silver";
+    else if (earnedBadges.some((b) => b.tier === "bronze")) currentTier = "bronze";
 
     const nextTier = getNextTier(currentTier);
     const nextRequirement = nextTier ? requirements[nextTier] : null;
-    
+
+    // Same basis as the achievements footer (current / requirement for the next tier), not “since current tier”.
     let percentToNext = 0;
     if (nextRequirement) {
-      const prevRequirement = currentTier ? requirements[currentTier] : 0;
-      const progressInTier = progress - prevRequirement;
-      const tierRange = nextRequirement - prevRequirement;
-      percentToNext = Math.min(100, Math.floor((progressInTier / tierRange) * 100));
+      percentToNext = Math.min(100, Math.floor((progress / nextRequirement) * 100));
     } else {
-      percentToNext = 100; // At max tier
+      percentToNext = 100;
     }
 
     result.push({
@@ -317,4 +310,23 @@ export async function getBadgeProgress(userId: string): Promise<BadgeProgress[]>
   }
 
   return result;
+}
+
+export async function getBadgeProgress(userId: string): Promise<BadgeProgress[]> {
+  if (!isSupabaseConfigured || !supabaseAdmin) {
+    return buildBadgeProgressList(ZERO_STATS, []);
+  }
+
+  const { data: statsData } = await supabaseAdmin
+    .from("user_gamification_stats")
+    .select(
+      "messages_sent, meetings_scheduled, connections_made, explore_passes, longest_daily_streak, longest_weekly_streak"
+    )
+    .eq("user_id", userId)
+    .single();
+
+  const stats = (statsData as StatsRow) || ZERO_STATS;
+  const existingBadges = await getUserBadges(userId);
+
+  return buildBadgeProgressList(stats, existingBadges);
 }

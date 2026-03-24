@@ -7,7 +7,11 @@ import {
   addExplorePost,
   listExplorePosts,
 } from "@/lib/stores/explore-posts-store";
-import { summarizeReactions } from "@/lib/stores/explore-reactions-store";
+import {
+  summarizeReactions,
+  summarizeReplyReactions,
+} from "@/lib/stores/explore-reactions-store";
+import type { AuthorInfo } from "@/lib/explore-resolve-authors";
 
 const MAX_CONTENT = 2000;
 const MAX_IMAGES = 6;
@@ -51,6 +55,43 @@ async function loadReactionSummaries(
   return map;
 }
 
+async function loadReplyReactionSummaries(
+  replyIds: string[],
+  viewerId: string | null
+): Promise<Map<string, RxSummary>> {
+  const map = new Map<string, RxSummary>();
+  for (const id of replyIds) {
+    map.set(id, { counts: {}, myReaction: null });
+  }
+  if (replyIds.length === 0) return map;
+
+  if (isSupabaseConfigured && supabaseAdmin) {
+    const { data, error } = await supabaseAdmin
+      .from("explore_reply_reactions")
+      .select("reply_id, user_id, reaction")
+      .in("reply_id", replyIds);
+
+    if (!error && data) {
+      for (const row of data) {
+        const rid = row.reply_id as string;
+        const s = map.get(rid);
+        if (!s) continue;
+        const r = row.reaction as string;
+        s.counts[r] = (s.counts[r] || 0) + 1;
+        if (viewerId && row.user_id === viewerId) s.myReaction = r;
+      }
+    }
+    return map;
+  }
+
+  const mem = summarizeReplyReactions(replyIds, viewerId);
+  for (const id of replyIds) {
+    const s = mem.get(id)!;
+    map.set(id, { counts: { ...s.counts }, myReaction: s.myReaction });
+  }
+  return map;
+}
+
 function enrichPost(
   row: {
     id: string;
@@ -65,12 +106,14 @@ function enrichPost(
     content: string;
     created_at: string;
   }>,
-  authors: Map<string, { name: string; email: string | null }>,
-  rx: RxSummary
+  authors: Map<string, AuthorInfo>,
+  rx: RxSummary,
+  replyRx: Map<string, RxSummary>
 ) {
   const author = authors.get(row.user_id) ?? {
     name: "Member",
     email: null,
+    photoUrl: null,
   };
   const urls = Array.isArray(row.image_urls)
     ? (row.image_urls as string[]).filter((x) => typeof x === "string")
@@ -86,16 +129,25 @@ function enrichPost(
     imageUrls: urls.slice(0, MAX_IMAGES),
     authorName: author.name,
     authorEmail: author.email,
+    authorPhotoUrl: author.photoUrl,
     reactionCounts: rx.counts,
     myReaction: rx.myReaction,
     replies: replies.map((r) => {
-      const ra = authors.get(r.user_id) ?? { name: "Member", email: null };
+      const ra = authors.get(r.user_id) ?? {
+        name: "Member",
+        email: null,
+        photoUrl: null,
+      };
+      const rsum = replyRx.get(r.id) ?? { counts: {}, myReaction: null };
       return {
         id: r.id,
         userId: r.user_id,
         content: r.content,
         createdAt: r.created_at,
         authorName: ra.name,
+        authorPhotoUrl: ra.photoUrl,
+        reactionCounts: rsum.counts,
+        myReaction: rsum.myReaction,
       };
     }),
   };
@@ -160,6 +212,14 @@ export async function GET() {
         }
         const authors = await resolveExploreAuthors([...authorIds]);
         const rxMap = await loadReactionSummaries(ids, viewerId);
+        const allReplyIds: string[] = [];
+        for (const arr of byPost.values()) {
+          for (const r of arr) allReplyIds.push(r.id);
+        }
+        const replyRxMap = await loadReplyReactionSummaries(
+          allReplyIds,
+          viewerId
+        );
 
         return NextResponse.json({
           success: true,
@@ -175,7 +235,8 @@ export async function GET() {
               },
               byPost.get(row.id) || [],
               authors,
-              rxMap.get(row.id) ?? { counts: {}, myReaction: null }
+              rxMap.get(row.id) ?? { counts: {}, myReaction: null },
+              replyRxMap
             )
           ),
         });
@@ -191,6 +252,11 @@ export async function GET() {
     const authors = await resolveExploreAuthors([...authorIds]);
     const pids = list.map((p) => p.id);
     const rxMap = await loadReactionSummaries(pids, viewerId);
+    const allReplyIds: string[] = [];
+    for (const p of list) {
+      for (const rep of p.replies) allReplyIds.push(rep.id);
+    }
+    const replyRxMap = await loadReplyReactionSummaries(allReplyIds, viewerId);
 
     return NextResponse.json({
       success: true,
@@ -211,7 +277,8 @@ export async function GET() {
             created_at: rep.createdAt,
           })),
           authors,
-          rxMap.get(r.id) ?? { counts: {}, myReaction: null }
+          rxMap.get(r.id) ?? { counts: {}, myReaction: null },
+          replyRxMap
         )
       ),
     });
@@ -265,6 +332,7 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (!error && data) {
+        const emptyReplyRx = new Map<string, RxSummary>();
         return NextResponse.json({
           success: true,
           data: enrichPost(
@@ -277,13 +345,15 @@ export async function POST(request: NextRequest) {
             },
             [],
             authors,
-            emptyRx
+            emptyRx,
+            emptyReplyRx
           ),
         });
       }
     }
 
     const record = addExplorePost(userId, content, imageUrls);
+    const emptyReplyRx = new Map<string, RxSummary>();
     return NextResponse.json({
       success: true,
       data: enrichPost(
@@ -296,7 +366,8 @@ export async function POST(request: NextRequest) {
         },
         [],
         authors,
-        emptyRx
+        emptyRx,
+        emptyReplyRx
       ),
     });
   } catch (e) {

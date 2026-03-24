@@ -39,7 +39,7 @@ function createMatch(overrides: Partial<MatchWithUser> = {}): MatchWithUser {
     },
     type: "high-affinity",
     commonalities: [
-      { category: "professional", description: "Both in Technology industry", weight: 0.9 },
+      { category: "professional", description: "Both at VP / executive director level", weight: 0.9 },
       { category: "hobby", description: "Both enjoy hiking", weight: 0.7 },
       { category: "values", description: "Share servant leadership philosophy", weight: 0.8 },
     ],
@@ -97,7 +97,7 @@ describe("MatchCard", () => {
 
   it("should render commonalities", () => {
     render(<MatchCard match={createMatch()} onPass={mockOnPass} onConnect={mockOnConnect} />);
-    expect(screen.getByText("Both in Technology industry")).toBeInTheDocument();
+    expect(screen.getByText("Both at VP / executive director level")).toBeInTheDocument();
     expect(screen.getByText("Both enjoy hiking")).toBeInTheDocument();
   });
 
