@@ -162,7 +162,7 @@ export function RankInput({
                 type="button"
                 onClick={() => handleSelect(option.value)}
                 className={cn(
-                  "flex items-center gap-3 p-4 rounded-full border-2 text-left transition-all duration-200",
+                  "flex items-center gap-3 p-4 rounded-xl border-2 text-left transition-all duration-200",
                   "border-white/20 bg-white/5 hover:border-cyan-400/50 hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
                 )}
               >
