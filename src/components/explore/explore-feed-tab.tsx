@@ -880,6 +880,7 @@ export function ExploreFeedTab() {
                 .join("")
                 .slice(0, 2)
                 .toUpperCase();
+              const photo = post.authorPhotoUrl?.trim() || undefined;
               const imgs = post.imageUrls || [];
               const replies = post.replies || [];
               const showReply = replyOpen === post.id;
