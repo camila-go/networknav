@@ -64,8 +64,8 @@ async function refreshSession(refreshToken: string): Promise<AuthSession | null>
     return null;
   }
 
-  const { users } = await import("@/lib/stores");
-  const user = users.get(payload.userId);
+  const { getUserById } = await import("@/lib/stores");
+  const user = getUserById(payload.userId);
 
   if (!user) {
     await clearAuthCookies();

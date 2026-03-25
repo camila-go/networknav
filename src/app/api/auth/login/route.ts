@@ -26,7 +26,10 @@ async function findUserFromSupabase(email: string): Promise<{
   questionnaireCompleted: boolean;
   questionnaireData?: Record<string, unknown>;
 } | null> {
-  if (!isSupabaseConfigured || !supabaseAdmin) return null;
+  if (!isSupabaseConfigured || !supabaseAdmin) {
+    console.log('[login] Supabase not available:', { isSupabaseConfigured, hasAdmin: !!supabaseAdmin });
+    return null;
+  }
 
   try {
     const { data: profile, error } = await supabaseAdmin
@@ -36,7 +39,7 @@ async function findUserFromSupabase(email: string): Promise<{
       .single();
     
     if (error || !profile) {
-      console.log('Supabase profile lookup error:', error?.message || 'No profile found');
+      console.log('[login] Supabase lookup failed:', { error: error?.message, code: error?.code, hasProfile: !!profile });
       return null;
     }
     
