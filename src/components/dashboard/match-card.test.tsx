@@ -153,9 +153,8 @@ describe("MatchCard", () => {
       },
     });
     render(<MatchCard match={matchWithEmail} onPass={mockOnPass} />);
-    // TeamsActionButtons renders Chat and Meet buttons
+    // TeamsActionButtons renders Chat button
     expect(screen.getByText("Chat")).toBeInTheDocument();
-    expect(screen.getByText("Meet")).toBeInTheDocument();
   });
 
   it("should render Pass button when matchedUser has no email", () => {

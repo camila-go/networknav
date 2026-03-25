@@ -24,10 +24,6 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 
-vi.mock("./explore-feed-tab", () => ({
-  ExploreFeedTab: () => <div data-testid="explore-feed-tab">Feed</div>,
-}));
-
 // Mock FilterSidebar
 vi.mock("./filter-sidebar", () => ({
   FilterSidebar: ({
@@ -104,12 +100,6 @@ function mockSearchFetch(results = mockResults, total = 2, hasMore = false) {
   } as unknown as Response);
 }
 
-/** Click the "Search" tab so the search UI is visible */
-async function switchToSearchTab(user: ReturnType<typeof userEvent.setup>) {
-  const searchTab = screen.getByRole("tab", { name: /search/i });
-  await user.click(searchTab);
-}
-
 describe("ExploreContainer", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -136,7 +126,7 @@ describe("ExploreContainer", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     global.fetch = vi.fn().mockReturnValue(new Promise(() => {}));
     render(<ExploreContainer />);
-    await switchToSearchTab(user);
+    
     const loader = document.querySelector(".animate-spin");
     expect(loader).toBeInTheDocument();
   });
@@ -144,7 +134,7 @@ describe("ExploreContainer", () => {
   it("should render search results", async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     render(<ExploreContainer />);
-    await switchToSearchTab(user);
+    
 
     await waitFor(() => {
       // Mobile swiper + desktop grid both render attendee cards (CSS hides one)
@@ -158,7 +148,7 @@ describe("ExploreContainer", () => {
   it("should show result count", async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     render(<ExploreContainer />);
-    await switchToSearchTab(user);
+    
 
     await waitFor(() => {
       expect(screen.getByText(/showing 2 of 2 attendees/i)).toBeInTheDocument();
@@ -169,7 +159,7 @@ describe("ExploreContainer", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     global.fetch = mockSearchFetch([], 0);
     render(<ExploreContainer />);
-    await switchToSearchTab(user);
+    
 
     await waitFor(() => {
       expect(screen.getByText(/no attendees found/i)).toBeInTheDocument();
@@ -184,7 +174,7 @@ describe("ExploreContainer", () => {
       expect(global.fetch).toHaveBeenCalled();
     });
 
-    await switchToSearchTab(user);
+    
     const initialCallCount = vi.mocked(global.fetch).mock.calls.length;
 
     const searchInput = screen.getByPlaceholderText(/search by name/i);
@@ -202,7 +192,7 @@ describe("ExploreContainer", () => {
   it("should navigate when requesting meeting", async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     render(<ExploreContainer />);
-    await switchToSearchTab(user);
+    
 
     await waitFor(() => {
       expect(screen.getAllByTestId("attendee-user-1").length).toBeGreaterThanOrEqual(1);
@@ -217,7 +207,7 @@ describe("ExploreContainer", () => {
   it("should show toast when saving search", async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     render(<ExploreContainer />);
-    await switchToSearchTab(user);
+    
 
     await waitFor(() => {
       expect(screen.getByTestId("filter-sidebar")).toBeInTheDocument();
@@ -248,7 +238,7 @@ describe("ExploreContainer", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     global.fetch = mockSearchFetch(mockResults, 25, true);
     render(<ExploreContainer />);
-    await switchToSearchTab(user);
+    
 
     await waitFor(() => {
       expect(screen.getByText(/page 1 of/i)).toBeInTheDocument();
@@ -261,7 +251,7 @@ describe("ExploreContainer", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     global.fetch = mockSearchFetch(mockResults, 25, true);
     render(<ExploreContainer />);
-    await switchToSearchTab(user);
+    
 
     await waitFor(() => {
       expect(screen.getByText(/next/i)).toBeEnabled();
@@ -281,7 +271,7 @@ describe("ExploreContainer", () => {
   it("should toggle view mode between grid and list", async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     render(<ExploreContainer />);
-    await switchToSearchTab(user);
+    
 
     await waitFor(() => {
       expect(screen.getAllByTestId("attendee-user-1").length).toBeGreaterThanOrEqual(1);

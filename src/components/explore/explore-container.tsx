@@ -4,8 +4,6 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FilterSidebar } from "./filter-sidebar";
 import { AttendeeCard } from "./attendee-card";
-import { ExploreFeedTab } from "./explore-feed-tab";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -30,27 +28,15 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
 import type { SearchFilters, AttendeeSearchResult } from "@/types";
 
-function exploreStateFromSearchParams(
-  sp: ReturnType<typeof useSearchParams>
-): { tab: "feed" | "search"; keywords: string } {
-  const q = sp.get("q")?.trim() ?? "";
-  const tab: "feed" | "search" =
-    q.length > 0 || sp.get("tab") === "search" ? "search" : "feed";
-  return { tab, keywords: q };
-}
-
 export function ExploreContainer() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
 
-  const initialExplore = exploreStateFromSearchParams(searchParams);
-  const [activeTab, setActiveTab] = useState<"feed" | "search">(initialExplore.tab);
+  const initialKeywords = searchParams.get("q")?.trim() ?? "";
   const [filters, setFilters] = useState<SearchFilters>({});
-  const [keywords, setKeywords] = useState(initialExplore.keywords);
-  const [debouncedKeywords, setDebouncedKeywords] = useState(
-    initialExplore.keywords
-  );
+  const [keywords, setKeywords] = useState(initialKeywords);
+  const [debouncedKeywords, setDebouncedKeywords] = useState(initialKeywords);
   const [results, setResults] = useState<AttendeeSearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [sortBy, setSortBy] = useState<"relevance" | "match" | "name" | "level">("relevance");
@@ -77,12 +63,9 @@ export function ExploreContainer() {
     if (searchParamsKeyRef.current === key) return;
     searchParamsKeyRef.current = key;
     const q = searchParams.get("q")?.trim() ?? "";
-    if (q || searchParams.get("tab") === "search") {
-      setActiveTab("search");
-      if (q) {
-        setKeywords(q);
-        setDebouncedKeywords(q);
-      }
+    if (q) {
+      setKeywords(q);
+      setDebouncedKeywords(q);
     }
   }, [searchParams]);
 
@@ -225,40 +208,8 @@ export function ExploreContainer() {
   }
 
   return (
-    <Tabs
-      value={activeTab}
-      onValueChange={(v) => setActiveTab(v as "feed" | "search")}
-      className="flex flex-col h-full bg-black min-h-0"
-    >
-      <div className="flex-shrink-0 z-20 w-full border-b border-white/10 bg-gradient-to-b from-zinc-900/95 to-black">
-        <TabsList className="grid w-full grid-cols-2 h-12 sm:h-14 rounded-none border-0 bg-transparent p-0 gap-0">
-          <TabsTrigger
-            value="feed"
-            className="rounded-none border-0 border-r border-white/10 data-[state=active]:bg-teal-500/15 data-[state=active]:text-teal-300 data-[state=active]:shadow-[inset_0_-3px_0_0_rgba(45,212,191,0.9)] text-white/55 data-[state=inactive]:hover:bg-white/5 text-sm sm:text-base font-medium"
-          >
-            Feed
-          </TabsTrigger>
-          <TabsTrigger
-            value="search"
-            className="rounded-none border-0 data-[state=active]:bg-cyan-500/15 data-[state=active]:text-cyan-300 data-[state=active]:shadow-[inset_0_-3px_0_0_rgba(34,211,238,0.9)] text-white/55 data-[state=inactive]:hover:bg-white/5 text-sm sm:text-base font-medium"
-          >
-            Search
-          </TabsTrigger>
-        </TabsList>
-      </div>
-
-      <TabsContent
-        value="feed"
-        className="flex-1 min-h-0 m-0 p-0 border-0 outline-none data-[state=inactive]:hidden overflow-y-auto overflow-x-hidden"
-      >
-        <ExploreFeedTab />
-      </TabsContent>
-
-      <TabsContent
-        value="search"
-        className="flex-1 flex min-h-0 m-0 p-0 border-0 outline-none data-[state=inactive]:hidden overflow-hidden"
-      >
-    <div className="flex h-full min-h-0 w-full bg-black">
+    <div className="flex flex-col h-full bg-black min-h-0">
+    <div className="flex flex-1 min-h-0 w-full bg-black">
       {/* Desktop filter sidebar */}
       <aside className="hidden lg:block w-72 border-r border-white/10 bg-black/50 flex-shrink-0">
         <FilterSidebar
@@ -537,8 +488,7 @@ export function ExploreContainer() {
         </div>
       </main>
     </div>
-      </TabsContent>
-    </Tabs>
+    </div>
   );
 }
 

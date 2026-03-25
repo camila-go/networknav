@@ -1,11 +1,11 @@
 "use client";
 
+import Image from "next/image";
 import { X, ExternalLink } from "lucide-react";
-import { cn, teamsChartUrl, teamsMeetingUrl } from "@/lib/utils";
+import { cn, teamsChartUrl } from "@/lib/utils";
 import {
   logExplorePassClick,
   logTeamsChatClick,
-  logTeamsMeetClick,
   type NetworkActionSource,
 } from "@/lib/log-network-action";
 
@@ -24,7 +24,7 @@ export interface TeamsActionButtonsProps {
 }
 
 /**
- * Pass (text) · Chat (outline) · Meet (primary). Chat/Meet use one external-link icon only (new tab).
+ * Pass (text) · Chat (outline with Teams icon). Chat opens a Teams 1:1 chat in a new tab.
  */
 export function TeamsActionButtons({
   targetEmail,
@@ -36,7 +36,6 @@ export function TeamsActionButtons({
   className,
 }: TeamsActionButtonsProps) {
   const chatUrl = teamsChartUrl(targetEmail);
-  const meetUrl = teamsMeetingUrl(targetEmail, `Meet with ${targetName}`);
 
   const handlePass = () => {
     logExplorePassClick({ source, targetUserId });
@@ -75,33 +74,20 @@ export function TeamsActionButtons({
           "text-white border border-white/25 bg-white/[0.06] hover:bg-white/10 hover:border-white/40"
         )}
       >
+        <Image
+          src="/teams-icon.png"
+          alt=""
+          width={18}
+          height={18}
+          className="shrink-0"
+          aria-hidden
+        />
         <span>Chat</span>
         <ExternalLink
           className={cn(tabIconClass, "text-white/85")}
           strokeWidth={TAB_STROKE}
           aria-hidden
         />
-      </a>
-      <a
-        href={meetUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label={`Schedule a Teams meeting with ${targetName} (opens in new tab)`}
-        onClick={() =>
-          logTeamsMeetClick({
-            source,
-            targetUserId,
-            targetEmail,
-          })
-        }
-        className={cn(
-          linkBase,
-          "font-semibold bg-gradient-to-r from-cyan-500 to-teal-500 text-black border-0 shadow-md shadow-cyan-500/20",
-          "hover:from-cyan-400 hover:to-teal-400"
-        )}
-      >
-        <span>Meet</span>
-        <ExternalLink className={cn(tabIconClass, "text-black")} strokeWidth={TAB_STROKE} aria-hidden />
       </a>
     </div>
   );

@@ -4,6 +4,13 @@ All notable changes to NetworkNav (Jynx) will be documented in this file.
 
 ## [Unreleased]
 
+### Removed
+- Remove Feed tab from Explore page; only Search remains (`src/components/explore/explore-container.tsx`, `src/components/explore/explore-feed-tab.tsx`, `src/app/api/explore/`)
+- Remove Meet button from match/attendee cards (`src/components/network/teams-action-buttons.tsx`)
+
+### Changed
+- Add Microsoft Teams icon to Chat button on match/attendee cards for clarity
+
 ### Fixed
 - Fix admin role not persisting across logins: login route now syncs role from Supabase when user is already in memory, preventing stale cached roles from overriding DB changes; `/api/auth/me` and `refreshSession()` now fall back to Supabase when the in-memory store is empty (serverless cold start) instead of returning 404/clearing cookies (`src/app/api/auth/login/route.ts`, `src/app/api/auth/me/route.ts`, `src/lib/auth/session.ts`)
 - Fix matching-service backfill exceeding per-type caps: backfill step now respects `maxHighAffinityMatches`/`maxStrategicMatches` limits (`src/lib/matching/matching-service.ts`)
