@@ -14,6 +14,9 @@ import type { UserRole } from "@/types";
 const LOGIN_RATE_LIMIT = { maxRequests: 5, windowMs: 15 * 60 * 1000 };
 
 // Helper to find user from Supabase and add to memory store
+// Track last lookup failure for debug response
+let lastSupabaseLookupError = '';
+
 async function findUserFromSupabase(email: string): Promise<{
   id: string;
   email: string;
@@ -27,7 +30,7 @@ async function findUserFromSupabase(email: string): Promise<{
   questionnaireData?: Record<string, unknown>;
 } | null> {
   if (!isSupabaseConfigured || !supabaseAdmin) {
-    console.log('[login] Supabase not available:', { isSupabaseConfigured, hasAdmin: !!supabaseAdmin });
+    lastSupabaseLookupError = `not_configured(cfg=${isSupabaseConfigured},admin=${!!supabaseAdmin})`;
     return null;
   }
 
@@ -37,9 +40,9 @@ async function findUserFromSupabase(email: string): Promise<{
       .select('id, email, password_hash, name, position, title, company, role, questionnaire_completed, questionnaire_data')
       .eq('email', email.toLowerCase())
       .single();
-    
+
     if (error || !profile) {
-      console.log('[login] Supabase lookup failed:', { error: error?.message, code: error?.code, hasProfile: !!profile });
+      lastSupabaseLookupError = `query_error(${error?.message || 'no_profile'},code=${error?.code})`;
       return null;
     }
     
@@ -140,10 +143,12 @@ export async function POST(request: NextRequest) {
     let user = users.get(email.toLowerCase());
     
     // If not in memory, try Supabase
+    let debugInfo = '';
     if (!user) {
-      console.log(`User ${email} not in memory, checking Supabase...`);
+      debugInfo += 'not_in_memory;';
       const supabaseUser = await findUserFromSupabase(email);
       if (supabaseUser) {
+        debugInfo += 'found_in_supabase;';
         // Create a properly typed user object
         const storedUser = {
           id: supabaseUser.id,
@@ -161,16 +166,19 @@ export async function POST(request: NextRequest) {
         // Add to memory store for future lookups
         users.set(email.toLowerCase(), storedUser);
         user = users.get(email.toLowerCase());
-        console.log(`User ${email} loaded from Supabase`);
+      } else {
+        debugInfo += `supabase_miss:${lastSupabaseLookupError};`;
       }
     }
-    
+
     if (!user) {
-      console.log(`User ${email} not found in memory or Supabase`);
+      console.log(`User ${email} not found. Debug: ${debugInfo}`);
       return NextResponse.json(
         {
           success: false,
           error: "Invalid email or password",
+          // TODO: Remove debug after fixing login
+          debug: debugInfo,
         },
         { status: 401 }
       );
