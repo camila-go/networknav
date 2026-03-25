@@ -4,6 +4,11 @@ All notable changes to NetworkNav (Jynx) will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- Conversational onboarding questionnaire: replace traditional form wizard with chat-style interface guided by "Jynx" concierge character; questions appear as chat messages with structured inputs inline, and Jynx reacts to each answer with AI-generated (Gemini) or canned contextual reactions (`src/components/questionnaire/conversational-wizard.tsx`, `src/components/questionnaire/chat-message.tsx`)
+- AI question reaction generator with canned fallback templates (`src/lib/ai/generative.ts`, `src/lib/questionnaire-reactions.ts`, `src/app/api/questionnaire/reaction/route.ts`)
+- Conversational prompt variants for all 9 questionnaire questions (`src/lib/questionnaire-data.ts`)
+
 ### Fixed
 - Fix Network page not showing other users when navigating directly (bypassing Matches page): `/api/network` now auto-generates matches from Supabase when the in-memory store is empty (`src/app/api/network/route.ts`)
 - Fix double-click on network graph nodes not navigating to profile: disabled D3 zoom's built-in dblclick handler and replaced native dblclick with a click-timer pattern that works alongside drag behavior (`src/components/network/network-graph.tsx`)

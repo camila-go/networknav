@@ -44,6 +44,45 @@ Shared context: ${context.commonalities.length ? context.commonalities.join(" | 
 }
 
 /**
+ * Generate a brief, contextual reaction to a user's questionnaire answer.
+ * Used in the conversational onboarding flow to make the experience feel interactive.
+ * Returns null when no generative provider is available, allowing callers to fall back to canned templates.
+ */
+export async function generateQuestionReaction(
+  questionText: string,
+  userAnswer: string,
+  previousContext: { question: string; answer: string }[],
+): Promise<string | null> {
+  const provider = getGenerativeProvider();
+  if (!provider) return null;
+
+  const systemInstruction = `You are Jynx, a warm and witty conference networking concierge for a leadership summit.
+React briefly (1 sentence, max 25 words) to the user's questionnaire answer.
+Rules:
+- Be genuine, not generic. Reference their specific answer when possible.
+- Vary your tone: mix encouragement, humor, and insight.
+- Never be preachy or over-the-top. Think "great conference host" energy.
+- No emojis. No questions back. Just a quick, natural reaction.`;
+
+  const contextLines = previousContext
+    .slice(-3) // Only include last 3 Q&A pairs for context
+    .map((c) => `Q: ${c.question}\nA: ${c.answer}`)
+    .join('\n');
+
+  const prompt = `${contextLines ? `Previous answers:\n${contextLines}\n\n` : ''}Current question: ${questionText}\nUser's answer: ${userAnswer}`;
+
+  try {
+    const text = await provider.generateText(prompt, systemInstruction);
+    // Take only the first sentence/line and trim
+    const reaction = text.split('\n')[0].trim();
+    return reaction.length > 10 ? reaction : null;
+  } catch (error) {
+    console.warn('AI question reaction generation failed:', error);
+    return null;
+  }
+}
+
+/**
  * Generate a short AI profile summary for a user.
  * Returns null when no generative provider is available.
  */

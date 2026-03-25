@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { QuestionnaireWizard } from "@/components/questionnaire/wizard";
+import { ConversationalWizard } from "@/components/questionnaire/conversational-wizard";
 
 export const metadata = {
   title: "Complete Your Profile | GS26",
@@ -17,7 +17,7 @@ export default async function OnboardingPage() {
           </div>
         }
       >
-        <QuestionnaireWizard />
+        <ConversationalWizard />
       </Suspense>
     </div>
   );

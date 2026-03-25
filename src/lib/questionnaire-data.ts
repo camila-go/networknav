@@ -13,6 +13,7 @@ export const QUESTIONNAIRE_SECTIONS: QuestionSection[] = [
       {
         id: "yearsExperience",
         text: "How many years have you been in leadership roles?",
+        conversationalPrompt: "First things first — how long have you been in a leadership role?",
         type: "single-select",
         required: true,
         options: [
@@ -27,6 +28,7 @@ export const QUESTIONNAIRE_SECTIONS: QuestionSection[] = [
       {
         id: "leadershipLevel",
         text: "What best describes your leadership level?",
+        conversationalPrompt: "And where do you sit in the org? Pick the one that fits best.",
         type: "icon-select",
         required: true,
         options: [
@@ -53,6 +55,7 @@ export const QUESTIONNAIRE_SECTIONS: QuestionSection[] = [
       {
         id: "leadershipPriorities",
         text: "What are your top leadership priorities right now?",
+        conversationalPrompt: "Now let's talk about what's on your plate. What are you focused on as a leader right now?",
         type: "multi-select",
         required: true,
         minSelections: 2,
@@ -71,6 +74,7 @@ export const QUESTIONNAIRE_SECTIONS: QuestionSection[] = [
       {
         id: "networkingGoals",
         text: "What would make this conference networking valuable for you?",
+        conversationalPrompt: "What are you hoping to get out of the connections you make here?",
         type: "multi-select",
         required: true,
         minSelections: 2,
@@ -87,6 +91,7 @@ export const QUESTIONNAIRE_SECTIONS: QuestionSection[] = [
       {
         id: "rechargeActivities",
         text: "How do you recharge outside of work?",
+        conversationalPrompt: "Enough shop talk for a sec — what do you do to recharge when you're off the clock?",
         type: "multi-select-custom",
         required: true,
         minSelections: 3,
@@ -123,6 +128,7 @@ export const QUESTIONNAIRE_SECTIONS: QuestionSection[] = [
       {
         id: "leadershipPhilosophy",
         text: "How would you describe your leadership philosophy?",
+        conversationalPrompt: "Home stretch! How would you describe the way you lead?",
         type: "multi-select",
         required: true,
         minSelections: 2,
@@ -141,6 +147,7 @@ export const QUESTIONNAIRE_SECTIONS: QuestionSection[] = [
       {
         id: "communicationStyle",
         text: "How do you prefer to communicate?",
+        conversationalPrompt: "When you're in a conversation, what's your natural style?",
         type: "single-select",
         required: true,
         options: [
@@ -155,6 +162,7 @@ export const QUESTIONNAIRE_SECTIONS: QuestionSection[] = [
       {
         id: "relationshipValues",
         text: "What do you value most in professional relationships?",
+        conversationalPrompt: "What matters most to you when building professional relationships?",
         type: "multi-select",
         required: true,
         minSelections: 2,
@@ -171,6 +179,7 @@ export const QUESTIONNAIRE_SECTIONS: QuestionSection[] = [
       {
         id: "energizers",
         text: "What energizes you as a person?",
+        conversationalPrompt: "Last one! What gives you energy and makes you feel alive?",
         type: "multi-select",
         required: true,
         minSelections: 2,

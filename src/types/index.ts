@@ -94,6 +94,7 @@ export interface QuestionSection {
 export interface Question {
   id: keyof QuestionnaireData;
   text: string;
+  conversationalPrompt?: string; // Casual, chat-friendly version of the question
   type: QuestionType;
   options?: QuestionOption[];
   required: boolean;
