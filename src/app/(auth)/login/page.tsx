@@ -9,6 +9,8 @@ import {
 } from "@/components/ui/card";
 import Link from "next/link";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Log In | GS26",
   description: "Log in to your GS26 conference account (powered by JYNX)",
