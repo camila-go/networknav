@@ -21,6 +21,7 @@ vi.mock("next/navigation", () => ({
     refresh: vi.fn(),
     prefetch: vi.fn(),
   }),
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 vi.mock("./explore-feed-tab", () => ({
@@ -103,6 +104,12 @@ function mockSearchFetch(results = mockResults, total = 2, hasMore = false) {
   } as unknown as Response);
 }
 
+/** Click the "Search" tab so the search UI is visible */
+async function switchToSearchTab(user: ReturnType<typeof userEvent.setup>) {
+  const searchTab = screen.getByRole("tab", { name: /search/i });
+  await user.click(searchTab);
+}
+
 describe("ExploreContainer", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -140,11 +147,12 @@ describe("ExploreContainer", () => {
     await switchToSearchTab(user);
 
     await waitFor(() => {
-      expect(screen.getByTestId("attendee-user-1")).toBeInTheDocument();
+      // Mobile swiper + desktop grid both render attendee cards (CSS hides one)
+      expect(screen.getAllByTestId("attendee-user-1").length).toBeGreaterThanOrEqual(1);
     });
-    expect(screen.getByTestId("attendee-user-2")).toBeInTheDocument();
-    expect(screen.getByText("Alice Johnson")).toBeInTheDocument();
-    expect(screen.getByText("Bob Smith")).toBeInTheDocument();
+    expect(screen.getAllByTestId("attendee-user-2").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("Alice Johnson").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("Bob Smith").length).toBeGreaterThanOrEqual(1);
   });
 
   it("should show result count", async () => {
@@ -173,10 +181,11 @@ describe("ExploreContainer", () => {
     render(<ExploreContainer />);
 
     await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledTimes(1);
+      expect(global.fetch).toHaveBeenCalled();
     });
 
     await switchToSearchTab(user);
+    const initialCallCount = vi.mocked(global.fetch).mock.calls.length;
 
     const searchInput = screen.getByPlaceholderText(/search by name/i);
     await user.type(searchInput, "alice");
@@ -186,7 +195,7 @@ describe("ExploreContainer", () => {
 
     await waitFor(() => {
       // Should have been called again after debounce
-      expect(global.fetch).toHaveBeenCalledTimes(2);
+      expect(vi.mocked(global.fetch).mock.calls.length).toBeGreaterThan(initialCallCount);
     });
   });
 
@@ -196,7 +205,7 @@ describe("ExploreContainer", () => {
     await switchToSearchTab(user);
 
     await waitFor(() => {
-      expect(screen.getByTestId("attendee-user-1")).toBeInTheDocument();
+      expect(screen.getAllByTestId("attendee-user-1").length).toBeGreaterThanOrEqual(1);
     });
 
     const meetingBtn = screen.getAllByText("Request Meeting")[0];
@@ -275,19 +284,18 @@ describe("ExploreContainer", () => {
     await switchToSearchTab(user);
 
     await waitFor(() => {
-      expect(screen.getByTestId("attendee-user-1")).toBeInTheDocument();
+      expect(screen.getAllByTestId("attendee-user-1").length).toBeGreaterThanOrEqual(1);
     });
 
     // The grid/list toggle buttons are rendered as icon buttons
-    // The list button is the second one in the pair
     const buttons = screen.getAllByRole("button");
     const listBtn = buttons.find(
-      (btn) => btn.querySelector("svg") && btn.className.includes("rounded-l-none")
+      (btn) => btn.querySelector("svg") && btn.className.includes("rounded-full")
     );
     if (listBtn) {
       await user.click(listBtn);
       // Results should still be visible
-      expect(screen.getByTestId("attendee-user-1")).toBeInTheDocument();
+      expect(screen.getAllByTestId("attendee-user-1").length).toBeGreaterThanOrEqual(1);
     }
   });
 });

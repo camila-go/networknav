@@ -57,25 +57,24 @@ function createMatch(overrides: Partial<MatchWithUser> = {}): MatchWithUser {
 
 describe("MatchCard", () => {
   const mockOnPass = vi.fn();
-  const mockOnConnect = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it("should render matched user name", () => {
-    render(<MatchCard match={createMatch()} onPass={mockOnPass} onConnect={mockOnConnect} />);
+    render(<MatchCard match={createMatch()} onPass={mockOnPass} />);
     expect(screen.getByText("Sarah Chen")).toBeInTheDocument();
   });
 
   it("should render position and company", () => {
-    render(<MatchCard match={createMatch()} onPass={mockOnPass} onConnect={mockOnConnect} />);
+    render(<MatchCard match={createMatch()} onPass={mockOnPass} />);
     expect(screen.getByText("VP of Engineering")).toBeInTheDocument();
     expect(screen.getByText("TechCorp")).toBeInTheDocument();
   });
 
   it("should render high-affinity badge", () => {
-    render(<MatchCard match={createMatch()} onPass={mockOnPass} onConnect={mockOnConnect} />);
+    render(<MatchCard match={createMatch()} onPass={mockOnPass} />);
     expect(screen.getByText("High-Affinity")).toBeInTheDocument();
   });
 
@@ -84,19 +83,18 @@ describe("MatchCard", () => {
       <MatchCard
         match={createMatch({ type: "strategic" })}
         onPass={mockOnPass}
-        onConnect={mockOnConnect}
       />
     );
     expect(screen.getByText("Strategic")).toBeInTheDocument();
   });
 
   it("should render match score", () => {
-    render(<MatchCard match={createMatch()} onPass={mockOnPass} onConnect={mockOnConnect} />);
+    render(<MatchCard match={createMatch()} onPass={mockOnPass} />);
     expect(screen.getByText("92%")).toBeInTheDocument();
   });
 
   it("should render commonalities", () => {
-    render(<MatchCard match={createMatch()} onPass={mockOnPass} onConnect={mockOnConnect} />);
+    render(<MatchCard match={createMatch()} onPass={mockOnPass} />);
     expect(screen.getByText("Both at VP / executive director level")).toBeInTheDocument();
     expect(screen.getByText("Both enjoy hiking")).toBeInTheDocument();
   });
@@ -119,7 +117,7 @@ describe("MatchCard", () => {
       ],
     });
 
-    render(<MatchCard match={match} onPass={mockOnPass} onConnect={mockOnConnect} />);
+    render(<MatchCard match={match} onPass={mockOnPass} />);
 
     // Should show "+1 more" button
     expect(screen.getByText(/\+1 more/)).toBeInTheDocument();
@@ -134,31 +132,39 @@ describe("MatchCard", () => {
 
   it("should call onPass when Pass button is clicked", async () => {
     const user = userEvent.setup();
-    render(<MatchCard match={createMatch()} onPass={mockOnPass} onConnect={mockOnConnect} />);
+    render(<MatchCard match={createMatch()} onPass={mockOnPass} />);
 
     await user.click(screen.getByText("Pass"));
     expect(mockOnPass).toHaveBeenCalledWith("match-1");
   });
 
-  it("should navigate to messages when Message button is clicked", async () => {
-    const user = userEvent.setup();
-    render(<MatchCard match={createMatch()} onPass={mockOnPass} onConnect={mockOnConnect} />);
-
-    await user.click(screen.getByText("Message"));
-    expect(mockPush).toHaveBeenCalledWith(
-      expect.stringContaining("/messages?userId=user-2")
-    );
-  });
-
-  it("should render action buttons (Pass, Message, Meet)", () => {
-    render(<MatchCard match={createMatch()} onPass={mockOnPass} onConnect={mockOnConnect} />);
-    expect(screen.getByText("Pass")).toBeInTheDocument();
-    expect(screen.getByText("Message")).toBeInTheDocument();
+  it("should show TeamsActionButtons when matchedUser has email", () => {
+    const matchWithEmail = createMatch({
+      matchedUser: {
+        id: "user-2",
+        email: "sarah@techcorp.com",
+        profile: {
+          name: "Sarah Chen",
+          position: "VP of Engineering",
+          title: "Engineering Leader",
+          company: "TechCorp",
+        },
+        questionnaireCompleted: true,
+      },
+    });
+    render(<MatchCard match={matchWithEmail} onPass={mockOnPass} />);
+    // TeamsActionButtons renders Chat and Meet buttons
+    expect(screen.getByText("Chat")).toBeInTheDocument();
     expect(screen.getByText("Meet")).toBeInTheDocument();
   });
 
+  it("should render Pass button when matchedUser has no email", () => {
+    render(<MatchCard match={createMatch()} onPass={mockOnPass} />);
+    expect(screen.getByText("Pass")).toBeInTheDocument();
+  });
+
   it("should render profile link", () => {
-    render(<MatchCard match={createMatch()} onPass={mockOnPass} onConnect={mockOnConnect} />);
+    render(<MatchCard match={createMatch()} onPass={mockOnPass} />);
     const links = screen.getAllByRole("link");
     const profileLink = links.find((link) => link.getAttribute("href")?.includes("/user/user-2"));
     expect(profileLink).toBeDefined();

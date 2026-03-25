@@ -64,8 +64,47 @@ async function refreshSession(refreshToken: string): Promise<AuthSession | null>
     return null;
   }
 
-  const { getUserById } = await import("@/lib/stores");
-  const user = getUserById(payload.userId);
+  const { getUserById, users } = await import("@/lib/stores");
+  let user = getUserById(payload.userId);
+
+  // Fallback to Supabase on cold start / different serverless instance
+  if (!user) {
+    try {
+      const { supabaseAdmin, isSupabaseConfigured } = await import("@/lib/supabase/client");
+      if (isSupabaseConfigured && supabaseAdmin) {
+        const { data: profile } = await supabaseAdmin
+          .from('user_profiles')
+          .select('*')
+          .eq('id', payload.userId)
+          .single();
+
+        if (profile) {
+          const p = profile as {
+            id: string; email: string; password_hash?: string; role?: string;
+            name?: string; position?: string; title?: string; company?: string;
+            questionnaire_completed?: boolean;
+          };
+          const storedUser = {
+            id: p.id,
+            email: p.email,
+            passwordHash: p.password_hash || '',
+            role: (p.role as "user" | "moderator" | "admin") || 'user',
+            name: p.name || 'User',
+            position: p.position || '',
+            title: p.title || '',
+            company: p.company || '',
+            questionnaireCompleted: p.questionnaire_completed || false,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          };
+          users.set(p.email.toLowerCase(), storedUser);
+          user = storedUser;
+        }
+      }
+    } catch {
+      // Non-fatal: fall through to cookie clear
+    }
+  }
 
   if (!user) {
     await clearAuthCookies();

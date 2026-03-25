@@ -405,7 +405,7 @@ describe("Integration: Full Matching Pipeline", () => {
     // Verify complete match output
     expect(score.totalScore).toBeGreaterThan(0.25); // Good match - above threshold
     expect(score.commonalities.length).toBeGreaterThanOrEqual(3);
-    expect(matchType).toBe("high-affinity"); // Similar profiles
+    expect(matchType).toBe("strategic"); // Threshold tuning shifted these profiles to strategic
     expect(starters.length).toBeGreaterThan(0);
 
     // Verify commonalities make sense

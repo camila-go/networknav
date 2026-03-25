@@ -114,7 +114,15 @@ export function generateMatches(
     const remaining = matchCandidates
       .filter((m) => !allSelected.includes(m))
       .sort((a, b) => b.score - a.score);
-    allSelected = [...allSelected, ...remaining.slice(0, totalNeeded - allSelected.length)];
+    for (const candidate of remaining) {
+      if (allSelected.length >= totalNeeded) break;
+      // Respect per-type caps even during backfill
+      const currentHA = allSelected.filter((m) => m.matchType === "high-affinity").length;
+      const currentSt = allSelected.filter((m) => m.matchType === "strategic").length;
+      if (candidate.matchType === "high-affinity" && currentHA >= opts.maxHighAffinityMatches) continue;
+      if (candidate.matchType === "strategic" && currentSt >= opts.maxStrategicMatches) continue;
+      allSelected.push(candidate);
+    }
   }
 
   // Ensure diversity (vary leadership context where possible)

@@ -5,6 +5,9 @@ All notable changes to NetworkNav (Jynx) will be documented in this file.
 ## [Unreleased]
 
 ### Fixed
+- Fix admin role not persisting across logins: login route now syncs role from Supabase when user is already in memory, preventing stale cached roles from overriding DB changes; `/api/auth/me` and `refreshSession()` now fall back to Supabase when the in-memory store is empty (serverless cold start) instead of returning 404/clearing cookies (`src/app/api/auth/login/route.ts`, `src/app/api/auth/me/route.ts`, `src/lib/auth/session.ts`)
+- Fix matching-service backfill exceeding per-type caps: backfill step now respects `maxHighAffinityMatches`/`maxStrategicMatches` limits (`src/lib/matching/matching-service.ts`)
+- Fix 48 broken tests across 10 test files: update stale mocks (`useSearchParams`, `useRouter`, D3 `alphaDecay`/`theta`, `generateSpMetadataXml`), align assertions with refactored components (`MatchCard`, `LoginForm`, `ProfileForm`), fix `bug-fixes.test.ts` to read `session.ts` instead of barrel `auth.ts`, add missing `switchToSearchTab` helper, handle mobile+desktop duplicate DOM elements in explore tests
 - Fix SSO button not appearing on login page: Vercel env vars (`SSO_ENABLED`, `SAML_ENTRY_POINT`, `SAML_IDP_CERT`) had trailing newlines from `echo` piping; re-added with clean values via `printf`. Added `.trim()` to env var comparisons in `src/app/(auth)/login/page.tsx` and `src/lib/saml/config.ts` to prevent whitespace/CRLF from breaking SSO feature flag checks.
 - Fix session refresh using wrong key to look up user: `refreshSession()` in `src/lib/auth/session.ts` used `users.get(userId)` but the Map is keyed by email; switched to `getUserById()` helper
 - Fix login failing on production: Supabase query explicitly selected `role` column which doesn't exist in the DB yet (RBAC `ALTER TABLE` was never run); switched to `select("*")` to gracefully handle missing optional columns

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { users } from "@/lib/stores";
+import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
+import type { UserRole } from "@/types";
 
 export async function GET() {
   try {
@@ -16,8 +18,45 @@ export async function GET() {
       );
     }
 
-    // Find user by email
-    const user = users.get(session.email);
+    // Find user by email from in-memory store
+    let user = users.get(session.email);
+
+    // Fallback to Supabase on cold start / different serverless instance
+    if (!user && isSupabaseConfigured && supabaseAdmin) {
+      try {
+        const { data: profile } = await supabaseAdmin
+          .from('user_profiles')
+          .select('*')
+          .eq('email', session.email.toLowerCase())
+          .single();
+
+        if (profile) {
+          const p = profile as {
+            id: string; email: string; password_hash?: string; role?: string;
+            name?: string; position?: string; title?: string; company?: string;
+            questionnaire_completed?: boolean;
+          };
+          const storedUser = {
+            id: p.id,
+            email: p.email,
+            passwordHash: p.password_hash || '',
+            role: (p.role as UserRole) || 'user',
+            name: p.name || 'User',
+            position: p.position || '',
+            title: p.title || '',
+            company: p.company || '',
+            questionnaireCompleted: p.questionnaire_completed || false,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          };
+          users.set(session.email.toLowerCase(), storedUser);
+          user = storedUser;
+        }
+      } catch {
+        // Non-fatal: fall through to 404
+      }
+    }
+
     if (!user) {
       return NextResponse.json(
         {

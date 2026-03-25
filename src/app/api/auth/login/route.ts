@@ -161,6 +161,23 @@ export async function POST(request: NextRequest) {
         user = users.get(email.toLowerCase());
         console.log(`User ${email} loaded from Supabase`);
       }
+    } else if (isSupabaseConfigured && supabaseAdmin) {
+      // User was in memory — sync role from Supabase in case it was changed externally
+      try {
+        const { data } = await supabaseAdmin
+          .from('user_profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+        const dbRole = (data?.role as UserRole) || 'user';
+        if (dbRole !== user.role) {
+          user = { ...user, role: dbRole };
+          users.set(email.toLowerCase(), user);
+          console.log(`Synced role for ${email} from Supabase: ${dbRole}`);
+        }
+      } catch {
+        // Non-fatal: proceed with in-memory role
+      }
     }
 
     if (!user) {

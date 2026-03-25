@@ -24,6 +24,9 @@ vi.mock("d3", () => {
     on: vi.fn().mockReturnThis(),
     stop: vi.fn(),
     alphaTarget: vi.fn().mockReturnThis(),
+    alphaDecay: vi.fn().mockReturnThis(),
+    alphaMin: vi.fn().mockReturnThis(),
+    velocityDecay: vi.fn().mockReturnThis(),
     restart: vi.fn(),
   };
 
@@ -41,6 +44,7 @@ vi.mock("d3", () => {
     }),
     forceManyBody: vi.fn().mockReturnValue({
       strength: vi.fn().mockReturnThis(),
+      theta: vi.fn().mockReturnThis(),
     }),
     forceCenter: vi.fn().mockReturnValue({}),
     forceCollide: vi.fn().mockReturnValue({

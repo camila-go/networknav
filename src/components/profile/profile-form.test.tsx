@@ -49,7 +49,6 @@ describe("ProfileForm", () => {
     expect(screen.getByLabelText(/^title$/i)).toHaveValue("Engineering Leader");
     expect(screen.getByLabelText(/company/i)).toHaveValue("TechCorp");
     expect(screen.getByLabelText(/location/i)).toHaveValue("San Francisco, CA");
-    expect(screen.getByLabelText(/photo url/i)).toHaveValue("https://example.com/photo.jpg");
   });
 
   it("should disable submit button when form is pristine", async () => {

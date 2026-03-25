@@ -21,6 +21,7 @@ vi.mock("@/lib/saml/config", () => ({
   isSsoEnabled: () => true,
   isSsoForced: () => false,
   getSpCert: () => undefined,
+  generateSpMetadataXml: () => mockGenerateServiceProviderMetadata(),
   getSaml: () => ({
     validatePostResponseAsync: mockValidatePostResponseAsync,
     getAuthorizeUrlAsync: mockGetAuthorizeUrlAsync,

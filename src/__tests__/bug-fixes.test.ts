@@ -39,9 +39,9 @@ describe('Bug Fix Verification', () => {
   
   describe('Bug 2: refreshSession returns valid AuthSession', () => {
     let authContent: string;
-    
+
     beforeAll(() => {
-      const filePath = path.join(__dirname, '../lib/auth.ts');
+      const filePath = path.join(__dirname, '../lib/auth/session.ts');
       authContent = fs.readFileSync(filePath, 'utf-8');
     });
     

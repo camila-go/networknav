@@ -143,7 +143,7 @@ describe("LoginForm", () => {
     });
   });
 
-  it("should redirect to onboarding when questionnaire not completed", async () => {
+  it("should redirect to dashboard even when questionnaire not completed", async () => {
     const user = userEvent.setup();
     vi.mocked(global.fetch).mockResolvedValueOnce({
       json: async () => ({
@@ -159,7 +159,7 @@ describe("LoginForm", () => {
     await user.click(screen.getByRole("button", { name: /log in/i }));
 
     await waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith("/onboarding");
+      expect(mockPush).toHaveBeenCalledWith("/dashboard");
     });
   });
 
