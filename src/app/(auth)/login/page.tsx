@@ -17,8 +17,8 @@ export const metadata = {
 };
 
 export default function LoginPage() {
-  const ssoEnabled = process.env.SSO_ENABLED === "true";
-  const ssoForce = process.env.SSO_FORCE === "true";
+  const ssoEnabled = process.env.SSO_ENABLED?.trim() === "true";
+  const ssoForce = process.env.SSO_FORCE?.trim() === "true";
 
   return (
     <Card className="w-full max-w-md animate-fade-in summit-card border-white/10">

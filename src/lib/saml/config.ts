@@ -11,11 +11,11 @@ const APP_URL =
   process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
 export function isSsoEnabled(): boolean {
-  return process.env.SSO_ENABLED === "true";
+  return process.env.SSO_ENABLED?.trim() === "true";
 }
 
 export function isSsoForced(): boolean {
-  return process.env.SSO_FORCE === "true";
+  return process.env.SSO_FORCE?.trim() === "true";
 }
 
 export function getSamlConfig(): SamlConfig {
