@@ -81,7 +81,11 @@ function DonutPercentLabel({
   value: number;
   className?: string;
 }) {
-  const n = Math.min(100, Math.max(0, Math.round(Number(value))));
+  const raw = Number(value);
+  const n = Math.min(
+    100,
+    Math.max(0, Math.round(Number.isFinite(raw) ? raw : 0))
+  );
   return (
     <div
       className={cn(
@@ -491,7 +495,7 @@ export function ExploreFeedTab() {
           (r.authorName || "").toLowerCase().includes(q)
       );
       return (
-        p.content.toLowerCase().includes(q) ||
+        (p.content || "").toLowerCase().includes(q) ||
         name.includes(q) ||
         inReplies
       );
@@ -746,8 +750,8 @@ export function ExploreFeedTab() {
 
   const membersModalStat = useMemo(() => {
     if (!seeWhoInterest) return undefined;
-    return restStats.find((s) => s.interest === seeWhoInterest);
-  }, [seeWhoInterest, restStats]);
+    return stats.find((s) => s.interest === seeWhoInterest);
+  }, [seeWhoInterest, stats]);
 
   return (
     <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 p-3 pt-2 sm:p-4 max-w-7xl mx-auto w-full">
@@ -880,7 +884,6 @@ export function ExploreFeedTab() {
                 .join("")
                 .slice(0, 2)
                 .toUpperCase();
-              const photo = post.authorPhotoUrl?.trim() || undefined;
               const imgs = post.imageUrls || [];
               const replies = post.replies || [];
               const showReply = replyOpen === post.id;
@@ -894,7 +897,10 @@ export function ExploreFeedTab() {
                     <div className="flex items-start gap-3">
                       <Link href={`/user/${post.userId}`} className="shrink-0">
                         <Avatar className="h-10 w-10 border border-white/10">
-                          <AvatarImage src={photo} alt="" />
+                          <AvatarImage
+                            src={post.authorPhotoUrl?.trim() || undefined}
+                            alt=""
+                          />
                           <AvatarFallback className="bg-cyan-500/20 text-cyan-300 text-xs">
                             {initials}
                           </AvatarFallback>
