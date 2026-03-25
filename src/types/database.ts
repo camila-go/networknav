@@ -75,6 +75,11 @@ export interface Database {
         Insert: UserPhotoInsert;
         Update: UserPhotoUpdate;
       };
+      moderation_queue: {
+        Row: ModerationQueueRow;
+        Insert: ModerationQueueInsert;
+        Update: ModerationQueueUpdate;
+      };
     };
     Functions: {
       match_profiles: {
@@ -125,6 +130,8 @@ export interface UserProfileRow {
   created_at: string;
   updated_at: string;
   
+  role: string;
+
   // Extended fields for Jynx leadership profiles
   position?: string;
   title?: string;
@@ -135,6 +142,7 @@ export interface UserProfileRow {
 }
 
 export interface UserProfileInsert {
+  role?: string;
   id?: string;
   user_id?: string | null;
   email?: string | null;
@@ -159,6 +167,7 @@ export interface UserProfileInsert {
 }
 
 export interface UserProfileUpdate {
+  role?: string;
   id?: string;
   user_id?: string | null;
   email?: string | null;
@@ -594,6 +603,50 @@ export interface UserPhotoInsert {
 export interface UserPhotoUpdate {
   caption?: string | null;
   display_order?: number;
+}
+
+// ============================================
+// Moderation Queue Table
+// ============================================
+
+export type ModerationContentType = 'post' | 'reply' | 'message' | 'profile' | 'photo';
+export type ModerationReason = 'auto_flagged' | 'user_report' | 'manual_review';
+export type ModerationQueueStatus = 'pending' | 'approved' | 'rejected' | 'deleted';
+
+export interface ModerationQueueRow {
+  id: string;
+  content_type: ModerationContentType;
+  content_id: string;
+  user_id: string;
+  content_snapshot: string | null;
+  image_url: string | null;
+  reason: ModerationReason;
+  report_id: string | null;
+  status: ModerationQueueStatus;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  reviewer_notes: string | null;
+  created_at: string;
+}
+
+export interface ModerationQueueInsert {
+  id?: string;
+  content_type: ModerationContentType;
+  content_id: string;
+  user_id: string;
+  content_snapshot?: string | null;
+  image_url?: string | null;
+  reason: ModerationReason;
+  report_id?: string | null;
+  status?: ModerationQueueStatus;
+  created_at?: string;
+}
+
+export interface ModerationQueueUpdate {
+  status?: ModerationQueueStatus;
+  reviewed_by?: string | null;
+  reviewed_at?: string | null;
+  reviewer_notes?: string | null;
 }
 
 // ============================================

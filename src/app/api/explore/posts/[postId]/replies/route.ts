@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
 import { resolveExploreAuthors } from "@/lib/explore-resolve-authors";
 import { addExploreReply, getExplorePost } from "@/lib/stores/explore-posts-store";
+import { autoModerateContent } from "@/lib/moderation/queue";
 
 const MAX_REPLY = 1500;
 
@@ -69,6 +70,14 @@ export async function POST(
         .single();
 
       if (!error && data) {
+        // Auto-moderate reply (non-blocking)
+        autoModerateContent({
+          contentType: "reply",
+          contentId: data.id,
+          userId,
+          text: content,
+        });
+
         return NextResponse.json({
           success: true,
           data: await enrichReply({
@@ -93,6 +102,15 @@ export async function POST(
       );
     }
     const reply = addExploreReply(postId, userId, content);
+
+    // Auto-moderate reply (non-blocking)
+    autoModerateContent({
+      contentType: "reply",
+      contentId: reply.id,
+      userId,
+      text: content,
+    });
+
     return NextResponse.json({
       success: true,
       data: await enrichReply({

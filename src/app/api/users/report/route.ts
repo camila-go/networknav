@@ -3,6 +3,7 @@ import { requireSupabaseAdmin, isSupabaseConfigured } from '@/lib/supabase/clien
 import { authenticateRequest, getUserProfile } from '@/lib/auth/middleware';
 import { reportUserSchema } from '@/lib/validation/schemas';
 import { checkRateLimit } from '@/lib/security/rateLimit';
+import { addToModerationQueue } from '@/lib/moderation/queue';
 import { z } from 'zod';
 
 /**
@@ -101,6 +102,16 @@ export async function POST(req: NextRequest) {
       blocker_id: profile.id,
       blocked_id: reportedUserId,
     } as never);
+
+    // Bridge report into moderation queue for admin review (non-blocking)
+    addToModerationQueue({
+      contentType: 'profile',
+      contentId: reportedUserId,
+      userId: reportedUserId,
+      contentSnapshot: `Report reason: ${reason}${description ? ` — ${description}` : ''}`,
+      reason: 'user_report',
+      reportId: report?.id as string | undefined,
+    }).catch((err) => console.error('Failed to add report to moderation queue:', err));
 
     return NextResponse.json({
       success: true,

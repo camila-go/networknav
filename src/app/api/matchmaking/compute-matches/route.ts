@@ -70,14 +70,12 @@ export async function POST(req: NextRequest) {
 
     // Compute matches for all users (admin/background job)
     if (forAllUsers) {
-      const adminEmails = (process.env.ADMIN_EMAILS || '')
-        .split(',')
-        .map(e => e.trim().toLowerCase())
-        .filter(Boolean);
-
-      if (!user.email || !adminEmails.includes(user.email.toLowerCase())) {
+      // Check admin role (bootstrapped from ADMIN_EMAILS on login)
+      const { isAdmin } = await import('@/lib/auth/rbac');
+      const session = await import('@/lib/auth/session').then(m => m.getSession());
+      if (!session || !isAdmin(session)) {
         return NextResponse.json(
-          { error: 'Forbidden. Admin access required.' },
+          { success: false, error: 'Forbidden. Admin access required.' },
           { status: 403 }
         );
       }

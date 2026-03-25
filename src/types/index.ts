@@ -2,10 +2,13 @@
 // Core User Types
 // ============================================
 
+export type UserRole = "user" | "moderator" | "admin";
+
 export interface User {
   id: string;
   email: string;
   passwordHash: string;
+  role: UserRole;
   profile: UserProfile;
   questionnaireCompleted: boolean;
   createdAt: Date;
@@ -215,7 +218,9 @@ export type NotificationType =
   | "request_reminder"
   | "questionnaire_reminder"
   | "badge_earned"
-  | "profile_frame_unlocked";
+  | "profile_frame_unlocked"
+  | "content_removed"
+  | "content_warning";
 
 export interface Notification {
   id: string;
@@ -398,6 +403,7 @@ export interface PaginatedResponse<T> {
 export interface AuthSession {
   userId: string;
   email: string;
+  role: UserRole;
   expiresAt: Date;
 }
 
@@ -545,6 +551,32 @@ export const POINT_VALUES: Record<ActivityType, number> = {
   intro_requested: 10,
   explore_pass: 2,
 };
+
+// ============================================
+// Moderation Types
+// ============================================
+
+export type ModerationContentType = "post" | "reply" | "message" | "profile" | "photo";
+export type ModerationReason = "auto_flagged" | "user_report" | "manual_review";
+export type ModerationStatus = "pending" | "approved" | "rejected" | "deleted";
+
+export interface ModerationItem {
+  id: string;
+  contentType: ModerationContentType;
+  contentId: string;
+  userId: string;
+  userName: string;
+  userPhotoUrl?: string;
+  contentSnapshot: string;
+  imageUrl?: string;
+  reason: ModerationReason;
+  reportId?: string;
+  status: ModerationStatus;
+  reviewedBy?: string;
+  reviewedAt?: Date;
+  reviewerNotes?: string;
+  createdAt: Date;
+}
 
 export const BADGE_DEFINITIONS: BadgeDefinition[] = [
   {

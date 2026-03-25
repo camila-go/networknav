@@ -34,6 +34,7 @@ export async function GET() {
         user: {
           id: user.id,
           email: user.email,
+          role: user.role || 'user',
           profile: {
             name: user.name,
             position: user.position,

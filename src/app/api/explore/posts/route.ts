@@ -11,6 +11,7 @@ import {
   summarizeReactions,
   summarizeReplyReactions,
 } from "@/lib/stores/explore-reactions-store";
+import { autoModerateContent } from "@/lib/moderation/queue";
 import type { AuthorInfo } from "@/lib/explore-resolve-authors";
 
 const MAX_CONTENT = 2000;
@@ -332,6 +333,15 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (!error && data) {
+        // Auto-moderate content (non-blocking)
+        autoModerateContent({
+          contentType: "post",
+          contentId: data.id,
+          userId,
+          text: content,
+          imageUrl: imageUrls[0],
+        });
+
         const emptyReplyRx = new Map<string, RxSummary>();
         return NextResponse.json({
           success: true,
@@ -353,6 +363,16 @@ export async function POST(request: NextRequest) {
     }
 
     const record = addExplorePost(userId, content, imageUrls);
+
+    // Auto-moderate content (non-blocking)
+    autoModerateContent({
+      contentType: "post",
+      contentId: record.id,
+      userId,
+      text: content,
+      imageUrl: imageUrls[0],
+    });
+
     const emptyReplyRx = new Map<string, RxSummary>();
     return NextResponse.json({
       success: true,

@@ -19,6 +19,10 @@ import type {
   MeetingStatus,
   MeetingType,
   CalendarPlatform,
+  UserRole,
+  ModerationContentType,
+  ModerationReason,
+  ModerationStatus,
 } from "@/types";
 
 // ============================================
@@ -35,6 +39,7 @@ export const users = pgTable("users", {
   company: varchar("company", { length: 255 }),
   photoUrl: text("photo_url"),
   location: varchar("location", { length: 255 }),
+  role: varchar("role", { length: 20 }).$type<UserRole>().default("user").notNull(),
   questionnaireCompleted: boolean("questionnaire_completed")
     .default(false)
     .notNull(),
@@ -423,4 +428,49 @@ export const userPhotosRelations = relations(userPhotos, ({ one }) => ({
     references: [users.id],
   }),
 }));
+
+// ============================================
+// Moderation Queue Table
+// ============================================
+
+export const moderationQueue = pgTable("moderation_queue", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  contentType: varchar("content_type", { length: 30 })
+    .$type<ModerationContentType>()
+    .notNull(),
+  contentId: uuid("content_id").notNull(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  contentSnapshot: text("content_snapshot"),
+  imageUrl: text("image_url"),
+  reason: varchar("reason", { length: 50 }).$type<ModerationReason>().notNull(),
+  reportId: uuid("report_id").references(() => reports.id),
+  status: varchar("status", { length: 20 })
+    .$type<ModerationStatus>()
+    .default("pending")
+    .notNull(),
+  reviewedBy: uuid("reviewed_by").references(() => users.id),
+  reviewedAt: timestamp("reviewed_at"),
+  reviewerNotes: text("reviewer_notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const moderationQueueRelations = relations(
+  moderationQueue,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [moderationQueue.userId],
+      references: [users.id],
+    }),
+    report: one(reports, {
+      fields: [moderationQueue.reportId],
+      references: [reports.id],
+    }),
+    reviewer: one(users, {
+      fields: [moderationQueue.reviewedBy],
+      references: [users.id],
+    }),
+  })
+);
 

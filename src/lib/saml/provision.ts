@@ -42,6 +42,7 @@ export async function provisionSamlUser(
           id: data.id,
           email: data.email,
           passwordHash: data.password_hash || "SAML_SSO_NO_PASSWORD",
+          role: data.role || "user",
           name: data.name,
           position: data.position || data.title || "",
           title: data.title || data.position || "",
@@ -106,6 +107,7 @@ export async function provisionSamlUser(
     id: userId,
     email,
     passwordHash,
+    role: "user",
     name: attrs.name,
     title: attrs.title,
     position: attrs.title, // same IdP field mapped to both

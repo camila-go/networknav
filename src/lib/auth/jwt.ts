@@ -1,6 +1,6 @@
 import { SignJWT, jwtVerify } from "jose";
 import bcrypt from "bcryptjs";
-import type { AuthSession } from "@/types";
+import type { AuthSession, UserRole } from "@/types";
 
 // ============================================
 // Environment & Secret Configuration
@@ -70,6 +70,7 @@ export async function verifyPassword(
 export async function createAccessToken(payload: {
   userId: string;
   email: string;
+  role: UserRole;
 }): Promise<string> {
   return new SignJWT(payload)
     .setProtectedHeader({ alg: "HS256" })
@@ -92,6 +93,7 @@ export async function verifyAccessToken(token: string): Promise<AuthSession | nu
     return {
       userId: payload.userId as string,
       email: payload.email as string,
+      role: (payload.role as UserRole) || "user",
       expiresAt: new Date((payload.exp as number) * 1000),
     };
   } catch {

@@ -45,10 +45,14 @@ drizzle/
 *.json.key
 service-account*.json
 
-# SAML SP certificates/keys
+# SAML certificates/keys
 sp-key.pem
 sp-cert.pem
 *.pem
+*.crt
+IDP-*.xml
+certs/
 
 # Claude Code local settings
 .claude/settings.local.json
+.vercel

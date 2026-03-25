@@ -4,6 +4,24 @@ All notable changes to NetworkNav (Jynx) will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- **SAML SSO dev IdP configuration**: configured Strategic Education dev IdP (`devsso.strategiced.com`) with entry point URL and signing certificate; moved IdP metadata and cert to `certs/` directory; updated `.gitignore` to exclude `*.crt`, `IDP-*.xml`, and `certs/`
+
+### Added
+- **RBAC system**: `UserRole` type (`user`/`moderator`/`admin`), `role` column on `user_profiles` table, role included in JWT access tokens and `AuthSession`; `ADMIN_EMAILS` env var auto-promotes users to admin on login (`src/types/index.ts`, `src/lib/auth/jwt.ts`, `src/lib/auth/session.ts`, `src/lib/stores/users-store.ts`)
+- **RBAC utilities**: `requireAdmin()`, `requireModerator()`, `isAdmin()`, `isModerator()`, `hasMinRole()` helpers with role hierarchy (`src/lib/auth/rbac.ts`)
+- **Admin panel**: new `(admin)` route group with role-gated layout, sidebar navigation, and three pages — dashboard overview, user management, and content moderation queue (`src/app/(admin)/`, `src/components/admin/`)
+- **Admin dashboard** (`/admin`): stat cards showing total users, pending moderation items, reports this week, and active users; links to moderation queue when items are pending
+- **User management** (`/admin/users`, admin only): searchable/filterable user table with pagination, role change dialog, password reset (generates temp password), and account deletion with confirmation; all actions backed by `/api/admin/users` and `/api/admin/users/[userId]` API routes
+- **Content moderation queue** (`/admin/moderation`, admin + moderator): card-based review interface with one-click Approve/Remove/Warn actions, bulk select, status tabs (Pending/All), and content type filters; backed by `/api/admin/moderation`, `/api/admin/moderation/[itemId]`, and `/api/admin/moderation/bulk` API routes
+- **Moderation pipeline**: auto-flagging via OpenAI moderation API on explore post and reply creation; user reports now bridge into the moderation queue for admin review (`src/lib/moderation/queue.ts`, `src/app/api/explore/posts/route.ts`, `src/app/api/users/report/route.ts`)
+- **Moderation queue table**: `moderation_queue` with content snapshots, reasons (auto_flagged/user_report/manual_review), reviewer tracking, and audit trail; Drizzle schema docs and DB types added (`src/db/schema.ts`, `src/types/database.ts`, `SUPABASE_SETUP.md`)
+- `content_removed` and `content_warning` notification types for moderation actions
+- Admin nav link (Shield icon) visible to admin/moderator users in dashboard header navigation (`src/components/dashboard/nav.tsx`)
+
+### Changed
+- `compute-matches` admin guard now uses RBAC `isAdmin()` check instead of raw `ADMIN_EMAILS` comparison (`src/app/api/matchmaking/compute-matches/route.ts`)
+
 ### Fixed
 - Fix 413 Payload Too Large on avatar/gallery uploads: switched from proxying files through Vercel API routes (4.5 MB limit) to direct browser-to-Supabase uploads via signed URLs; max file size increased to 10 MB (`src/app/api/profile/avatar/upload-url/route.ts`, `src/app/api/profile/photos/upload-url/route.ts`)
 - Fix 500 on user photo gallery: added `user_photos` table migration (`supabase/migrations/20260318_add_user_photos_table.sql`) with RLS policies; updated `SUPABASE_SETUP.md` with table setup, storage bucket creation instructions, and migration reference

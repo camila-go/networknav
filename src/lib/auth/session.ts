@@ -75,6 +75,7 @@ async function refreshSession(refreshToken: string): Promise<AuthSession | null>
   const newAccessToken = await createAccessToken({
     userId: user.id,
     email: user.email,
+    role: user.role || "user",
   });
   const newRefreshToken = await createRefreshToken({ userId: user.id });
 
@@ -83,6 +84,7 @@ async function refreshSession(refreshToken: string): Promise<AuthSession | null>
   return {
     userId: user.id,
     email: user.email,
+    role: user.role || "user",
     expiresAt: new Date(Date.now() + 15 * 60 * 1000),
   };
 }

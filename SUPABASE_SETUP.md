@@ -605,3 +605,35 @@ The scripts are idempotent (`IF NOT EXISTS`) so they are safe to run even if som
 - Verify the `idx_profile_embedding` index was created
 - If Supabase lints warn "Extension in Public", see the migration options in Section A above
 
+---
+
+## RBAC & Moderation Queue Migration
+
+Run these SQL statements to add role-based access control and a content moderation queue:
+
+```sql
+-- Add role column to user_profiles (defaults to 'user')
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS role VARCHAR(20) NOT NULL DEFAULT 'user';
+
+-- Create moderation_queue table
+CREATE TABLE IF NOT EXISTS moderation_queue (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  content_type VARCHAR(30) NOT NULL,
+  content_id UUID NOT NULL,
+  user_id UUID NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
+  content_snapshot TEXT,
+  image_url TEXT,
+  reason VARCHAR(50) NOT NULL,
+  report_id UUID REFERENCES reports(id),
+  status VARCHAR(20) NOT NULL DEFAULT 'pending',
+  reviewed_by UUID REFERENCES user_profiles(id),
+  reviewed_at TIMESTAMP WITH TIME ZONE,
+  reviewer_notes TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_moderation_queue_status ON moderation_queue(status);
+CREATE INDEX IF NOT EXISTS idx_moderation_queue_created ON moderation_queue(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_moderation_queue_user ON moderation_queue(user_id);
+```
+

@@ -8,6 +8,7 @@ import {
 import { users } from "@/lib/stores";
 import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
 import { checkRateLimit } from "@/lib/security/rateLimit";
+import type { UserRole } from "@/types";
 
 // Rate limit for login: 5 attempts per 15 minutes per IP
 const LOGIN_RATE_LIMIT = { maxRequests: 5, windowMs: 15 * 60 * 1000 };
@@ -17,6 +18,7 @@ async function findUserFromSupabase(email: string): Promise<{
   id: string;
   email: string;
   passwordHash: string;
+  role: UserRole;
   name: string;
   position: string;
   title: string;
@@ -25,11 +27,11 @@ async function findUserFromSupabase(email: string): Promise<{
   questionnaireData?: Record<string, unknown>;
 } | null> {
   if (!isSupabaseConfigured || !supabaseAdmin) return null;
-  
+
   try {
     const { data: profile, error } = await supabaseAdmin
       .from('user_profiles')
-      .select('id, email, password_hash, name, position, title, company, questionnaire_completed, questionnaire_data')
+      .select('id, email, password_hash, name, position, title, company, role, questionnaire_completed, questionnaire_data')
       .eq('email', email.toLowerCase())
       .single();
     
@@ -43,6 +45,7 @@ async function findUserFromSupabase(email: string): Promise<{
       id: string;
       email: string;
       password_hash?: string;
+      role?: string;
       name?: string;
       position?: string;
       title?: string;
@@ -64,6 +67,7 @@ async function findUserFromSupabase(email: string): Promise<{
       id: typedProfile.id,
       email: typedProfile.email,
       passwordHash: typedProfile.password_hash,
+      role: (typedProfile.role as UserRole) || 'user',
       name: typedProfile.name || 'User',
       position: typedProfile.position || '',
       title: typedProfile.title || '',
@@ -142,6 +146,7 @@ export async function POST(request: NextRequest) {
           id: supabaseUser.id,
           email: supabaseUser.email,
           passwordHash: supabaseUser.passwordHash,
+          role: supabaseUser.role,
           name: supabaseUser.name,
           position: supabaseUser.position,
           title: supabaseUser.title,
@@ -180,10 +185,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Bootstrap admin role from ADMIN_EMAILS env var
+    const adminEmails = (process.env.ADMIN_EMAILS || '')
+      .split(',')
+      .map(e => e.trim().toLowerCase())
+      .filter(Boolean);
+    if (adminEmails.includes(user.email.toLowerCase()) && (!user.role || user.role === 'user')) {
+      user.role = 'admin';
+      users.set(user.email.toLowerCase(), user);
+      // Persist role upgrade to Supabase
+      if (isSupabaseConfigured && supabaseAdmin) {
+        supabaseAdmin
+          .from('user_profiles')
+          .update({ role: 'admin' } as never)
+          .eq('id', user.id)
+          .then(() => console.log(`Auto-promoted ${user.email} to admin`));
+      }
+    }
+
+    const userRole: UserRole = user.role || 'user';
+
     // Create tokens
     const accessToken = await createAccessToken({
       userId: user.id,
       email: user.email,
+      role: userRole,
     });
     const refreshToken = await createRefreshToken({ userId: user.id });
 
@@ -194,6 +220,7 @@ export async function POST(request: NextRequest) {
         user: {
           id: user.id,
           email: user.email,
+          role: userRole,
           profile: {
             name: user.name,
             position: user.position,

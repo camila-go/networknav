@@ -87,6 +87,7 @@ export async function POST(request: NextRequest) {
       id: userId,
       email: email.toLowerCase(),
       passwordHash,
+      role: 'user' as const,
       name,
       position,
       title,
@@ -165,7 +166,7 @@ export async function POST(request: NextRequest) {
     users.set(email.toLowerCase(), user);
 
     // Create tokens
-    const accessToken = await createAccessToken({ userId, email: user.email });
+    const accessToken = await createAccessToken({ userId, email: user.email, role: 'user' });
     const refreshToken = await createRefreshToken({ userId });
 
     // Create response with user data

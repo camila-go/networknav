@@ -91,6 +91,7 @@ export async function POST(request: NextRequest) {
     const accessToken = await createAccessToken({
       userId: user.id,
       email: user.email,
+      role: user.role || "user",
     });
     const refreshToken = await createRefreshToken({ userId: user.id });
 

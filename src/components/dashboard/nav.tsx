@@ -1,11 +1,13 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Sparkles, User, LogOut, Search, Network } from "lucide-react";
+import { Sparkles, User, LogOut, Search, Network, Shield } from "lucide-react";
 import { Gs26LockupLink } from "@/components/brand/gs26-lockup-link";
 import { cn } from "@/lib/utils";
 import { NotificationBell } from "@/components/notifications/notification-bell";
+import type { UserRole } from "@/types";
 
 const navItems = [
   { href: "/dashboard", label: "Matches", icon: Sparkles },
@@ -16,6 +18,20 @@ const navItems = [
 
 export function DashboardNav() {
   const pathname = usePathname();
+  const [userRole, setUserRole] = useState<UserRole>("user");
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.success && res.data?.user?.role) {
+          setUserRole(res.data.user.role);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const isAdminOrMod = userRole === "admin" || userRole === "moderator";
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -43,8 +59,8 @@ export function DashboardNav() {
                   <button
                     className={cn(
                       "inline-flex items-center justify-center gap-2 px-3 py-2 rounded-full text-sm font-medium transition-all",
-                      isActive 
-                        ? "bg-cyan-500/20 text-cyan-400" 
+                      isActive
+                        ? "bg-cyan-500/20 text-cyan-400"
                         : "text-white/70 hover:bg-white/10 hover:text-white"
                     )}
                   >
@@ -54,6 +70,21 @@ export function DashboardNav() {
                 </Link>
               );
             })}
+            {isAdminOrMod && (
+              <Link href="/admin">
+                <button
+                  className={cn(
+                    "inline-flex items-center justify-center gap-2 px-3 py-2 rounded-full text-sm font-medium transition-all",
+                    pathname.startsWith("/admin")
+                      ? "bg-amber-500/20 text-amber-400"
+                      : "text-amber-400/70 hover:bg-white/10 hover:text-amber-400"
+                  )}
+                >
+                  <Shield className="h-4 w-4" />
+                  <span>Admin</span>
+                </button>
+              </Link>
+            )}
           </div>
 
           <div className="mx-1">

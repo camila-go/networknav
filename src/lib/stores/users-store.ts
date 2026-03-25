@@ -5,10 +5,13 @@
  * (each API route is bundled separately in App Router).
  */
 
+import type { UserRole } from "@/types";
+
 export interface StoredUser {
   id: string;
   email: string;
   passwordHash: string;
+  role: UserRole;
   name: string;
   position: string;
   title: string;
