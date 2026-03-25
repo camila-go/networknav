@@ -3,17 +3,19 @@ import { getSession } from "@/lib/auth";
 import { users, userMatches } from "@/lib/stores";
 import { cookies } from "next/headers";
 import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
+import { isLiveDatabaseMode } from "@/lib/supabase/data-mode";
 import { cache, CACHE_KEYS, CACHE_TTLS } from "@/lib/cache";
-import type { NetworkGraphData, NetworkNode, NetworkEdge, NetworkCluster, MatchType } from "@/types";
+import { calculateMatchScore, determineMatchType, generateConversationStarters } from "@/lib/matching/market-basket-analysis";
+import type { NetworkGraphData, NetworkNode, NetworkEdge, NetworkCluster, MatchType, Match, QuestionnaireData } from "@/types";
 
 async function fetchProfileBasics(
   userId: string
-): Promise<{ name: string; position: string; company?: string; email?: string | null } | null> {
+): Promise<{ name: string; position: string; company?: string; email?: string | null; photoUrl?: string } | null> {
   if (!isSupabaseConfigured || !supabaseAdmin) return null;
   try {
     const { data } = await supabaseAdmin
       .from("user_profiles")
-      .select("name, position, title, company, email")
+      .select("name, position, title, company, email, photo_url")
       .eq("id", userId)
       .maybeSingle();
     if (!data || !(data as { name?: string }).name) return null;
@@ -23,12 +25,14 @@ async function fetchProfileBasics(
       title?: string;
       company?: string;
       email?: string | null;
+      photo_url?: string;
     };
     return {
       name: row.name,
       position: row.position || row.title || "Member",
       company: row.company,
       email: row.email ?? null,
+      photoUrl: row.photo_url,
     };
   } catch {
     return null;
@@ -48,6 +52,93 @@ async function fetchEmailsByIds(ids: string[]): Promise<Map<string, string | nul
     console.error("network route: fetchEmailsByIds", e);
   }
   return map;
+}
+
+/**
+ * Generates matches from Supabase when the in-memory store is empty.
+ * Simplified version of the matches API — uses MBA scoring but skips AI conversation starters.
+ */
+async function ensureMatchesLoaded(currentUserId: string, currentUserEmail?: string): Promise<Match[]> {
+  if (!supabaseAdmin) return [];
+
+  // Find the current user's Supabase profile
+  let supabaseId: string | null = null;
+  if (currentUserId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+    const { data } = await supabaseAdmin.from("user_profiles").select("id").eq("id", currentUserId).single();
+    if (data) supabaseId = (data as { id: string }).id;
+  }
+  if (!supabaseId && currentUserEmail && !currentUserEmail.includes("@jynx.demo")) {
+    const { data } = await supabaseAdmin.from("user_profiles").select("id").eq("email", currentUserEmail.toLowerCase()).single();
+    if (data) supabaseId = (data as { id: string }).id;
+  }
+
+  // Fetch current user's questionnaire data
+  let currentUserQ: Partial<QuestionnaireData> | null = null;
+  if (supabaseId) {
+    const { data } = await supabaseAdmin.from("user_profiles").select("questionnaire_data").eq("id", supabaseId).single();
+    if (data) currentUserQ = ((data as { questionnaire_data?: Record<string, unknown> }).questionnaire_data as Partial<QuestionnaireData>) ?? null;
+  }
+
+  // Fetch all active profiles
+  const { data: profiles, error } = await supabaseAdmin
+    .from("user_profiles")
+    .select("id, name, email, position, title, company, photo_url, questionnaire_data")
+    .eq("is_active", true)
+    .limit(80);
+
+  if (error || !profiles?.length) return [];
+
+  type Profile = { id: string; name: string; email?: string; position?: string; title?: string; company?: string; photo_url?: string; questionnaire_data?: Record<string, unknown> };
+  const typed = profiles as unknown as Profile[];
+  const filtered = typed.filter((p) => {
+    if (supabaseId && p.id === supabaseId) return false;
+    if (p.id === currentUserId) return false;
+    if (currentUserEmail && p.email?.toLowerCase() === currentUserEmail.toLowerCase()) return false;
+    if (!p.name?.trim()) return false;
+    return true;
+  });
+
+  if (!filtered.length) return [];
+
+  const now = new Date();
+  return filtered.map((p) => {
+    const candidateQ = (p.questionnaire_data ?? {}) as Partial<QuestionnaireData>;
+    let score: number, type: "high-affinity" | "strategic", commonalities: Match["commonalities"];
+
+    if (currentUserQ && p.questionnaire_data) {
+      const ms = calculateMatchScore(currentUserQ, candidateQ);
+      type = determineMatchType(ms);
+      score = Math.min(0.95, ms.totalScore);
+      commonalities = ms.commonalities;
+    } else {
+      score = p.questionnaire_data ? 0.65 : 0.50;
+      type = "strategic";
+      commonalities = [];
+    }
+
+    if (commonalities.length === 0) {
+      commonalities = [{ category: "professional" as const, description: p.position ? `${p.position} at ${p.company || "their organization"}` : "Fellow conference attendee", weight: 0.6 }];
+    }
+
+    return {
+      id: `supabase-match-${p.id}`,
+      userId: currentUserId,
+      matchedUserId: p.id,
+      matchedUser: {
+        id: p.id,
+        email: p.email,
+        profile: { name: p.name || "Anonymous", position: p.position || "", title: p.title || "", company: p.company, photoUrl: p.photo_url },
+        questionnaireCompleted: !!p.questionnaire_data,
+      },
+      type,
+      commonalities,
+      conversationStarters: generateConversationStarters(commonalities, type, p.name?.split(" ")[0]),
+      score,
+      generatedAt: now,
+      viewed: false,
+      passed: false,
+    };
+  });
 }
 
 function buildNetworkFromMatches(userId: string): NetworkGraphData {
@@ -93,6 +184,7 @@ function buildNetworkFromMatches(userId: string): NetworkGraphData {
       name: match.matchedUser.profile.name,
       title: match.matchedUser.profile.title || match.matchedUser.profile.position || "Member",
       company: match.matchedUser.profile.company,
+      photoUrl: match.matchedUser.profile.photoUrl,
       matchType,
       commonalityCount: match.commonalities.length,
       commonalities: commonalityDescriptions,
@@ -180,6 +272,18 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json({ success: true, data: cached });
     }
 
+    // Ensure matches are populated — they may be empty if user navigated directly to /network
+    if (!userMatches.get(currentUserId)?.length && isLiveDatabaseMode() && supabaseAdmin) {
+      try {
+        const matches = await ensureMatchesLoaded(currentUserId, session?.email);
+        if (matches.length > 0) {
+          userMatches.set(currentUserId, matches);
+        }
+      } catch (e) {
+        console.error("network route: ensureMatchesLoaded", e);
+      }
+    }
+
     let networkData = buildNetworkFromMatches(currentUserId);
 
     const profile = await fetchProfileBasics(currentUserId);
@@ -190,6 +294,7 @@ export async function GET(_request: NextRequest) {
         center.title = profile.position;
         center.company = profile.company;
         center.email = profile.email ?? undefined;
+        center.photoUrl = profile.photoUrl;
       }
     }
 

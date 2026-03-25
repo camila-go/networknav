@@ -4,6 +4,14 @@ All notable changes to NetworkNav (Jynx) will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+- Fix Network page not showing other users when navigating directly (bypassing Matches page): `/api/network` now auto-generates matches from Supabase when the in-memory store is empty (`src/app/api/network/route.ts`)
+- Fix double-click on network graph nodes not navigating to profile: disabled D3 zoom's built-in dblclick handler and replaced native dblclick with a click-timer pattern that works alongside drag behavior (`src/components/network/network-graph.tsx`)
+- Fix network graph drag behavior: reduced simulation reheat from 0.3 to 0.05 so other nodes don't jitter, and nodes now stay where dropped instead of snapping back (`src/components/network/network-graph.tsx`)
+
+### Added
+- Profile pictures on network graph nodes: nodes with photos show circular avatar with match-type colored border ring; nodes without photos keep gradient + initials fallback (`src/components/network/network-graph.tsx`, `src/app/api/network/route.ts`, `src/types/index.ts`)
+
 ### Removed
 - Remove Feed tab from Explore page; only Search remains (`src/components/explore/explore-container.tsx`, `src/components/explore/explore-feed-tab.tsx`, `src/app/api/explore/`)
 - Remove Meet button from match/attendee cards (`src/components/network/teams-action-buttons.tsx`)

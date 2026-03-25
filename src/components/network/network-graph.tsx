@@ -115,8 +115,8 @@ export function NetworkGraph({
         .attr("opacity", (d) => d.isDiscoverable ? 0.7 : 1);
       circles
         .attr("opacity", 1)
-        .attr("stroke", "rgba(255,255,255,0.3)")
-        .attr("stroke-width", 2);
+        .attr("stroke", (n) => n.photoUrl ? getMatchTypeStrokeColor(n.matchType) : "rgba(255,255,255,0.3)")
+        .attr("stroke-width", (n) => n.photoUrl ? 3 : 2);
       nameLabels.attr("opacity", 1);
       titleLabels.attr("opacity", 1);
       return;
@@ -209,6 +209,14 @@ export function NetworkGraph({
       });
 
     svg.call(zoom);
+    // Disable zoom's built-in double-click-to-zoom so node dblclick works
+    svg.on("dblclick.zoom", null);
+
+    // Track whether a drag occurred to distinguish clicks from drags
+    let didDrag = false;
+    // Click-timer pattern for reliable double-click detection despite drag behavior
+    let clickTimer: ReturnType<typeof setTimeout> | null = null;
+    let lastClickedNodeId: string | null = null;
 
     const g = svg.append("g");
 
@@ -242,6 +250,27 @@ export function NetworkGraph({
       .attr("x2", "100%").attr("y2", "100%");
     discoverableGradient.append("stop").attr("offset", "0%").attr("stop-color", "#8b5cf6");
     discoverableGradient.append("stop").attr("offset", "100%").attr("stop-color", "#a78bfa");
+
+    // Create SVG patterns for nodes with profile pictures
+    nodes.filter(n => n.photoUrl).forEach(n => {
+      const r = getNodeRadius(n);
+      const patternId = `img-${n.id.replace(/[^a-zA-Z0-9]/g, "_")}`;
+      const clipId = `clip-${n.id.replace(/[^a-zA-Z0-9]/g, "_")}`;
+      defs.append("clipPath").attr("id", clipId)
+        .append("circle").attr("r", r).attr("cx", 0).attr("cy", 0);
+      const pattern = defs.append("pattern")
+        .attr("id", patternId)
+        .attr("patternUnits", "objectBoundingBox")
+        .attr("width", 1)
+        .attr("height", 1);
+      pattern.append("image")
+        .attr("href", n.photoUrl!)
+        .attr("width", r * 2)
+        .attr("height", r * 2)
+        .attr("x", 0)
+        .attr("y", 0)
+        .attr("preserveAspectRatio", "xMidYMid slice");
+    });
 
     // Create force simulation with performance-tuned parameters
     const simulation = d3.forceSimulation<SimulationNode>(nodes)
@@ -282,9 +311,9 @@ export function NetworkGraph({
 
     const circles = node.append("circle")
       .attr("r", (d) => getNodeRadius(d))
-      .attr("fill", (d) => getNodeColor(d))
-      .attr("stroke", "rgba(255,255,255,0.3)")
-      .attr("stroke-width", 2)
+      .attr("fill", (d) => getNodeFill(d))
+      .attr("stroke", (d) => d.photoUrl ? getMatchTypeStrokeColor(d.matchType) : "rgba(255,255,255,0.3)")
+      .attr("stroke-width", (d) => d.photoUrl ? 3 : 2)
       .style("filter", "drop-shadow(0 4px 8px rgba(0,0,0,0.3))");
 
     const nameLabels = node.append("text")
@@ -302,7 +331,7 @@ export function NetworkGraph({
       .attr("fill", "rgba(255,255,255,0.5)")
       .text((d) => d.title.length > 20 ? d.title.slice(0, 20) + "..." : d.title);
 
-    node.append("text")
+    node.filter((d) => !d.photoUrl).append("text")
       .attr("dy", "0.35em")
       .attr("text-anchor", "middle")
       .attr("font-size", (d) => Math.max(10, getNodeRadius(d) * 0.6) + "px")
@@ -319,17 +348,33 @@ export function NetworkGraph({
     node
       .on("click", function (event, d) {
         event.stopPropagation();
-        if (selectedNodeIdRef.current === d.id) {
-          setInternalSelectedNodeId(null);
+        // Ignore clicks that were actually drags
+        if (didDrag) { didDrag = false; return; }
+
+        if (lastClickedNodeId === d.id && clickTimer) {
+          // Second click within 300ms — double-click
+          clearTimeout(clickTimer);
+          clickTimer = null;
+          lastClickedNodeId = null;
+          if (d.matchType !== "neutral") {
+            onNodeDoubleClickRef.current?.(d);
+          }
         } else {
-          setInternalSelectedNodeId(d.id);
+          // First click — wait 300ms to see if it's a double-click
+          if (clickTimer) clearTimeout(clickTimer);
+          lastClickedNodeId = d.id;
+          clickTimer = setTimeout(() => {
+            clickTimer = null;
+            lastClickedNodeId = null;
+            // Single click — toggle selection
+            if (selectedNodeIdRef.current === d.id) {
+              setInternalSelectedNodeId(null);
+            } else {
+              setInternalSelectedNodeId(d.id);
+            }
+            onNodeClickRef.current?.(d);
+          }, 300);
         }
-        onNodeClickRef.current?.(d);
-      })
-      .on("dblclick", function (event, d) {
-        event.stopPropagation();
-        if (d.matchType === "neutral") return;
-        onNodeDoubleClickRef.current?.(d);
       });
 
     // Click on background to deselect
@@ -355,23 +400,25 @@ export function NetworkGraph({
     // Drag behavior
     function drag(simulation: d3.Simulation<SimulationNode, SimulationLink>) {
       function dragstarted(event: d3.D3DragEvent<SVGGElement, SimulationNode, SimulationNode>) {
-        if (!event.active) simulation.alphaTarget(0.3).restart();
+        didDrag = false;
+        if (!event.active) simulation.alphaTarget(0.05).restart();
         event.subject.fx = event.subject.x;
         event.subject.fy = event.subject.y;
       }
 
       function dragged(event: d3.D3DragEvent<SVGGElement, SimulationNode, SimulationNode>) {
+        didDrag = true;
         event.subject.fx = event.x;
         event.subject.fy = event.y;
       }
 
       function dragended(event: d3.D3DragEvent<SVGGElement, SimulationNode, SimulationNode>) {
         if (!event.active) simulation.alphaTarget(0);
-        event.subject.fx = null;
-        event.subject.fy = null;
+        // Keep fx/fy so the node stays where the user dropped it
       }
 
       return d3.drag<SVGGElement, SimulationNode>()
+        .filter((event) => !event.button)
         .on("start", dragstarted)
         .on("drag", dragged)
         .on("end", dragended);
@@ -379,6 +426,7 @@ export function NetworkGraph({
 
     return () => {
       simulation.stop();
+      if (clickTimer) clearTimeout(clickTimer);
       linkSelectionRef.current = null;
       circleSelectionRef.current = null;
       nameLabelRef.current = null;
@@ -415,6 +463,23 @@ function getNodeColor(node: NetworkNode): string {
       return "url(#discoverableGradient)";
     default:
       return "url(#neutralGradient)";
+  }
+}
+
+function getNodeFill(node: NetworkNode): string {
+  if (node.photoUrl) {
+    const patternId = `img-${node.id.replace(/[^a-zA-Z0-9]/g, "_")}`;
+    return `url(#${patternId})`;
+  }
+  return getNodeColor(node);
+}
+
+function getMatchTypeStrokeColor(matchType: string): string {
+  switch (matchType) {
+    case "high-affinity": return "#14b8a6";
+    case "strategic": return "#fbbf24";
+    case "discoverable": return "#a78bfa";
+    default: return "#06b6d4";
   }
 }
 

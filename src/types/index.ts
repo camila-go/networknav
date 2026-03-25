@@ -351,6 +351,7 @@ export interface NetworkNode {
   company?: string;
   /** For Teams meeting deep link */
   email?: string | null;
+  photoUrl?: string;
   matchType: MatchType | "neutral" | "discoverable";
   commonalityCount: number;
   commonalities: string[];

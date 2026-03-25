@@ -17,6 +17,7 @@ vi.mock("d3", () => {
     call: vi.fn().mockReturnThis(),
     select: vi.fn().mockReturnThis(),
     remove: vi.fn().mockReturnThis(),
+    filter: vi.fn().mockReturnThis(),
   };
 
   const mockSimulation = {
@@ -51,6 +52,7 @@ vi.mock("d3", () => {
       radius: vi.fn().mockReturnThis(),
     }),
     drag: vi.fn().mockReturnValue({
+      filter: vi.fn().mockReturnThis(),
       on: vi.fn().mockReturnThis(),
     }),
   };
