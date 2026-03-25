@@ -14,9 +14,6 @@ import type { UserRole } from "@/types";
 const LOGIN_RATE_LIMIT = { maxRequests: 5, windowMs: 15 * 60 * 1000 };
 
 // Helper to find user from Supabase and add to memory store
-// Track last lookup failure for debug response
-let lastSupabaseLookupError = '';
-
 async function findUserFromSupabase(email: string): Promise<{
   id: string;
   email: string;
@@ -29,24 +26,22 @@ async function findUserFromSupabase(email: string): Promise<{
   questionnaireCompleted: boolean;
   questionnaireData?: Record<string, unknown>;
 } | null> {
-  if (!isSupabaseConfigured || !supabaseAdmin) {
-    lastSupabaseLookupError = `not_configured(cfg=${isSupabaseConfigured},admin=${!!supabaseAdmin})`;
-    return null;
-  }
+  if (!isSupabaseConfigured || !supabaseAdmin) return null;
 
   try {
+    // Use select("*") to avoid errors when optional columns (e.g. role) don't exist yet
     const { data: profile, error } = await supabaseAdmin
       .from('user_profiles')
-      .select('id, email, password_hash, name, position, title, company, role, questionnaire_completed, questionnaire_data')
+      .select('*')
       .eq('email', email.toLowerCase())
       .single();
 
     if (error || !profile) {
-      lastSupabaseLookupError = `query_error(${error?.message || 'no_profile'},code=${error?.code})`;
+      console.log('Supabase profile lookup error:', error?.message || 'No profile found');
       return null;
     }
-    
-    // Type assertion since we're selecting specific columns
+
+    // Type assertion since we're selecting all columns
     const typedProfile = profile as {
       id: string;
       email: string;
@@ -59,16 +54,16 @@ async function findUserFromSupabase(email: string): Promise<{
       questionnaire_completed?: boolean;
       questionnaire_data?: Record<string, unknown>;
     };
-    
+
     // Check if we have a password hash stored
     if (!typedProfile.password_hash) {
       console.log('User found in Supabase but no password hash stored - column may be missing');
       console.log('Run: ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS password_hash TEXT;');
       return null;
     }
-    
+
     console.log('✅ User loaded from Supabase:', typedProfile.name, typedProfile.email);
-    
+
     return {
       id: typedProfile.id,
       email: typedProfile.email,
@@ -90,10 +85,10 @@ async function findUserFromSupabase(email: string): Promise<{
 export async function POST(request: NextRequest) {
   try {
     // Get IP for rate limiting (use forwarded IP in production)
-    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() 
-      || request.headers.get("x-real-ip") 
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+      || request.headers.get("x-real-ip")
       || "unknown";
-    
+
     // Check rate limit before processing
     const rateLimitResult = await checkRateLimit(
       `login:${ip}`,
@@ -101,20 +96,20 @@ export async function POST(request: NextRequest) {
       LOGIN_RATE_LIMIT.maxRequests,
       LOGIN_RATE_LIMIT.windowMs
     );
-    
+
     if (!rateLimitResult.allowed) {
       return NextResponse.json(
         {
           success: false,
           error: "Too many login attempts. Please try again later.",
-          retryAfter: rateLimitResult.resetTime 
+          retryAfter: rateLimitResult.resetTime
             ? Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000)
             : 900,
         },
-        { 
+        {
           status: 429,
           headers: {
-            "Retry-After": String(rateLimitResult.resetTime 
+            "Retry-After": String(rateLimitResult.resetTime
               ? Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000)
               : 900),
           },
@@ -141,14 +136,12 @@ export async function POST(request: NextRequest) {
 
     // Find user from in-memory store first
     let user = users.get(email.toLowerCase());
-    
+
     // If not in memory, try Supabase
-    let debugInfo = '';
     if (!user) {
-      debugInfo += 'not_in_memory;';
+      console.log(`User ${email} not in memory, checking Supabase...`);
       const supabaseUser = await findUserFromSupabase(email);
       if (supabaseUser) {
-        debugInfo += 'found_in_supabase;';
         // Create a properly typed user object
         const storedUser = {
           id: supabaseUser.id,
@@ -166,19 +159,16 @@ export async function POST(request: NextRequest) {
         // Add to memory store for future lookups
         users.set(email.toLowerCase(), storedUser);
         user = users.get(email.toLowerCase());
-      } else {
-        debugInfo += `supabase_miss:${lastSupabaseLookupError};`;
+        console.log(`User ${email} loaded from Supabase`);
       }
     }
 
     if (!user) {
-      console.log(`User ${email} not found. Debug: ${debugInfo}`);
+      console.log(`User ${email} not found in memory or Supabase`);
       return NextResponse.json(
         {
           success: false,
           error: "Invalid email or password",
-          // TODO: Remove debug after fixing login
-          debug: debugInfo,
         },
         { status: 401 }
       );
@@ -272,4 +262,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

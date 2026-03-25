@@ -7,7 +7,7 @@ All notable changes to NetworkNav (Jynx) will be documented in this file.
 ### Fixed
 - Fix SSO button not appearing on login page: Vercel env vars (`SSO_ENABLED`, `SAML_ENTRY_POINT`, `SAML_IDP_CERT`) had trailing newlines from `echo` piping; re-added with clean values via `printf`. Added `.trim()` to env var comparisons in `src/app/(auth)/login/page.tsx` and `src/lib/saml/config.ts` to prevent whitespace/CRLF from breaking SSO feature flag checks.
 - Fix session refresh using wrong key to look up user: `refreshSession()` in `src/lib/auth/session.ts` used `users.get(userId)` but the Map is keyed by email; switched to `getUserById()` helper
-- Add diagnostic logging to login route for Supabase lookup failures
+- Fix login failing on production: Supabase query explicitly selected `role` column which doesn't exist in the DB yet (RBAC `ALTER TABLE` was never run); switched to `select("*")` to gracefully handle missing optional columns
 
 ### Added
 - **SAML SSO dev IdP configuration**: configured Strategic Education dev IdP (`devsso.strategiced.com`) with entry point URL and signing certificate; moved IdP metadata and cert to `certs/` directory; updated `.gitignore` to exclude `*.crt`, `IDP-*.xml`, and `certs/`
