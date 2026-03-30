@@ -46,7 +46,7 @@ export function getSamlConfig(): SamlConfig {
     decryptionPvk: process.env.SAML_SP_KEY || undefined,
     signatureAlgorithm: "sha256",
     digestAlgorithm: "sha256",
-    wantAssertionsSigned: true,
+    wantAssertionsSigned: false,
     wantAuthnResponseSigned: false,
     // PingFederate may not support the default PasswordProtectedTransport context
     disableRequestedAuthnContext: true,
