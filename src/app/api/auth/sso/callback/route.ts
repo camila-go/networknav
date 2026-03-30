@@ -62,28 +62,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Log the SAMLResponse for debugging signature issues
-    const responseXml = Buffer.from(samlResponse, "base64").toString("utf-8");
-    // Extract the cert embedded in the assertion (if any)
-    const embeddedCertMatch = responseXml.match(
-      /<ds:X509Certificate[^>]*>([^<]+)<\/ds:X509Certificate>/
-    );
-    const configCert = process.env.SAML_IDP_CERT?.trim();
-    // Check where the signature is — on the Response, the Assertion, or both
-    const hasResponseSignature = /<samlp:Response[^>]*>[\s\S]*?<ds:Signature/.test(
-      responseXml.split("<saml:Assertion")[0]
-    );
-    const hasAssertionSignature = /<saml:Assertion[\s\S]*?<ds:Signature/.test(responseXml);
-    console.log("SAML callback debug:", {
-      hasResponse: true,
-      responseLength: samlResponse.length,
-      embeddedCert: embeddedCertMatch?.[1]?.substring(0, 60) + "...",
-      configCert: configCert?.substring(0, 60) + "...",
-      certsMatch: embeddedCertMatch?.[1]?.replace(/\s/g, "") === configCert?.replace(/\s/g, ""),
-      hasResponseSignature,
-      hasAssertionSignature,
-    });
-
     // Validate the SAML assertion
     const saml = getSaml();
     const { profile } = await saml.validatePostResponseAsync({
