@@ -5,7 +5,12 @@ All notable changes to NetworkNav (Jynx) will be documented in this file.
 ## [Unreleased]
 
 ### Fixed
+- Fix likely cause of PingFederate 502 on SP-initiated SSO: disable `RequestedAuthnContext` (node-saml default `PasswordProtectedTransport` may not be supported by IdP) and set `AllowCreate=false` in NameIDPolicy (enterprise IdPs reject account creation from SP requests) (`src/lib/saml/config.ts`)
 - Fix SSO error messages leaking internal env var names to end users; trim `SAML_IDP_CERT` and `SAML_ENTRY_POINT` env vars to prevent Vercel whitespace issues (`src/lib/saml/config.ts`, `src/app/api/auth/sso/callback/route.ts`)
+
+### Added
+- SSO debug endpoint (`GET /api/auth/sso/debug`) that decodes and displays the AuthnRequest XML, redirect URL, and SAML config for diagnosing SP-initiated flow issues with the IdP; gated by `SSO_DEBUG_SECRET` in production (`src/app/api/auth/sso/debug/route.ts`)
+- Logging of SAML redirect URL and SAMLRequest size in SP-initiated login route for Vercel log debugging (`src/app/api/auth/sso/login/route.ts`)
 
 ### Fixed
 - Fix 102 TypeScript errors caused by Supabase SDK v2.95.3 type mismatch: convert all `interface` Row/Insert/Update types to `type` aliases (interfaces lack implicit index signatures required by `GenericSchema`), add `Relationships: []` and `Views: {}` to Database schema, add missing `notifications`/`notification_preferences` tables, `explore_passes` column, `increment_gamification_stats` RPC, `expires_at` on connections, `bio` on StoredUser, notification templates for `content_removed`/`content_warning`, SAML `idpCert` field name and `ValidateInResponseTo` enum (`src/types/database.ts`, `src/types/index.ts`, + 10 other files)

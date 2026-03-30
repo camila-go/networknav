@@ -48,6 +48,10 @@ export function getSamlConfig(): SamlConfig {
     digestAlgorithm: "sha256",
     wantAssertionsSigned: true,
     wantAuthnResponseSigned: false,
+    // PingFederate may not support the default PasswordProtectedTransport context
+    disableRequestedAuthnContext: true,
+    // Enterprise IdPs reject AllowCreate=true (they don't create accounts from SP requests)
+    allowCreate: false,
     // Allow IdP-initiated SSO (no InResponseTo) while validating when present
     validateInResponseTo: ValidateInResponseTo.never,
   };

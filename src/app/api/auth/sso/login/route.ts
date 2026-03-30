@@ -19,6 +19,15 @@ export async function GET() {
     const saml = getSaml();
     const loginUrl = await saml.getAuthorizeUrlAsync("", undefined, {});
 
+    // Log the redirect URL (truncated) for debugging SP-initiated flow issues
+    const url = new URL(loginUrl);
+    console.log(
+      "SAML SP-initiated login: redirecting to",
+      url.origin + url.pathname,
+      "| SAMLRequest length:",
+      url.searchParams.get("SAMLRequest")?.length ?? 0
+    );
+
     return NextResponse.redirect(loginUrl);
   } catch (error) {
     console.error("SAML login initiation error:", error);
