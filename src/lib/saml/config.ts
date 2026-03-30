@@ -5,7 +5,7 @@
  * The SAML instance is lazy-initialized as a singleton.
  */
 
-import { SAML, type SamlConfig } from "@node-saml/node-saml";
+import { SAML, ValidateInResponseTo, type SamlConfig } from "@node-saml/node-saml";
 
 const APP_URL =
   process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
@@ -19,13 +19,19 @@ export function isSsoForced(): boolean {
 }
 
 export function getSamlConfig(): SamlConfig {
-  const entryPoint = process.env.SAML_ENTRY_POINT;
-  const idpCert = process.env.SAML_IDP_CERT;
+  const entryPoint = process.env.SAML_ENTRY_POINT?.trim();
+  const idpCert = process.env.SAML_IDP_CERT?.trim();
 
-  if (!entryPoint || !idpCert) {
+  if (!entryPoint) {
     throw new Error(
-      "SAML SSO is enabled but SAML_ENTRY_POINT and SAML_IDP_CERT are not configured. " +
-        "Please set these environment variables."
+      "SSO is not fully configured: IdP entry point is missing. " +
+        "Please contact the administrator."
+    );
+  }
+  if (!idpCert) {
+    throw new Error(
+      "SSO is not fully configured: IdP certificate is missing. " +
+        "Please contact the administrator."
     );
   }
 
@@ -35,7 +41,7 @@ export function getSamlConfig(): SamlConfig {
       process.env.SAML_ISSUER || `${APP_URL}/api/auth/sso/metadata`,
     callbackUrl:
       process.env.SAML_CALLBACK_URL || `${APP_URL}/api/auth/sso/callback`,
-    cert: idpCert,
+    idpCert,
     privateKey: process.env.SAML_SP_KEY || undefined,
     decryptionPvk: process.env.SAML_SP_KEY || undefined,
     signatureAlgorithm: "sha256",
@@ -43,7 +49,7 @@ export function getSamlConfig(): SamlConfig {
     wantAssertionsSigned: true,
     wantAuthnResponseSigned: false,
     // Allow IdP-initiated SSO (no InResponseTo) while validating when present
-    validateInResponseTo: "never",
+    validateInResponseTo: ValidateInResponseTo.never,
   };
 }
 

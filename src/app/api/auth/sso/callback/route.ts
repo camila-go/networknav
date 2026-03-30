@@ -124,8 +124,14 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("SAML callback error:", error);
 
-    const message =
+    const rawMessage =
       error instanceof Error ? error.message : "SAML authentication failed";
+
+    // Show a user-friendly message for config errors instead of
+    // leaking internal env var names to the SSO team / end users
+    const message = rawMessage.includes("not fully configured")
+      ? rawMessage
+      : "SSO login failed. Please contact the administrator.";
 
     // Redirect to login with error instead of returning JSON,
     // since this is a browser redirect flow

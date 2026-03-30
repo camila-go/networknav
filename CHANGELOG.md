@@ -4,6 +4,19 @@ All notable changes to NetworkNav (Jynx) will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+- Fix SSO error messages leaking internal env var names to end users; trim `SAML_IDP_CERT` and `SAML_ENTRY_POINT` env vars to prevent Vercel whitespace issues (`src/lib/saml/config.ts`, `src/app/api/auth/sso/callback/route.ts`)
+
+### Fixed
+- Fix 102 TypeScript errors caused by Supabase SDK v2.95.3 type mismatch: convert all `interface` Row/Insert/Update types to `type` aliases (interfaces lack implicit index signatures required by `GenericSchema`), add `Relationships: []` and `Views: {}` to Database schema, add missing `notifications`/`notification_preferences` tables, `explore_passes` column, `increment_gamification_stats` RPC, `expires_at` on connections, `bio` on StoredUser, notification templates for `content_removed`/`content_warning`, SAML `idpCert` field name and `ValidateInResponseTo` enum (`src/types/database.ts`, `src/types/index.ts`, + 10 other files)
+
+### Added
+- "People You Could Meet" discoverable contacts section on network tab: always-visible horizontal scrollable row of purple-themed cards showing people reachable through your connections, with bridge person attribution (`src/components/network/network-container.tsx`)
+- Discoverable purple bubble nodes shown on D3 network graph by default (3 nodes), not only when a connection is selected (`src/components/network/network-container.tsx`)
+
+### Fixed
+- Fix mobile network cards incorrectly branded as "Extended Network" with purple styling: reframed as "Your Matches" with match-type-appropriate colors (teal for high-affinity, amber for strategic), removed misleading "Connection Path" visualization (`src/components/network/network-container.tsx`)
+
 ### Added
 - Conversational onboarding questionnaire: replace traditional form wizard with chat-style interface guided by "Jynx" concierge character; questions appear as chat messages with structured inputs inline, and Jynx reacts to each answer with AI-generated (Gemini) or canned contextual reactions (`src/components/questionnaire/conversational-wizard.tsx`, `src/components/questionnaire/chat-message.tsx`)
 - AI question reaction generator with canned fallback templates (`src/lib/ai/generative.ts`, `src/lib/questionnaire-reactions.ts`, `src/app/api/questionnaire/reaction/route.ts`)
