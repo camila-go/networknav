@@ -3,48 +3,56 @@
 // Auto-generated types for database tables
 // ============================================
 
-export interface Database {
+export type Database = {
   public: {
     Tables: {
       user_profiles: {
         Row: UserProfileRow;
         Insert: UserProfileInsert;
         Update: UserProfileUpdate;
+        Relationships: [];
       };
       matches: {
         Row: MatchRow;
         Insert: MatchInsert;
         Update: MatchUpdate;
+        Relationships: [];
       };
       meeting_integrations: {
         Row: MeetingIntegrationRow;
         Insert: MeetingIntegrationInsert;
         Update: MeetingIntegrationUpdate;
+        Relationships: [];
       };
       scheduled_meetings: {
         Row: ScheduledMeetingRow;
         Insert: ScheduledMeetingInsert;
         Update: ScheduledMeetingUpdate;
+        Relationships: [];
       };
       meeting_requests: {
         Row: MeetingRequestRow;
         Insert: MeetingRequestInsert;
         Update: MeetingRequestUpdate;
+        Relationships: [];
       };
       connections: {
         Row: ConnectionRow;
         Insert: ConnectionInsert;
         Update: ConnectionUpdate;
+        Relationships: [];
       };
       messages: {
         Row: MessageRow;
         Insert: MessageInsert;
         Update: MessageUpdate;
+        Relationships: [];
       };
       reports: {
         Row: ReportRow;
         Insert: ReportInsert;
         Update: ReportUpdate;
+        Relationships: [];
       };
       user_gamification_stats: {
         Row: UserGamificationStatsRow;
@@ -74,13 +82,28 @@ export interface Database {
         Row: UserPhotoRow;
         Insert: UserPhotoInsert;
         Update: UserPhotoUpdate;
+        Relationships: [];
       };
       moderation_queue: {
         Row: ModerationQueueRow;
         Insert: ModerationQueueInsert;
         Update: ModerationQueueUpdate;
+        Relationships: [];
+      };
+      notifications: {
+        Row: NotificationRow;
+        Insert: NotificationInsert;
+        Update: NotificationUpdate;
+        Relationships: [];
+      };
+      notification_preferences: {
+        Row: NotificationPreferencesRow;
+        Insert: NotificationPreferencesInsert;
+        Update: NotificationPreferencesUpdate;
+        Relationships: [];
       };
     };
+    Views: {};
     Functions: {
       match_profiles: {
         Args: {
@@ -105,15 +128,24 @@ export interface Database {
         };
         Returns: void;
       };
+      increment_gamification_stats: {
+        Args: {
+          p_user_id: string;
+          p_points: number;
+          p_stat_field: string;
+          p_last_active: string;
+        };
+        Returns: void;
+      };
     };
   };
-}
+};
 
 // ============================================
 // User Profiles Table
 // ============================================
 
-export interface UserProfileRow {
+export type UserProfileRow = {
   id: string;
   user_id: string | null;
   email: string | null;
@@ -129,7 +161,7 @@ export interface UserProfileRow {
   blocked_users: string[];
   created_at: string;
   updated_at: string;
-  
+
   role: string;
 
   // Extended fields for Jynx leadership profiles
@@ -139,9 +171,9 @@ export interface UserProfileRow {
   photo_url?: string;
   questionnaire_completed?: boolean;
   questionnaire_data?: Record<string, unknown>;
-}
+};
 
-export interface UserProfileInsert {
+export type UserProfileInsert = {
   role?: string;
   id?: string;
   user_id?: string | null;
@@ -164,9 +196,9 @@ export interface UserProfileInsert {
   photo_url?: string;
   questionnaire_completed?: boolean;
   questionnaire_data?: Record<string, unknown>;
-}
+};
 
-export interface UserProfileUpdate {
+export type UserProfileUpdate = {
   role?: string;
   id?: string;
   user_id?: string | null;
@@ -188,34 +220,34 @@ export interface UserProfileUpdate {
   photo_url?: string;
   questionnaire_completed?: boolean;
   questionnaire_data?: Record<string, unknown>;
-}
+};
 
 // ============================================
 // Matches Table
 // ============================================
 
-export interface MatchRow {
+export type MatchRow = {
   id: string;
   user_id: string;
   matched_user_id: string;
   similarity_score: number;
   created_at: string;
-}
+};
 
-export interface MatchInsert {
+export type MatchInsert = {
   id?: string;
   user_id: string;
   matched_user_id: string;
   similarity_score: number;
   created_at?: string;
-}
+};
 
-export interface MatchUpdate {
+export type MatchUpdate = {
   id?: string;
   user_id?: string;
   matched_user_id?: string;
   similarity_score?: number;
-}
+};
 
 // ============================================
 // Meeting Integrations Table
@@ -223,7 +255,7 @@ export interface MatchUpdate {
 
 export type MeetingPlatform = 'google' | 'microsoft';
 
-export interface MeetingIntegrationRow {
+export type MeetingIntegrationRow = {
   id: string;
   user_id: string;
   platform: MeetingPlatform;
@@ -232,9 +264,9 @@ export interface MeetingIntegrationRow {
   expires_at: string | null;
   created_at: string;
   updated_at: string;
-}
+};
 
-export interface MeetingIntegrationInsert {
+export type MeetingIntegrationInsert = {
   id?: string;
   user_id: string;
   platform: MeetingPlatform;
@@ -243,14 +275,14 @@ export interface MeetingIntegrationInsert {
   expires_at?: string | null;
   created_at?: string;
   updated_at?: string;
-}
+};
 
-export interface MeetingIntegrationUpdate {
+export type MeetingIntegrationUpdate = {
   access_token?: string;
   refresh_token?: string | null;
   expires_at?: string | null;
   updated_at?: string;
-}
+};
 
 // ============================================
 // Scheduled Meetings Table
@@ -259,7 +291,7 @@ export interface MeetingIntegrationUpdate {
 export type ScheduledMeetingPlatform = 'google_meet' | 'teams';
 export type ScheduledMeetingStatus = 'scheduled' | 'completed' | 'cancelled';
 
-export interface ScheduledMeetingRow {
+export type ScheduledMeetingRow = {
   id: string;
   host_user_id: string;
   guest_user_id: string;
@@ -271,9 +303,9 @@ export interface ScheduledMeetingRow {
   end_time: string;
   status: ScheduledMeetingStatus;
   created_at: string;
-}
+};
 
-export interface ScheduledMeetingInsert {
+export type ScheduledMeetingInsert = {
   id?: string;
   host_user_id: string;
   guest_user_id: string;
@@ -285,16 +317,16 @@ export interface ScheduledMeetingInsert {
   end_time: string;
   status?: ScheduledMeetingStatus;
   created_at?: string;
-}
+};
 
-export interface ScheduledMeetingUpdate {
+export type ScheduledMeetingUpdate = {
   meeting_link?: string;
   meeting_id?: string | null;
   title?: string;
   start_time?: string;
   end_time?: string;
   status?: ScheduledMeetingStatus;
-}
+};
 
 // ============================================
 // Reports Table
@@ -302,7 +334,7 @@ export interface ScheduledMeetingUpdate {
 
 export type ReportStatus = 'pending' | 'reviewed' | 'resolved';
 
-export interface ReportRow {
+export type ReportRow = {
   id: string;
   reporter_id: string;
   reported_user_id: string;
@@ -310,9 +342,9 @@ export interface ReportRow {
   description: string | null;
   status: ReportStatus;
   created_at: string;
-}
+};
 
-export interface ReportInsert {
+export type ReportInsert = {
   id?: string;
   reporter_id: string;
   reported_user_id: string;
@@ -320,13 +352,13 @@ export interface ReportInsert {
   description?: string | null;
   status?: ReportStatus;
   created_at?: string;
-}
+};
 
-export interface ReportUpdate {
+export type ReportUpdate = {
   reason?: string;
   description?: string | null;
   status?: ReportStatus;
-}
+};
 
 // ============================================
 // Meeting Requests Table
@@ -335,7 +367,7 @@ export interface ReportUpdate {
 export type MeetingRequestStatus = 'pending' | 'scheduled' | 'declined' | 'cancelled' | 'completed';
 export type MeetingType = 'video' | 'coffee' | 'conference' | 'phone';
 
-export interface MeetingRequestRow {
+export type MeetingRequestRow = {
   id: string;
   requester_id: string;
   recipient_id: string;
@@ -348,9 +380,9 @@ export interface MeetingRequestRow {
   meeting_link: string | null;
   created_at: string;
   updated_at: string;
-}
+};
 
-export interface MeetingRequestInsert {
+export type MeetingRequestInsert = {
   id?: string;
   requester_id: string;
   recipient_id: string;
@@ -363,14 +395,14 @@ export interface MeetingRequestInsert {
   meeting_link?: string | null;
   created_at?: string;
   updated_at?: string;
-}
+};
 
-export interface MeetingRequestUpdate {
+export type MeetingRequestUpdate = {
   status?: MeetingRequestStatus;
   accepted_time?: string | null;
   meeting_link?: string | null;
   updated_at?: string;
-}
+};
 
 // ============================================
 // Connections Table
@@ -378,7 +410,7 @@ export interface MeetingRequestUpdate {
 
 export type ConnectionStatus = 'pending' | 'accepted' | 'declined';
 
-export interface ConnectionRow {
+export type ConnectionRow = {
   id: string;
   requester_id: string;
   recipient_id: string;
@@ -386,9 +418,10 @@ export interface ConnectionRow {
   message: string | null;
   created_at: string;
   updated_at: string;
-}
+  expires_at: string | null;
+};
 
-export interface ConnectionInsert {
+export type ConnectionInsert = {
   id?: string;
   requester_id: string;
   recipient_id: string;
@@ -396,44 +429,44 @@ export interface ConnectionInsert {
   message?: string | null;
   created_at?: string;
   updated_at?: string;
-}
+};
 
-export interface ConnectionUpdate {
+export type ConnectionUpdate = {
   status?: ConnectionStatus;
   updated_at?: string;
-}
+};
 
 // ============================================
 // Messages Table
 // ============================================
 
-export interface MessageRow {
+export type MessageRow = {
   id: string;
   connection_id: string;
   sender_id: string;
   content: string;
   read: boolean;
   created_at: string;
-}
+};
 
-export interface MessageInsert {
+export type MessageInsert = {
   id?: string;
   connection_id: string;
   sender_id: string;
   content: string;
   read?: boolean;
   created_at?: string;
-}
+};
 
-export interface MessageUpdate {
+export type MessageUpdate = {
   read?: boolean;
-}
+};
 
 // ============================================
 // Gamification Tables
 // ============================================
 
-export interface UserGamificationStatsRow {
+export type UserGamificationStatsRow = {
   id: string;
   user_id: string;
   total_points: number;
@@ -443,6 +476,7 @@ export interface UserGamificationStatsRow {
   meetings_scheduled: number;
   connections_made: number;
   intros_requested: number;
+  explore_passes: number;
   current_daily_streak: number;
   current_weekly_streak: number;
   longest_daily_streak: number;
@@ -451,9 +485,9 @@ export interface UserGamificationStatsRow {
   weekly_goal: number | null;
   created_at: string;
   updated_at: string;
-}
+};
 
-export interface UserGamificationStatsInsert {
+export type UserGamificationStatsInsert = {
   id?: string;
   user_id: string;
   total_points?: number;
@@ -463,6 +497,7 @@ export interface UserGamificationStatsInsert {
   meetings_scheduled?: number;
   connections_made?: number;
   intros_requested?: number;
+  explore_passes?: number;
   current_daily_streak?: number;
   current_weekly_streak?: number;
   longest_daily_streak?: number;
@@ -471,9 +506,9 @@ export interface UserGamificationStatsInsert {
   weekly_goal?: number | null;
   created_at?: string;
   updated_at?: string;
-}
+};
 
-export interface UserGamificationStatsUpdate {
+export type UserGamificationStatsUpdate = {
   total_points?: number;
   points_this_week?: number;
   points_this_month?: number;
@@ -481,6 +516,7 @@ export interface UserGamificationStatsUpdate {
   meetings_scheduled?: number;
   connections_made?: number;
   intros_requested?: number;
+  explore_passes?: number;
   current_daily_streak?: number;
   current_weekly_streak?: number;
   longest_daily_streak?: number;
@@ -489,27 +525,27 @@ export interface UserGamificationStatsUpdate {
   weekly_goal?: number | null;
   updated_at?: string;
   [key: string]: unknown;
-}
+};
 
-export interface UserActivityRow {
+export type UserActivityRow = {
   id: string;
   user_id: string;
   activity_type: string;
   points_earned: number;
   metadata: Record<string, unknown>;
   created_at: string;
-}
+};
 
-export interface UserActivityInsert {
+export type UserActivityInsert = {
   id?: string;
   user_id: string;
   activity_type: string;
   points_earned: number;
   metadata?: Record<string, unknown>;
   created_at?: string;
-}
+};
 
-export interface UserBadgeRow {
+export type UserBadgeRow = {
   id: string;
   user_id: string;
   badge_type: string;
@@ -517,9 +553,9 @@ export interface UserBadgeRow {
   progress: number;
   earned_at: string;
   updated_at: string;
-}
+};
 
-export interface UserBadgeInsert {
+export type UserBadgeInsert = {
   id?: string;
   user_id: string;
   badge_type: string;
@@ -527,15 +563,15 @@ export interface UserBadgeInsert {
   progress?: number;
   earned_at?: string;
   updated_at?: string;
-}
+};
 
-export interface UserBadgeUpdate {
+export type UserBadgeUpdate = {
   tier?: string;
   progress?: number;
   updated_at?: string;
-}
+};
 
-export interface UserStreakRow {
+export type UserStreakRow = {
   id: string;
   user_id: string;
   streak_type: string;
@@ -548,9 +584,9 @@ export interface UserStreakRow {
   freezes_used_this_week: number;
   created_at: string;
   updated_at: string;
-}
+};
 
-export interface UserStreakInsert {
+export type UserStreakInsert = {
   id?: string;
   user_id: string;
   streak_type: string;
@@ -563,9 +599,9 @@ export interface UserStreakInsert {
   freezes_used_this_week?: number;
   created_at?: string;
   updated_at?: string;
-}
+};
 
-export interface UserStreakUpdate {
+export type UserStreakUpdate = {
   current_streak?: number;
   longest_streak?: number;
   last_activity_date?: string | null;
@@ -574,13 +610,13 @@ export interface UserStreakUpdate {
   streak_frozen_until?: string | null;
   freezes_used_this_week?: number;
   updated_at?: string;
-}
+};
 
 // ============================================
 // User Photos Table
 // ============================================
 
-export interface UserPhotoRow {
+export type UserPhotoRow = {
   id: string;
   user_id: string;
   storage_key: string;
@@ -588,9 +624,9 @@ export interface UserPhotoRow {
   caption: string | null;
   display_order: number;
   created_at: string;
-}
+};
 
-export interface UserPhotoInsert {
+export type UserPhotoInsert = {
   id?: string;
   user_id: string;
   storage_key: string;
@@ -598,12 +634,12 @@ export interface UserPhotoInsert {
   caption?: string | null;
   display_order?: number;
   created_at?: string;
-}
+};
 
-export interface UserPhotoUpdate {
+export type UserPhotoUpdate = {
   caption?: string | null;
   display_order?: number;
-}
+};
 
 // ============================================
 // Moderation Queue Table
@@ -613,7 +649,7 @@ export type ModerationContentType = 'post' | 'reply' | 'message' | 'profile' | '
 export type ModerationReason = 'auto_flagged' | 'user_report' | 'manual_review';
 export type ModerationQueueStatus = 'pending' | 'approved' | 'rejected' | 'deleted';
 
-export interface ModerationQueueRow {
+export type ModerationQueueRow = {
   id: string;
   content_type: ModerationContentType;
   content_id: string;
@@ -627,9 +663,9 @@ export interface ModerationQueueRow {
   reviewed_at: string | null;
   reviewer_notes: string | null;
   created_at: string;
-}
+};
 
-export interface ModerationQueueInsert {
+export type ModerationQueueInsert = {
   id?: string;
   content_type: ModerationContentType;
   content_id: string;
@@ -640,20 +676,74 @@ export interface ModerationQueueInsert {
   report_id?: string | null;
   status?: ModerationQueueStatus;
   created_at?: string;
-}
+};
 
-export interface ModerationQueueUpdate {
+export type ModerationQueueUpdate = {
   status?: ModerationQueueStatus;
   reviewed_by?: string | null;
   reviewed_at?: string | null;
   reviewer_notes?: string | null;
-}
+};
+
+// ============================================
+// Notifications Table
+// ============================================
+
+export type NotificationRow = {
+  id: string;
+  user_id: string;
+  type: string;
+  title: string;
+  body: string;
+  data: Record<string, unknown> | null;
+  read: boolean;
+  created_at: string;
+};
+
+export type NotificationInsert = {
+  id?: string;
+  user_id: string;
+  type: string;
+  title: string;
+  body: string;
+  data?: Record<string, unknown> | null;
+  read?: boolean;
+  created_at?: string;
+};
+
+export type NotificationUpdate = {
+  read?: boolean;
+};
+
+// ============================================
+// Notification Preferences Table
+// ============================================
+
+export type NotificationPreferencesRow = {
+  user_id: string;
+  email: boolean;
+  in_app: boolean;
+  push: boolean;
+};
+
+export type NotificationPreferencesInsert = {
+  user_id: string;
+  email?: boolean;
+  in_app?: boolean;
+  push?: boolean;
+};
+
+export type NotificationPreferencesUpdate = {
+  email?: boolean;
+  in_app?: boolean;
+  push?: boolean;
+};
 
 // ============================================
 // Function Return Types
 // ============================================
 
-export interface MatchProfileResult {
+export type MatchProfileResult = {
   id: string;
   name: string;
   bio: string | null;
@@ -661,5 +751,4 @@ export interface MatchProfileResult {
   location: string | null;
   age: number | null;
   similarity: number;
-}
-
+};

@@ -26,6 +26,8 @@ const NOTIFICATION_ICONS: Record<NotificationType, React.ReactNode> = {
   questionnaire_reminder: <Bell className="h-4 w-4 text-orange-400" />,
   badge_earned: <Trophy className="h-4 w-4 text-amber-400" />,
   profile_frame_unlocked: <UserCircle className="h-4 w-4 text-cyan-400" />,
+  content_removed: <AlertCircle className="h-4 w-4 text-red-400" />,
+  content_warning: <AlertCircle className="h-4 w-4 text-amber-400" />,
 };
 
 export function NotificationList({ onClose }: NotificationListProps) {

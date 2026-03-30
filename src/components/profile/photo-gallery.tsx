@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { ChevronLeft, ChevronRight, Plus, Trash2, Pencil, Check, X, ChevronUp, ChevronDown, Loader2, Images } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Trash2, Pencil, Check, X, ChevronUp, ChevronDown, Loader2, Image } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import type { UserPhoto } from "@/types";
@@ -261,7 +261,7 @@ export function PhotoGallery({ userId, isOwner, withContainer = false, container
         </div>
       ) : photos.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-10 text-white/30">
-          <Images className="h-10 w-10 mb-2" />
+          <Image className="h-10 w-10 mb-2" />
           <p className="text-sm">No photos yet</p>
           {isOwner && <p className="text-xs mt-1">Add photos to share your journey</p>}
         </div>

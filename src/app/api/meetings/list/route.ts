@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireSupabaseAdmin, isSupabaseConfigured } from '@/lib/supabase/client';
 import { authenticateRequest, getUserProfile } from '@/lib/auth/middleware';
+import type { ScheduledMeetingStatus } from '@/types/database';
 
 export async function GET(req: NextRequest) {
   try {
@@ -59,7 +60,7 @@ export async function GET(req: NextRequest) {
 
     // Filter by status
     if (status) {
-      query = query.eq('status', status);
+      query = query.eq('status', status as ScheduledMeetingStatus);
     }
 
     // Filter upcoming only

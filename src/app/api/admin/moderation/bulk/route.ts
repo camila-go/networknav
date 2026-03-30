@@ -50,7 +50,7 @@ export async function PATCH(request: NextRequest) {
       };
 
       for (const item of items) {
-        const table = tableMap[item.content_type];
+        const table = tableMap[item.content_type] as "messages" | "user_photos" | undefined;
         if (table) {
           await supabaseAdmin.from(table).delete().eq("id", item.content_id);
         }

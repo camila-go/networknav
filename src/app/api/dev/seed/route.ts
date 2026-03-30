@@ -259,6 +259,7 @@ export async function POST() {
         id,
         email: seed.email,
         passwordHash,
+        role: 'user',
         name: seed.name,
         position: seed.position,
         title: seed.title,

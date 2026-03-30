@@ -144,37 +144,66 @@ export function NetworkContainer() {
     };
   }, [networkData, yourConnectionIds]);
 
-  // Enhanced network data with discoverable contacts shown as nodes when a connection is selected
+  // Enhanced network data with discoverable contacts shown as purple nodes on the graph
   const enhancedNetworkData = useMemo(() => {
     if (!networkData) return null;
-    if (!selectedNode || selectedNode.matchType === "neutral") return networkData;
 
-    const discoverableContacts = getDiscoverableContacts(selectedNode.id);
-    if (discoverableContacts.length === 0) return networkData;
-
-    // Create new nodes for discoverable contacts (purple "potential" connections)
-    const newNodes: NetworkNode[] = discoverableContacts.map(contact => ({
-      id: contact.id,
-      name: contact.name,
-      title: contact.title,
-      company: contact.company,
-      matchType: "discoverable" as MatchType, // We'll handle this specially in the graph
-      commonalityCount: 0,
-      commonalities: [contact.reason],
-    }));
-
-    // Create edges from selected node to discoverable contacts
-    const newEdges: NetworkEdge[] = discoverableContacts.map(contact => ({
-      source: selectedNode.id,
-      target: contact.id,
-      strength: 0.5,
-      commonalities: [contact.reason],
-    }));
-
-    // Filter out any nodes that already exist in the network
     const existingNodeIds = new Set(networkData.nodes.map(n => n.id));
+    let newNodes: NetworkNode[] = [];
+    let newEdges: NetworkEdge[] = [];
+
+    if (selectedNode && selectedNode.matchType !== "neutral") {
+      // When a node is selected, show its discoverable contacts
+      const contacts = getDiscoverableContacts(selectedNode.id);
+      newNodes = contacts.map(contact => ({
+        id: contact.id,
+        name: contact.name,
+        title: contact.title,
+        company: contact.company,
+        matchType: "discoverable" as MatchType,
+        commonalityCount: 0,
+        commonalities: [contact.reason],
+      }));
+      newEdges = contacts.map(contact => ({
+        source: selectedNode.id,
+        target: contact.id,
+        strength: 0.5,
+        commonalities: [contact.reason],
+      }));
+    } else {
+      // When no node selected, show a few discoverable nodes by default
+      const sampleNodes = networkData.nodes
+        .filter(n => n.matchType !== "neutral" && extendedNetwork[n.id]?.length > 0)
+        .slice(0, 3);
+
+      for (const node of sampleNodes) {
+        const contact = extendedNetwork[node.id]?.[0];
+        if (contact && !existingNodeIds.has(contact.id)) {
+          newNodes.push({
+            id: contact.id,
+            name: contact.name,
+            title: contact.title,
+            company: contact.company,
+            matchType: "discoverable" as MatchType,
+            commonalityCount: 0,
+            commonalities: [contact.reason],
+          });
+          newEdges.push({
+            source: node.id,
+            target: contact.id,
+            strength: 0.5,
+            commonalities: [contact.reason],
+          });
+        }
+      }
+    }
+
+    // Filter out any nodes that already exist
     const uniqueNewNodes = newNodes.filter(n => !existingNodeIds.has(n.id));
-    const uniqueNewEdges = newEdges.filter(e => !existingNodeIds.has(e.target as string));
+    const allNodeIds = new Set([...existingNodeIds, ...uniqueNewNodes.map(n => n.id)]);
+    const uniqueNewEdges = newEdges.filter(e => allNodeIds.has(e.target as string) && !existingNodeIds.has(e.target as string));
+
+    if (uniqueNewNodes.length === 0) return networkData;
 
     return {
       ...networkData,
@@ -192,6 +221,25 @@ export function NetworkContainer() {
       return node.matchType === filter;
     });
   }, [networkData, filter]);
+
+  // Flattened discoverable contacts for the "People You Could Meet" section
+  const discoverableContacts = useMemo(() => {
+    const seen = new Set<string>();
+    const contacts: (ExtendedContact & { bridgeName: string })[] = [];
+
+    for (const [nodeId, contactList] of Object.entries(extendedNetwork)) {
+      const bridgeNode = networkData?.nodes.find(n => n.id === nodeId);
+      if (!bridgeNode) continue;
+      for (const contact of contactList) {
+        if (!seen.has(contact.id)) {
+          seen.add(contact.id);
+          contacts.push({ ...contact, bridgeName: bridgeNode.name });
+        }
+      }
+      if (contacts.length >= 12) break;
+    }
+    return contacts;
+  }, [extendedNetwork, networkData]);
 
   function handleNodeClick(node: NetworkNode) {
     if (node.matchType === "neutral") return;
@@ -314,6 +362,43 @@ export function NetworkContainer() {
             </Button>
           </div>
         </div>
+
+        {/* Discoverable contacts - "People You Could Meet" */}
+        {discoverableContacts.length > 0 && (
+          <div className="mb-4">
+            <div className="flex items-center gap-2 mb-2 px-1">
+              <div className="w-5 h-5 rounded-full bg-gradient-to-r from-violet-500 to-purple-500 flex items-center justify-center">
+                <Users className="h-3 w-3 text-white" />
+              </div>
+              <span className="text-sm font-medium text-white/70">People You Could Meet</span>
+              <span className="text-xs text-violet-300/50 ml-auto">{discoverableContacts.length} people</span>
+            </div>
+            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+              {discoverableContacts.map(contact => (
+                <Link
+                  key={contact.id}
+                  href={`/user/${contact.id}`}
+                  className="flex-shrink-0 w-40 flex flex-col items-center gap-1.5 p-3 rounded-xl bg-gradient-to-b from-violet-500/10 to-purple-900/20 border border-violet-500/20 hover:border-violet-500/40 hover:bg-violet-500/15 transition-colors"
+                >
+                  <Avatar className="h-10 w-10 border-2 border-violet-400/30">
+                    <AvatarFallback className="text-xs font-semibold bg-gradient-to-br from-violet-500 to-purple-500 text-white">
+                      {contact.name.split(" ").map(n => n[0]).join("")}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-sm text-white font-medium text-center truncate w-full">
+                    {contact.name}
+                  </span>
+                  <span className="text-[11px] text-white/50 text-center truncate w-full">
+                    {contact.title}
+                  </span>
+                  <span className="text-[10px] text-violet-300/60 text-center truncate w-full">
+                    via {contact.bridgeName.split(" ")[0]}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Mobile card view - shown on small screens */}
         <NetworkMobileCards
@@ -981,8 +1066,8 @@ function NetworkMobileCards({
     return (
       <div className="md:hidden flex-1 flex items-center justify-center">
         <div className="text-center py-8">
-          <Network className="h-12 w-12 text-violet-400/30 mx-auto mb-3" />
-          <p className="text-white/50">No extended network to explore</p>
+          <Network className="h-12 w-12 text-cyan-400/30 mx-auto mb-3" />
+          <p className="text-white/50">No matches to show</p>
         </div>
       </div>
     );
@@ -990,17 +1075,17 @@ function NetworkMobileCards({
 
   return (
     <div className="md:hidden flex-1 flex flex-col">
-      {/* Header - network exploration context */}
+      {/* Header */}
       <div className="flex items-center justify-between mb-3 px-1">
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-full bg-gradient-to-r from-violet-500 to-purple-500 flex items-center justify-center">
+          <div className="w-6 h-6 rounded-full bg-gradient-to-r from-cyan-500 to-teal-500 flex items-center justify-center">
             <Network className="h-3 w-3 text-white" />
           </div>
           <span className="text-sm font-medium text-white/70">
-            Extended Network
+            Your Matches
           </span>
         </div>
-        <span className="text-xs text-violet-300/60">{activeIndex + 1} of {nodes.length}</span>
+        <span className="text-xs text-white/50">{activeIndex + 1} of {nodes.length}</span>
       </div>
 
       {/* Swipeable cards */}
@@ -1015,89 +1100,41 @@ function NetworkMobileCards({
           return (
             <div
               key={node.id}
-              className="flex-shrink-0 w-[85vw] max-w-[340px] snap-start overflow-hidden rounded-2xl bg-gradient-to-b from-violet-500/10 to-purple-900/20 border border-violet-500/20"
+              className={cn(
+                "flex-shrink-0 w-[85vw] max-w-[340px] snap-start overflow-hidden rounded-2xl border",
+                node.matchType === "high-affinity"
+                  ? "bg-gradient-to-b from-teal-500/10 to-teal-900/20 border-teal-500/20"
+                  : "bg-gradient-to-b from-amber-500/10 to-amber-900/20 border-amber-500/20"
+              )}
             >
-              {/* Connection path visualization */}
-              <div className="px-4 pt-4 pb-3 bg-gradient-to-b from-violet-500/5 to-transparent">
-                <p className="text-[10px] uppercase tracking-widest text-violet-300/50 text-center mb-3">
-                  Connection Path
-                </p>
-                <div className="flex items-center justify-center gap-1">
-                  {/* You */}
-                  <div className="flex flex-col items-center">
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center text-[10px] font-bold text-black border-2 border-cyan-400/50">
-                      You
-                    </div>
-                  </div>
-                  
-                  {/* Connection line to bridge */}
-                  <div className="flex items-center w-8">
-                    <div className="h-0.5 flex-1 bg-gradient-to-r from-cyan-500/60 to-violet-500/60" />
-                    <div className="w-1 h-1 rounded-full bg-violet-400" />
-                  </div>
-                  
-                  {/* Bridge connection(s) */}
-                  {mutualConnections.length > 0 ? (
-                    <>
-                      <button
-                        onClick={() => onNodeSelect(mutualConnections[0])}
-                        className="flex flex-col items-center"
-                      >
-                        <Avatar className="h-9 w-9 border-2 border-violet-400/50 ring-2 ring-violet-400/20">
-                          <AvatarFallback className="text-[10px] font-semibold bg-gradient-to-br from-violet-500 to-purple-500 text-white">
-                            {mutualConnections[0].name.split(" ").map(n => n[0]).join("")}
-                          </AvatarFallback>
-                        </Avatar>
-                      </button>
-                      
-                      {/* Connection line to target */}
-                      <div className="flex items-center w-8">
-                        <div className="w-1 h-1 rounded-full bg-violet-400" />
-                        <div className="h-0.5 flex-1 bg-gradient-to-r from-violet-500/60 to-fuchsia-500/60" />
-                      </div>
-                    </>
-                  ) : (
-                    <div className="flex items-center w-8">
-                      <div className="h-0.5 flex-1 bg-gradient-to-r from-violet-500/40 to-fuchsia-500/40" />
-                    </div>
-                  )}
-                  
-                  {/* Target person */}
-                  <button
-                    onClick={() => onNodeSelect(node)}
-                    className="flex flex-col items-center"
-                  >
-                    <Avatar className="h-11 w-11 border-2 border-violet-400/50 ring-2 ring-violet-400/30">
-                      <AvatarFallback className={cn(
-                        "font-semibold",
-                        node.matchType === "high-affinity"
-                          ? "bg-gradient-to-br from-teal-500 to-teal-400 text-black"
-                          : "bg-gradient-to-br from-amber-500 to-amber-400 text-black"
-                      )}>
-                        {node.name.split(" ").map(n => n[0]).join("")}
-                      </AvatarFallback>
-                    </Avatar>
-                  </button>
-                </div>
-                
-                {mutualConnections.length > 0 && (
-                  <p className="text-center text-[11px] text-violet-300/70 mt-2">
-                    via {mutualConnections[0].name.split(" ")[0]}
-                    {mutualConnections.length > 1 && ` and ${mutualConnections.length - 1} other${mutualConnections.length > 2 ? 's' : ''}`}
-                  </p>
-                )}
-              </div>
-
               {/* Person details */}
-              <div className="px-4 py-3 text-center">
+              <div className="px-4 pt-4 pb-3 text-center">
+                <button onClick={() => onNodeSelect(node)} className="mx-auto">
+                  <Avatar className={cn(
+                    "h-16 w-16 border-2 mx-auto",
+                    node.matchType === "high-affinity" ? "border-teal-400/50" : "border-amber-400/50"
+                  )}>
+                    <AvatarFallback className={cn(
+                      "text-lg font-semibold",
+                      node.matchType === "high-affinity"
+                        ? "bg-gradient-to-br from-teal-500 to-teal-400 text-black"
+                        : "bg-gradient-to-br from-amber-500 to-amber-400 text-black"
+                    )}>
+                      {node.name.split(" ").map(n => n[0]).join("")}
+                    </AvatarFallback>
+                  </Avatar>
+                </button>
                 <Link href={`/user/${node.id}`}>
-                  <h3 className="font-semibold text-lg text-white cursor-pointer hover:text-violet-300 transition-colors">
+                  <h3 className="font-semibold text-lg text-white cursor-pointer hover:text-cyan-300 transition-colors mt-2">
                     {node.name}
                   </h3>
                 </Link>
                 <p className="text-sm text-white/60">{node.title}</p>
                 {node.company && (
-                  <p className="text-sm text-violet-300">{node.company}</p>
+                  <p className={cn(
+                    "text-sm",
+                    node.matchType === "high-affinity" ? "text-teal-300" : "text-amber-300"
+                  )}>{node.company}</p>
                 )}
                 <Badge
                   className={cn(
@@ -1115,39 +1152,11 @@ function NetworkMobileCards({
                 </Badge>
               </div>
 
-              {/* Shared network section */}
-              {mutualConnections.length > 0 && (
-                <div className="px-4 py-3 bg-violet-500/5 border-t border-violet-500/10">
-                  <p className="text-[10px] font-medium text-violet-300/60 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                    <Network className="h-3 w-3" />
-                    Shared Network ({mutualConnections.length})
-                  </p>
-                  <div className="flex gap-2">
-                    {mutualConnections.slice(0, 3).map((conn) => (
-                      <Link
-                        key={conn.id}
-                        href={`/user/${conn.id}`}
-                        className="flex-1 flex flex-col items-center gap-1 p-2 rounded-full bg-violet-500/10 border border-violet-500/20 hover:bg-violet-500/20 transition-colors"
-                      >
-                        <Avatar className="h-9 w-9 border border-violet-400/30">
-                          <AvatarFallback className="text-xs font-semibold bg-gradient-to-br from-violet-500/80 to-purple-500/80 text-white">
-                            {conn.name.split(" ").map(n => n[0]).join("")}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="text-xs text-white/80 font-medium">
-                          {conn.name.split(" ")[0]}
-                        </span>
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Why explore */}
+              {/* Commonalities */}
               {node.commonalities.length > 0 && (
-                <div className="px-4 py-3 border-t border-violet-500/10">
+                <div className="px-4 py-3 border-t border-white/10">
                   <p className="text-[10px] font-medium text-white/40 uppercase tracking-wider mb-1">
-                    Why explore
+                    What you share
                   </p>
                   <p className="text-sm text-white/80">
                     {node.commonalities[0]}
@@ -1155,8 +1164,46 @@ function NetworkMobileCards({
                 </div>
               )}
 
-              {/* Action buttons - purple theme */}
-              <div className="border-t border-violet-500/20 bg-violet-500/5 flex gap-2 p-3">
+              {/* Mutual connections */}
+              {mutualConnections.length > 0 && (
+                <div className="px-4 py-3 bg-white/5 border-t border-white/10">
+                  <p className="text-[10px] font-medium text-white/50 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <Network className="h-3 w-3" />
+                    Mutual ({mutualConnections.length})
+                  </p>
+                  <div className="flex gap-2">
+                    {mutualConnections.slice(0, 3).map((conn) => (
+                      <button
+                        key={conn.id}
+                        onClick={() => onNodeSelect(conn)}
+                        className="flex-1 flex flex-col items-center gap-1 p-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
+                      >
+                        <Avatar className="h-8 w-8 border border-white/20">
+                          <AvatarFallback className={cn(
+                            "text-xs font-semibold text-black",
+                            conn.matchType === "high-affinity"
+                              ? "bg-gradient-to-br from-teal-500 to-teal-400"
+                              : "bg-gradient-to-br from-amber-500 to-amber-400"
+                          )}>
+                            {conn.name.split(" ").map(n => n[0]).join("")}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-xs text-white/80 font-medium">
+                          {conn.name.split(" ")[0]}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Action buttons */}
+              <div className={cn(
+                "border-t flex gap-2 p-3",
+                node.matchType === "high-affinity"
+                  ? "border-teal-500/20 bg-teal-500/5"
+                  : "border-amber-500/20 bg-amber-500/5"
+              )}>
                 <Link
                   href={`/user/${node.id}`}
                   className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-full text-sm font-medium bg-white/10 text-white hover:bg-white/20 transition-colors"
@@ -1166,10 +1213,15 @@ function NetworkMobileCards({
                 </Link>
                 <button
                   onClick={() => onMeet(node)}
-                  className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-full text-sm font-medium bg-gradient-to-r from-violet-500 to-purple-500 text-white hover:from-violet-400 hover:to-purple-400 transition-colors"
+                  className={cn(
+                    "flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-full text-sm font-medium text-white transition-colors",
+                    node.matchType === "high-affinity"
+                      ? "bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400"
+                      : "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400"
+                  )}
                 >
-                  <UserPlus className="h-4 w-4" />
-                  Request Intro
+                  <MessageCircle className="h-4 w-4" />
+                  Message
                 </button>
               </div>
             </div>
@@ -1177,7 +1229,7 @@ function NetworkMobileCards({
         })}
       </div>
 
-      {/* Pagination dots - purple theme */}
+      {/* Pagination dots */}
       {nodes.length > 1 && nodes.length <= 10 && (
         <div className="flex justify-center gap-1.5 mt-2">
           {nodes.map((_, index) => (
@@ -1190,9 +1242,9 @@ function NetworkMobileCards({
                 }
               }}
               className={`h-1.5 rounded-full transition-all ${
-                index === activeIndex 
-                  ? 'w-6 bg-violet-400' 
-                  : 'w-1.5 bg-violet-300/30 hover:bg-violet-300/50'
+                index === activeIndex
+                  ? 'w-6 bg-cyan-400'
+                  : 'w-1.5 bg-white/30 hover:bg-white/50'
               }`}
             />
           ))}

@@ -272,7 +272,7 @@ export function ChatWindow({
             clearTimeout(timeout);
             
             if (response.success && response.data?.message) {
-              setMessages((prev) => [...prev, response.data.message]);
+              setMessages((prev) => [...prev, response.data!.message as Message]);
               setNewMessage("");
               onMessageSent?.();
               

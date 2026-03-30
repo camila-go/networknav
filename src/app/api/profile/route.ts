@@ -191,7 +191,7 @@ export async function PATCH(request: NextRequest) {
             title,
             company,
             location: location ?? null,
-            photo_url: photoUrl ?? null,
+            photo_url: photoUrl ?? undefined,
             updated_at: user.updatedAt.toISOString(),
           })
           .eq("user_id", user.id);

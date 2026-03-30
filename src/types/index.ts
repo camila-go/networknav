@@ -494,6 +494,7 @@ export interface GamificationStats {
   currentWeeklyStreak: number;
   longestDailyStreak: number;
   longestWeeklyStreak: number;
+  explorePasses: number;
   lastActiveAt: Date | null;
   createdAt: Date;
   updatedAt: Date;

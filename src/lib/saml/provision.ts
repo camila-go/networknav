@@ -6,6 +6,7 @@
  * by the registration route.
  */
 
+import type { UserRole } from "@/types";
 import { users, type StoredUser } from "@/lib/stores/users-store";
 import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
 import type { SamlUserAttributes } from "./types";
@@ -40,9 +41,9 @@ export async function provisionSamlUser(
         // Load into memory for fast future access
         existing = {
           id: data.id,
-          email: data.email,
-          passwordHash: data.password_hash || "SAML_SSO_NO_PASSWORD",
-          role: data.role || "user",
+          email: data.email ?? email,
+          passwordHash: "SAML_SSO_NO_PASSWORD",
+          role: (data.role || "user") as UserRole,
           name: data.name,
           position: data.position || data.title || "",
           title: data.title || data.position || "",

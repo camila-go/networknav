@@ -228,6 +228,16 @@ const NOTIFICATION_TEMPLATES: Record<
     title: "New profile frame unlocked",
     body: `You reached ${String(data?.minPoints ?? "")} connection points. The "${(data?.frameName as string) || "new"}" profile frame is now available on your profile.`,
   }),
+
+  content_removed: (data) => ({
+    title: "Content removed",
+    body: `Your ${(data?.contentType as string) || "content"} was removed for violating community guidelines.`,
+  }),
+
+  content_warning: (data) => ({
+    title: "Content warning",
+    body: `Your ${(data?.contentType as string) || "content"} has been flagged for review.`,
+  }),
 };
 
 // ============================================

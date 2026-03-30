@@ -114,7 +114,7 @@ async function deleteContent(contentType: string, contentId: string) {
     photo: "user_photos",
   };
 
-  const table = tableMap[contentType];
+  const table = tableMap[contentType] as "messages" | "user_photos" | undefined;
   if (table) {
     await supabaseAdmin.from(table).delete().eq("id", contentId);
   }

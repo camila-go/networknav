@@ -38,7 +38,7 @@ export function setupMessageHandlers(
 
       // For new conversations, find or create connection
       if (!connectionId && data.targetUserId) {
-        connectionId = findOrCreateConnection(userId, data.targetUserId);
+        connectionId = findOrCreateConnection(userId, data.targetUserId) ?? undefined;
       }
 
       if (!connectionId) {

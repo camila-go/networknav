@@ -17,6 +17,7 @@ export interface StoredUser {
   title: string;
   company?: string;
   photoUrl?: string;
+  bio?: string;
   location?: string;
   questionnaireCompleted: boolean;
   createdAt: Date;
