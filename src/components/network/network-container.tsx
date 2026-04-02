@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import { NetworkGraph } from "./network-graph";
-import { Button } from "@/components/ui/button";
+import { Button, primaryActionClasses } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -280,7 +280,7 @@ export function NetworkContainer() {
             Complete your questionnaire to see your network map
           </p>
           <Link href="/onboarding">
-            <Button className="bg-gradient-to-r from-cyan-500 to-teal-500 text-black hover:from-cyan-400 hover:to-teal-400">
+            <Button>
               Complete Questionnaire
             </Button>
           </Link>
@@ -607,7 +607,10 @@ export function NetworkContainer() {
                     href={teamsMeetingUrl(selectedNode.email, `Meet: ${selectedNode.name}`)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center gap-1 px-4 py-2 rounded-full text-sm font-medium bg-gradient-to-r from-cyan-500 to-teal-500 text-black hover:from-cyan-400 hover:to-teal-400 transition-colors"
+                    className={cn(
+                      "inline-flex items-center justify-center gap-1 rounded-full px-4 py-2 text-sm font-medium transition-colors",
+                      primaryActionClasses
+                    )}
                   >
                     <Calendar className="h-4 w-4" />
                     Meet
@@ -716,7 +719,10 @@ export function NetworkContainer() {
                         href={teamsMeetingUrl(selectedNode.email, `Meet: ${selectedNode.name}`)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex-1 inline-flex items-center justify-center gap-1 rounded-full text-sm font-medium bg-gradient-to-r from-cyan-500 to-teal-500 text-black hover:from-cyan-400 hover:to-teal-400 px-3 py-2"
+                        className={cn(
+                          "flex-1 inline-flex items-center justify-center gap-1 rounded-full px-3 py-2 text-sm font-medium",
+                          primaryActionClasses
+                        )}
                       >
                         <Calendar className="h-4 w-4" />
                         Meet
@@ -921,7 +927,10 @@ export function NetworkContainer() {
                     href={teamsMeetingUrl(selectedNode.email, `Meet: ${selectedNode.name}`)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-1 inline-flex items-center justify-center gap-1 rounded-full text-sm font-medium bg-gradient-to-r from-cyan-500 to-teal-500 text-black hover:from-cyan-400 hover:to-teal-400 px-3 py-2"
+                    className={cn(
+                      "flex-1 inline-flex items-center justify-center gap-1 rounded-full px-3 py-2 text-sm font-medium",
+                      primaryActionClasses
+                    )}
                   >
                     <Calendar className="h-4 w-4" />
                     Meet
@@ -1214,10 +1223,8 @@ function NetworkMobileCards({
                 <button
                   onClick={() => onMeet(node)}
                   className={cn(
-                    "flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-full text-sm font-medium text-white transition-colors",
-                    node.matchType === "high-affinity"
-                      ? "bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400"
-                      : "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400"
+                    "flex-1 inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-2.5 text-sm font-medium transition-colors",
+                    primaryActionClasses
                   )}
                 >
                   <MessageCircle className="h-4 w-4" />

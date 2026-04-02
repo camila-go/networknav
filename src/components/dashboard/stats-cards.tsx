@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { Flame, Zap, Target, Trophy, Settings2, Check, Sparkles, PartyPopper, Star, X } from "lucide-react";
 import type { GamificationStats, StreakStatus } from "@/types";
+import { Button } from "@/components/ui/button";
 
 // Celebration messages for weekly goal completion
 const CELEBRATION_MESSAGES = [
@@ -194,18 +195,17 @@ export function StatsCards({ matchCount, matchScore }: StatsCardsProps = {}) {
               
               {/* Action buttons */}
               <div className="flex gap-3 justify-center">
-                <button
+                <Button
+                  size="lg"
                   onClick={() => {
                     dismissCelebration();
-                    window.location.href = '/explore';
+                    window.location.href = "/explore";
                   }}
-                  className="px-5 py-2.5 bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white font-medium rounded-full hover:from-violet-400 hover:to-fuchsia-400 transition-all shadow-lg shadow-violet-500/25"
+                  className="gap-2"
                 >
-                  <span className="flex items-center gap-2">
-                    <Sparkles className="h-4 w-4" />
-                    Explore More
-                  </span>
-                </button>
+                  <Sparkles className="h-4 w-4" />
+                  Explore More
+                </Button>
                 <button
                   onClick={dismissCelebration}
                   className="px-5 py-2.5 bg-white/10 text-white font-medium rounded-full hover:bg-white/20 transition-colors"

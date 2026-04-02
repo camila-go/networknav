@@ -18,6 +18,7 @@ import {
   Network
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { SHOW_GAMIFICATION_UI } from "@/lib/feature-flags";
 
 const ONBOARDING_STORAGE_KEY = "jynx_onboarding_completed";
 const QUESTIONNAIRE_COMPLETED_KEY = "jynx_questionnaire_completed";
@@ -31,7 +32,7 @@ interface OnboardingStep {
   gradient: string;
 }
 
-const steps: OnboardingStep[] = [
+const ALL_ONBOARDING_STEPS: OnboardingStep[] = [
   {
     id: "welcome",
     title: "Welcome to GS26!",
@@ -95,6 +96,10 @@ const steps: OnboardingStep[] = [
     gradient: "from-amber-500 to-yellow-500",
   },
 ];
+
+const steps: OnboardingStep[] = SHOW_GAMIFICATION_UI
+  ? ALL_ONBOARDING_STEPS
+  : ALL_ONBOARDING_STEPS.filter((s) => !["streaks", "goals", "badges"].includes(s.id));
 
 export function OnboardingModal() {
   const [isOpen, setIsOpen] = useState(false);
@@ -218,14 +223,7 @@ export function OnboardingModal() {
                 Back
               </Button>
             )}
-            <Button
-              onClick={handleNext}
-              className={cn(
-                "flex-1 text-black font-semibold",
-                "bg-gradient-to-r",
-                step.gradient
-              )}
-            >
+            <Button onClick={handleNext} className="flex-1 font-semibold">
               {isLastStep ? (
                 <>
                   <Check className="h-4 w-4 mr-2" />

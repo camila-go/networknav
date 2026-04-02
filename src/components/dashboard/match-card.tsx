@@ -209,6 +209,7 @@ export function MatchCard({ match, onPass, viewerFirstName }: MatchCardProps) {
             targetUserId={match.matchedUserId}
             source="dashboard_match"
             onPass={() => onPass(match.id)}
+            composeMessage={displayStarters[0]}
           />
         ) : (
           <button
@@ -220,10 +221,10 @@ export function MatchCard({ match, onPass, viewerFirstName }: MatchCardProps) {
               });
               onPass(match.id);
             }}
-            className="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-full text-sm font-medium text-white/50 hover:text-white/80 hover:bg-white/5 transition-colors w-full"
+            className="inline-flex w-full min-h-10 items-center justify-center gap-2 rounded-full border-2 border-white/20 bg-transparent px-4 text-sm font-semibold text-white/90 transition-colors hover:border-white/40 hover:bg-white/10"
           >
             <span>Pass</span>
-            <X className="h-4 w-4 opacity-70" />
+            <X className="h-4 w-4 opacity-80 shrink-0" strokeWidth={2.5} aria-hidden />
           </button>
         )}
       </div>

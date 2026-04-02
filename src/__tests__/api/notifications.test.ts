@@ -94,6 +94,32 @@ describe("Notifications API Routes", () => {
       expect(body.data.notifications).toBeUndefined();
     });
 
+    it("excludes badge and profile-frame notifications from list and count when gamification UI is off", async () => {
+      vi.mocked(getSession).mockResolvedValue(mockSession);
+      createNotification("user-1", "new_matches");
+      createNotification("user-1", "badge_earned", {
+        badgeLabel: "Test",
+        badgeType: "conversation_starter",
+        tier: "bronze",
+      });
+      createNotification("user-1", "profile_frame_unlocked", {
+        frameName: "Gold",
+        minPoints: 100,
+      });
+
+      const req = createGetRequest();
+      const res = await GET(req);
+      const body = await res.json();
+      expect(body.data.notifications).toHaveLength(1);
+      expect(body.data.notifications[0].type).toBe("new_matches");
+      expect(body.data.unreadCount).toBe(1);
+
+      const countReq = createGetRequest({ type: "count" });
+      const countRes = await GET(countReq);
+      const countBody = await countRes.json();
+      expect(countBody.data.unreadCount).toBe(1);
+    });
+
     it("should return preferences when type=preferences", async () => {
       vi.mocked(getSession).mockResolvedValue(mockSession);
       const req = createGetRequest({ type: "preferences" });

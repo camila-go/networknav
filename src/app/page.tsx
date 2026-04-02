@@ -33,7 +33,7 @@ export default function HomePage() {
             <Link href="/register" className="min-h-[44px]">
               <Button
                 size="sm"
-                className="h-10 bg-gradient-to-r from-cyan-500 to-teal-500 px-3 text-sm font-semibold text-black shadow-lg shadow-cyan-500/30 hover:from-cyan-400 hover:to-teal-400 sm:h-11 sm:px-4 sm:text-base"
+                className="h-10 px-3 text-sm font-semibold sm:h-11 sm:px-4 sm:text-base"
               >
                 Get Started
               </Button>
@@ -126,7 +126,7 @@ export default function HomePage() {
               <Link href="/register" className="w-full min-h-[48px] sm:w-auto sm:min-w-[12rem]">
                 <Button
                   size="lg"
-                  className="h-12 min-h-[48px] w-full border-0 px-8 text-base font-semibold text-black shadow-xl shadow-cyan-500/30 sm:h-14 sm:px-10 sm:text-lg bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400"
+                  className="h-12 min-h-[48px] w-full border-0 px-8 text-base font-semibold sm:h-14 sm:px-10 sm:text-lg"
                 >
                   Get Started
                   <ArrowRight className="ml-2 h-5 w-5 shrink-0" aria-hidden="true" />
@@ -226,7 +226,7 @@ export default function HomePage() {
               designed to maximize your leadership journey.
             </p>
             <Link href="/register">
-              <Button size="lg" className="text-lg px-12 h-14 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-black font-semibold shadow-xl shadow-cyan-500/30">
+              <Button size="lg" className="h-14 px-12 text-lg font-semibold">
                 Confirm Attendance
                 <ArrowRight className="ml-2 h-5 w-5" aria-hidden="true" />
               </Button>

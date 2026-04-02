@@ -39,6 +39,7 @@ import {
 import { BadgeDisplay } from "@/components/gamification/badge-display";
 import { type BadgeProgress, parseBadgesFromApi } from "@/lib/gamification";
 import type { UserBadge } from "@/types";
+import { SHOW_GAMIFICATION_UI } from "@/lib/feature-flags";
 
 interface UserInterests {
   rechargeActivities: string[];
@@ -202,8 +203,8 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {/* Activity Stats */}
-        {stats && (
+        {/* Activity Stats (points, streak, activity counts) — gamification; hidden for this release */}
+        {SHOW_GAMIFICATION_UI && stats && (
           <div className="rounded-xl bg-white/5 border border-white/10 p-6">
             <h2 className="text-xs font-semibold text-white/50 uppercase tracking-wider flex items-center gap-2 mb-4">
               <Trophy className="h-4 w-4 text-amber-400" />
@@ -234,13 +235,15 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {/* Badges — same grid + styles as achievements modal; data from Supabase via API */}
-        <BadgeDisplay
-          badges={badges}
-          progress={badgeProgress}
-          showProgress
-          heading="Your Badges"
-        />
+        {/* Badges grid — hidden for this release */}
+        {SHOW_GAMIFICATION_UI && (
+          <BadgeDisplay
+            badges={badges}
+            progress={badgeProgress}
+            showProgress
+            heading="Your Badges"
+          />
+        )}
 
         {/* Your Connections */}
         <div className="rounded-xl bg-white/5 border border-white/10 p-6">
@@ -389,19 +392,21 @@ export default function ProfilePage() {
           
           {expandedSection === "privacy" && (
             <div className="px-6 pb-6 space-y-4 border-t border-white/10 pt-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Eye className="h-4 w-4 text-white/50" />
-                  <div>
-                    <p className="text-sm font-medium text-white">Show Activity Stats</p>
-                    <p className="text-xs text-white/50">Let others see your points and streaks</p>
+              {SHOW_GAMIFICATION_UI && (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Eye className="h-4 w-4 text-white/50" />
+                    <div>
+                      <p className="text-sm font-medium text-white">Show Activity Stats</p>
+                      <p className="text-xs text-white/50">Let others see your points and streaks</p>
+                    </div>
                   </div>
+                  <Switch
+                    checked={privacySettings.showActivityStats}
+                    onCheckedChange={(checked) => setPrivacySettings(s => ({ ...s, showActivityStats: checked }))}
+                  />
                 </div>
-                <Switch
-                  checked={privacySettings.showActivityStats}
-                  onCheckedChange={(checked) => setPrivacySettings(s => ({ ...s, showActivityStats: checked }))}
-                />
-              </div>
+              )}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <Users className="h-4 w-4 text-white/50" />
@@ -522,16 +527,18 @@ export default function ProfilePage() {
                   onCheckedChange={(checked) => setNotificationSettings(s => ({ ...s, weeklyDigest: checked }))}
                 />
               </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-white">Streak Reminders</p>
-                  <p className="text-xs text-white/50">Get reminded to maintain your streak</p>
+              {SHOW_GAMIFICATION_UI && (
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-white">Streak Reminders</p>
+                    <p className="text-xs text-white/50">Get reminded to maintain your streak</p>
+                  </div>
+                  <Switch
+                    checked={notificationSettings.streakReminders}
+                    onCheckedChange={(checked) => setNotificationSettings(s => ({ ...s, streakReminders: checked }))}
+                  />
                 </div>
-                <Switch
-                  checked={notificationSettings.streakReminders}
-                  onCheckedChange={(checked) => setNotificationSettings(s => ({ ...s, streakReminders: checked }))}
-                />
-              </div>
+              )}
             </div>
           )}
         </div>
@@ -642,7 +649,11 @@ export default function ProfilePage() {
                   <BookOpenCheck className="h-4 w-4 text-cyan-400" />
                   <div className="text-left">
                     <p className="text-sm font-medium text-white">View App Tour</p>
-                    <p className="text-xs text-white/50">Learn how matches, streaks, and badges work</p>
+                    <p className="text-xs text-white/50">
+                      {SHOW_GAMIFICATION_UI
+                        ? "Learn how matches, streaks, and badges work"
+                        : "Learn how matches and networking features work"}
+                    </p>
                   </div>
                 </div>
                 <ChevronDown className="h-4 w-4 text-white/50 -rotate-90" />

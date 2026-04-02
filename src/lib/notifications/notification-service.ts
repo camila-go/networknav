@@ -6,6 +6,7 @@
 
 import type { Notification, NotificationType } from "@/types";
 import { notifications, notificationPreferences, getDefaultPreferences } from "@/lib/stores";
+import { filterNotificationsForPresentation } from "@/lib/notifications/presentation-filter";
 import { getSocketInstance } from "@/lib/socket";
 import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
 
@@ -243,6 +244,18 @@ const NOTIFICATION_TEMPLATES: Record<
 // ============================================
 // Core Functions
 // ============================================
+
+/**
+ * Notifications + unread count as shown in the app (respects SHOW_GAMIFICATION_UI).
+ */
+export async function getNotificationsForPresentation(
+  userId: string
+): Promise<{ notifications: Notification[]; unreadCount: number }> {
+  const all = await getNotifications(userId);
+  const notifications = filterNotificationsForPresentation(all);
+  const unreadCount = notifications.filter((n) => !n.read).length;
+  return { notifications, unreadCount };
+}
 
 /**
  * Create a new notification for a user

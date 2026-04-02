@@ -1,6 +1,7 @@
 export {
   createNotification,
   getNotifications,
+  getNotificationsForPresentation,
   getUnreadCount,
   markAsRead,
   markAllAsRead,
@@ -18,3 +19,5 @@ export {
   notifyMeetingAccepted,
   notifyMeetingDeclined,
 } from "./notification-service";
+
+export { isGamificationNotificationType } from "./presentation-filter";

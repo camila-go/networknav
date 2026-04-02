@@ -597,7 +597,7 @@ export function MeetingsContainer() {
               description="When you schedule meetings, they'll appear here."
               action={
                 <Link href="/explore">
-                  <Button className="bg-gradient-to-r from-cyan-500 to-teal-500 text-black hover:from-cyan-400 hover:to-teal-400">
+                  <Button>
                     Find people to meet
                   </Button>
                 </Link>
@@ -787,7 +787,7 @@ function UpcomingMeetingCard({
 
           <div className="flex items-center gap-2 mt-4">
             {meeting.meetingLink && (
-              <Button size="sm" className="bg-gradient-to-r from-cyan-500 to-teal-500 text-black hover:from-cyan-400 hover:to-teal-400" asChild>
+              <Button size="sm" asChild>
                 <a href={meeting.meetingLink} target="_blank" rel="noopener noreferrer">
                   <Video className="h-4 w-4 mr-1" />
                   Join Meeting
@@ -961,7 +961,7 @@ function RequestCard({
                 size="sm"
                 onClick={() => onAction(meeting.id, "accept", { acceptedTime: selectedTime })}
                 disabled={isLoading || !selectedTime}
-                className="gap-1 bg-gradient-to-r from-cyan-500 to-teal-500 text-black hover:from-cyan-400 hover:to-teal-400"
+                className="gap-1"
               >
                 {isLoading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />

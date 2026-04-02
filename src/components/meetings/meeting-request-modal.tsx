@@ -487,7 +487,7 @@ export function MeetingRequestModal({
           <Button
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="flex-1 gap-2 bg-gradient-to-r from-cyan-500 to-teal-500 text-black hover:from-cyan-400 hover:to-teal-400"
+            className="flex-1 gap-2"
           >
             {isSubmitting ? (
               <>

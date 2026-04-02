@@ -11,6 +11,8 @@ import {
 import { NotificationList } from "./notification-list";
 import { useSocket } from "@/lib/socket/client";
 import { cn } from "@/lib/utils";
+import { SHOW_GAMIFICATION_UI } from "@/lib/feature-flags";
+import { isGamificationNotificationType } from "@/lib/notifications/presentation-filter";
 
 export function NotificationBell() {
   const [unreadCount, setUnreadCount] = useState(0);
@@ -26,7 +28,14 @@ export function NotificationBell() {
   useEffect(() => {
     if (!socket) return;
 
-    function handleNewNotification() {
+    function handleNewNotification(payload?: { type?: string }) {
+      if (
+        !SHOW_GAMIFICATION_UI &&
+        payload?.type &&
+        isGamificationNotificationType(payload.type)
+      ) {
+        return;
+      }
       setUnreadCount((prev) => prev + 1);
     }
 

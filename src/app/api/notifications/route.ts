@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import {
-  getNotifications,
-  getUnreadCount,
+  getNotificationsForPresentation,
   markAllAsRead,
   getPreferences,
   updatePreferences,
@@ -31,16 +30,15 @@ export async function GET(request: NextRequest) {
     }
 
     if (type === "count") {
-      const count = getUnreadCount(session.userId);
+      const { unreadCount } = await getNotificationsForPresentation(session.userId);
       return NextResponse.json({
         success: true,
-        data: { unreadCount: count },
+        data: { unreadCount },
       });
     }
 
-    // Default: return all notifications
-    const userNotifications = await getNotifications(session.userId);
-    const unreadCount = getUnreadCount(session.userId);
+    const { notifications: userNotifications, unreadCount } =
+      await getNotificationsForPresentation(session.userId);
 
     return NextResponse.json({
       success: true,

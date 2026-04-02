@@ -9,6 +9,8 @@ import { formatRelativeTime } from "@/lib/utils";
 import { useSocket } from "@/lib/socket/client";
 import type { NotificationPayload } from "@/lib/socket/types";
 import type { Notification, NotificationType } from "@/types";
+import { SHOW_GAMIFICATION_UI } from "@/lib/feature-flags";
+import { isGamificationNotificationType } from "@/lib/notifications/presentation-filter";
 
 interface NotificationListProps {
   onClose?: () => void;
@@ -44,6 +46,9 @@ export function NotificationList({ onClose }: NotificationListProps) {
     if (!socket) return;
 
     function handleNewNotification(data: NotificationPayload) {
+      if (!SHOW_GAMIFICATION_UI && isGamificationNotificationType(data.type)) {
+        return;
+      }
       setNotifications((prev) => [
         {
           id: data.id,

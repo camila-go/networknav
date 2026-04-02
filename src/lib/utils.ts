@@ -43,8 +43,29 @@ export function truncate(str: string, length: number): string {
   return str.slice(0, length) + "...";
 }
 
-export function teamsChartUrl(email: string): string {
-  return `https://teams.microsoft.com/l/chat/0/0?users=${encodeURIComponent(email)}`;
+/** Max length for Teams deep-link `message` (URL size / client limits). */
+const TEAMS_CHAT_MESSAGE_MAX_LEN = 3500;
+
+/**
+ * Deep link to a 1:1 Teams chat. Optional `composeMessage` is passed as the `message`
+ * query param so Teams can pre-fill the compose box; the user still sends manually.
+ * (Some Teams clients may ignore `message`; see Microsoft Teams deep-link docs.)
+ */
+export function teamsChartUrl(
+  email: string,
+  options?: { composeMessage?: string }
+): string {
+  const url = new URL("https://teams.microsoft.com/l/chat/0/0");
+  url.searchParams.set("users", email.trim());
+  const draft = options?.composeMessage?.trim();
+  if (draft) {
+    const capped =
+      draft.length > TEAMS_CHAT_MESSAGE_MAX_LEN
+        ? `${draft.slice(0, TEAMS_CHAT_MESSAGE_MAX_LEN - 1)}…`
+        : draft;
+    url.searchParams.set("message", capped);
+  }
+  return url.toString();
 }
 
 export function teamsMeetingUrl(email: string, subject?: string): string {

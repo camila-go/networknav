@@ -5,6 +5,7 @@ import { MatchCard } from "./match-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sparkles, Flame, Target, MessageCircle, Rocket, Heart, Star, TrendingUp } from "lucide-react";
 import type { MatchWithUser, Commonality, StreakStatus } from "@/types";
+import { SHOW_GAMIFICATION_UI } from "@/lib/feature-flags";
 
 // Personalized encouragement messages based on user state
 const ENCOURAGEMENT_MESSAGES = {
@@ -46,7 +47,12 @@ export function MatchesGrid({ onMatchesLoaded }: MatchesGridProps = {}) {
 
   useEffect(() => {
     fetchMatches();
-    fetchStreakData();
+    if (SHOW_GAMIFICATION_UI) {
+      void fetchStreakData();
+    } else {
+      setStreaks(null);
+      setEncouragement(null);
+    }
     let cancelled = false;
     fetch("/api/profile")
       .then((r) => r.json())
@@ -189,8 +195,8 @@ export function MatchesGrid({ onMatchesLoaded }: MatchesGridProps = {}) {
 
   return (
     <div className="space-y-4">
-      {/* Personalized Encouragement Banner */}
-      {encouragement && (
+      {/* Personalized Encouragement Banner (streak / weekly goal messaging) */}
+      {SHOW_GAMIFICATION_UI && encouragement && (
         <div className="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-white/5 to-white/[0.02] border border-white/10 rounded-xl">
           <encouragement.icon className={`h-5 w-5 ${encouragement.color} flex-shrink-0`} />
           <p className="text-sm text-white/80">

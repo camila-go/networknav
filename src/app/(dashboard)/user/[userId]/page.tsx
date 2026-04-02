@@ -17,6 +17,7 @@ import {
 import type { UserBadge } from "@/types";
 import { parseBadgesFromApi } from "@/lib/gamification";
 import { PhotoGallery } from "@/components/profile/photo-gallery";
+import { SHOW_GAMIFICATION_UI } from "@/lib/feature-flags";
 
 interface UserInterests {
   rechargeActivities: string[];
@@ -284,7 +285,7 @@ export default function UserProfilePage() {
         <h2 className="text-2xl font-bold text-white mb-4">User not found</h2>
         <p className="text-white/60 mb-6">This profile may not be available.</p>
         <Link href="/dashboard">
-          <Button className="bg-gradient-to-r from-cyan-500 to-teal-500 text-black">Back to Dashboard</Button>
+          <Button>Back to Dashboard</Button>
         </Link>
       </div>
     );
@@ -369,15 +370,15 @@ export default function UserProfilePage() {
               </div>
             )}
 
-            {/* Activity indicator and badges preview */}
+            {/* Activity / badges preview chips (gamification-adjacent) */}
             <div className="mt-4 flex flex-wrap items-center gap-2">
-              {isActiveThisWeek && (
+              {SHOW_GAMIFICATION_UI && isActiveThisWeek && (
                 <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-green-500/20 border border-green-500/30">
                   <Activity className="h-3 w-3 text-green-400" />
                   <span className="text-xs text-green-400 font-medium">Active this week</span>
                 </div>
               )}
-              {badges.length > 0 && (
+              {SHOW_GAMIFICATION_UI && badges.length > 0 && (
                 <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-amber-500/20 border border-amber-500/30">
                   <Trophy className="h-3 w-3 text-amber-400" />
                   <span className="text-xs text-amber-300 font-medium">{badges.length} badge{badges.length !== 1 ? 's' : ''}</span>
@@ -406,8 +407,8 @@ export default function UserProfilePage() {
         </div>
       </div>
 
-      {/* Activity Stats Section */}
-      {activityStats && activityStats.totalPoints > 0 && (
+      {/* Networking activity stats (points, streak, etc.) — hidden for this release */}
+      {SHOW_GAMIFICATION_UI && activityStats && activityStats.totalPoints > 0 && (
         <div className="rounded-xl bg-white/5 border border-white/10 p-6">
           <h2 className="text-xs font-semibold text-white/50 uppercase tracking-wider mb-4 flex items-center gap-2">
             <TrendingUp className="h-4 w-4 text-cyan-400" />
@@ -594,8 +595,8 @@ export default function UserProfilePage() {
         </div>
       )}
 
-      {/* Badges — Supabase-backed only; full grid so every profile shows the same six slots */}
-      {profile && (
+      {/* Achievements & Badges — hidden for this release */}
+      {SHOW_GAMIFICATION_UI && profile && (
         <div className="rounded-2xl border border-white/10 bg-white/5 p-4 sm:p-6">
           <div className="mb-4 flex items-center justify-between gap-2">
             <h2 className="flex items-center gap-2 text-lg font-semibold text-white">

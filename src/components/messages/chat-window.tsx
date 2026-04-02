@@ -482,7 +482,7 @@ export function ChatWindow({
             type="submit"
             size="icon"
             disabled={!newMessage.trim() || isSending}
-            className="bg-gradient-to-r from-cyan-500 to-teal-500 text-black hover:from-cyan-400 hover:to-teal-400 disabled:opacity-50"
+            className="disabled:opacity-50"
           >
             {isSending ? (
               <Loader2 className="h-4 w-4 animate-spin" />

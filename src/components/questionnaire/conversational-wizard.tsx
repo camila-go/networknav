@@ -437,7 +437,7 @@ export function ConversationalWizard() {
                     <Button
                       onClick={handleSubmitAnswer}
                       disabled={!canCurrentQuestionProceed() || inputLocked}
-                      className="gap-2 bg-gradient-to-r from-cyan-500 to-teal-500 text-black hover:from-cyan-400 hover:to-teal-400"
+                      className="gap-2"
                     >
                       {inputLocked ? (
                         <>
@@ -477,7 +477,7 @@ export function ConversationalWizard() {
             <Button
               onClick={handleComplete}
               disabled={isSubmitting}
-              className="gap-2 bg-gradient-to-r from-cyan-500 to-teal-500 text-black hover:from-cyan-400 hover:to-teal-400 px-8 py-3 text-base font-semibold"
+              className="gap-2 px-8 py-3 text-base font-semibold"
             >
               {isSubmitting ? (
                 <>

@@ -39,7 +39,7 @@ export function EmptyState({ compact }: EmptyStateProps) {
         conversations here.
       </p>
       <Link href="/dashboard">
-        <Button className="bg-gradient-to-r from-cyan-500 to-teal-500 text-black hover:from-cyan-400 hover:to-teal-400">
+        <Button>
           <MessageCircle className="h-4 w-4 mr-2" />
           View Your Matches
         </Button>

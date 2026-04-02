@@ -125,7 +125,7 @@ export function EncouragementModal({ message, onClose, onAction }: Encouragement
           {message.actionText && (
             <Button
               onClick={handleAction}
-              className="flex-1 bg-gradient-to-r from-cyan-500 to-teal-500 text-black hover:from-cyan-400 hover:to-teal-400"
+              className="flex-1"
             >
               {message.actionText}
               <ArrowRight className="h-4 w-4 ml-1" />

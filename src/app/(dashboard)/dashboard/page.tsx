@@ -5,6 +5,7 @@ import { MatchesGrid } from "@/components/dashboard/matches-grid";
 import { StatsCards } from "@/components/dashboard/stats-cards";
 import { BadgeProgressModal } from "@/components/gamification/badge-progress-modal";
 import { OnboardingModal } from "@/components/onboarding";
+import { SHOW_GAMIFICATION_UI } from "@/lib/feature-flags";
 
 export default function DashboardPage() {
   const [matchStats, setMatchStats] = useState({ count: 0, avgScore: 0 });
@@ -28,13 +29,15 @@ export default function DashboardPage() {
             Discover leaders who share your challenges, interests, and goals
           </p>
         </div>
-        <BadgeProgressModal />
+        {SHOW_GAMIFICATION_UI && <BadgeProgressModal />}
       </div>
 
-      {/* Stats overview */}
-      <Suspense fallback={<div className="h-24 shimmer rounded-xl" />}>
-        <StatsCards matchCount={matchStats.count} matchScore={matchStats.avgScore} />
-      </Suspense>
+      {/* Stats overview — gamification (points, streak, weekly goal); hidden when SHOW_GAMIFICATION_UI is false */}
+      {SHOW_GAMIFICATION_UI && (
+        <Suspense fallback={<div className="h-24 shimmer rounded-xl" />}>
+          <StatsCards matchCount={matchStats.count} matchScore={matchStats.avgScore} />
+        </Suspense>
+      )}
 
       {/* Matches grid */}
       <Suspense

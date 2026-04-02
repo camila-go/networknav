@@ -374,7 +374,6 @@ export function UsersTable() {
             <Button
               onClick={handleRoleChange}
               disabled={actionLoading || newRole === actionUser?.role}
-              className="bg-cyan-600 hover:bg-cyan-700"
             >
               {actionLoading ? "Saving..." : "Save"}
             </Button>
@@ -434,7 +433,7 @@ export function UsersTable() {
           ) : null}
           <DialogFooter>
             {tempPassword ? (
-              <Button onClick={() => { setResetDialog(false); setTempPassword(""); }} className="bg-cyan-600 hover:bg-cyan-700">
+              <Button onClick={() => { setResetDialog(false); setTempPassword(""); }}>
                 Done
               </Button>
             ) : (
@@ -442,11 +441,7 @@ export function UsersTable() {
                 <Button variant="ghost" onClick={() => setResetDialog(false)} className="text-white/60">
                   Cancel
                 </Button>
-                <Button
-                  onClick={handleResetPassword}
-                  disabled={actionLoading}
-                  className="bg-amber-600 hover:bg-amber-700"
-                >
+                <Button onClick={handleResetPassword} disabled={actionLoading}>
                   {actionLoading ? "Resetting..." : "Reset Password"}
                 </Button>
               </>

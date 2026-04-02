@@ -335,7 +335,7 @@ export function ProfileForm() {
       <Button 
         type="submit" 
         disabled={isSubmitting || !isDirty}
-        className="bg-gradient-to-r from-cyan-500 to-teal-500 text-black hover:from-cyan-400 hover:to-teal-400 disabled:opacity-50"
+        className="disabled:opacity-50"
       >
         {isSubmitting ? (
           <>
