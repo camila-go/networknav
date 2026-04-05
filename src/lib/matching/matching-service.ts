@@ -141,11 +141,10 @@ function ensureMatchDiversity(candidates: MatchCandidate[]): MatchCandidate[] {
   const result: MatchCandidate[] = [];
   const seenAttributes = new Set<string>();
 
-  // First pass: add unique matches
   for (const candidate of candidates) {
-    const org = candidate.user.responses.organizationSize ?? "";
-    const level = candidate.user.responses.leadershipLevel;
-    const key = `${org}-${level}`;
+    const arch = candidate.user.responses.archetype ?? "";
+    const tag = candidate.user.responses.personalityTags?.[0] ?? "";
+    const key = `${arch}-${tag}`;
 
     if (!seenAttributes.has(key)) {
       result.push(candidate);

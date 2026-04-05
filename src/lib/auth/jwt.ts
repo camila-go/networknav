@@ -27,20 +27,45 @@ function getSecret(envVar: string, devFallback: string): Uint8Array {
   }
 
   if (secret.length < 32) {
-    throw new Error(
-      `SECURITY ERROR: ${envVar} must be at least 32 characters long. ` +
-        `Current length: ${secret.length}`
+    if (IS_PRODUCTION) {
+      throw new Error(
+        `SECURITY ERROR: ${envVar} must be at least 32 characters long. ` +
+          `Current length: ${secret.length}`
+      );
+    }
+    console.warn(
+      `⚠️  WARNING: ${envVar} is under 32 characters in development — using fallback so the app can start. ` +
+        `Use a secret of at least 32 characters in .env.local.`
     );
+    return new TextEncoder().encode(devFallback);
   }
 
   return new TextEncoder().encode(secret);
 }
 
-const JWT_SECRET = getSecret("JWT_SECRET", "development-secret-key-change-in-production-min32chars");
-const JWT_REFRESH_SECRET = getSecret(
-  "JWT_REFRESH_SECRET",
-  "development-refresh-key-change-in-production-min32"
-);
+/** Lazy so importing this module never throws during Next.js build / route collection. */
+let cachedAccessSecret: Uint8Array | null = null;
+let cachedRefreshSecret: Uint8Array | null = null;
+
+function accessSecret(): Uint8Array {
+  if (!cachedAccessSecret) {
+    cachedAccessSecret = getSecret(
+      "JWT_SECRET",
+      "development-secret-key-change-in-production-min32chars"
+    );
+  }
+  return cachedAccessSecret;
+}
+
+function refreshSecret(): Uint8Array {
+  if (!cachedRefreshSecret) {
+    cachedRefreshSecret = getSecret(
+      "JWT_REFRESH_SECRET",
+      "development-refresh-key-change-in-production-min32"
+    );
+  }
+  return cachedRefreshSecret;
+}
 
 const ACCESS_TOKEN_EXPIRY = "15m";
 const REFRESH_TOKEN_EXPIRY = "7d";
@@ -76,7 +101,7 @@ export async function createAccessToken(payload: {
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime(ACCESS_TOKEN_EXPIRY)
-    .sign(JWT_SECRET);
+    .sign(accessSecret());
 }
 
 export async function createRefreshToken(payload: { userId: string }): Promise<string> {
@@ -84,12 +109,12 @@ export async function createRefreshToken(payload: { userId: string }): Promise<s
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime(REFRESH_TOKEN_EXPIRY)
-    .sign(JWT_REFRESH_SECRET);
+    .sign(refreshSecret());
 }
 
 export async function verifyAccessToken(token: string): Promise<AuthSession | null> {
   try {
-    const { payload } = await jwtVerify(token, JWT_SECRET);
+    const { payload } = await jwtVerify(token, accessSecret());
     return {
       userId: payload.userId as string,
       email: payload.email as string,
@@ -103,7 +128,7 @@ export async function verifyAccessToken(token: string): Promise<AuthSession | nu
 
 export async function verifyRefreshToken(token: string): Promise<{ userId: string } | null> {
   try {
-    const { payload } = await jwtVerify(token, JWT_REFRESH_SECRET);
+    const { payload } = await jwtVerify(token, refreshSecret());
     return {
       userId: payload.userId as string,
     };

@@ -40,7 +40,7 @@ vi.mock("./filter-sidebar", () => ({
       <span data-testid="result-count">{resultCount}</span>
       <button
         data-testid="apply-filter"
-        onClick={() => onFiltersChange({ leadershipLevels: ["vp"] })}
+        onClick={() => onFiltersChange({ archetypes: ["builder"] })}
       >
         Apply Filter
       </button>
@@ -53,6 +53,7 @@ vi.mock("./filter-sidebar", () => ({
 
 // Mock AttendeeCard
 vi.mock("./attendee-card", () => ({
+  EXPLORE_HIGH_AFFINITY_MIN_PERCENT: 50,
   AttendeeCard: ({
     attendee,
     onRequestMeeting,
@@ -105,10 +106,22 @@ describe("ExploreContainer", () => {
     vi.clearAllMocks();
     vi.useFakeTimers({ shouldAdvanceTime: true });
     global.fetch = mockSearchFetch();
+    // Treat viewport as desktop so `md:` / `sm:` utilities show search + sort in tests.
+    vi.spyOn(window, "matchMedia").mockImplementation((query) => ({
+      matches: true,
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
   });
 
   afterEach(() => {
     vi.useRealTimers();
+    vi.restoreAllMocks();
   });
 
   it("should search on mount", async () => {

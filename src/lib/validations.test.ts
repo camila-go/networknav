@@ -192,30 +192,24 @@ describe("Validation Schemas", () => {
   describe("questionnaireResponseSchema", () => {
     it("should accept valid questionnaire data", () => {
       const result = questionnaireResponseSchema.safeParse({
-        yearsExperience: "6-10",
-        leadershipPriorities: ["innovation", "growth"],
-        rechargeActivities: ["hiking", "reading"],
+        roleSummary: "I run platform teams",
+        archetype: "builder",
+        teamQualities: ["energy", "ideas"],
+        personalityTags: ["social", "planner"],
       });
       expect(result.success).toBe(true);
     });
 
-    it("should enforce max 5 leadershipPriorities", () => {
+    it("should enforce max 5 teamQualities", () => {
       const result = questionnaireResponseSchema.safeParse({
-        leadershipPriorities: ["a", "b", "c", "d", "e", "f"],
+        teamQualities: ["a", "b", "c", "d", "e", "f"],
       });
       expect(result.success).toBe(false);
     });
 
-    it("should enforce max 8 rechargeActivities", () => {
+    it("should enforce max 8 personalityTags", () => {
       const result = questionnaireResponseSchema.safeParse({
-        rechargeActivities: Array.from({ length: 9 }, (_, i) => `activity-${i}`),
-      });
-      expect(result.success).toBe(false);
-    });
-
-    it("should enforce max 3 relationshipValues", () => {
-      const result = questionnaireResponseSchema.safeParse({
-        relationshipValues: ["a", "b", "c", "d"],
+        personalityTags: Array.from({ length: 9 }, (_, i) => `t-${i}`),
       });
       expect(result.success).toBe(false);
     });

@@ -46,6 +46,12 @@ describe("LoginForm", () => {
     expect(screen.getByText(/forgot password/i)).toBeInTheDocument();
   });
 
+  it("should render Corporate SSO link", () => {
+    render(<LoginForm />);
+    const sso = screen.getByRole("link", { name: /sign in with corporate sso/i });
+    expect(sso).toHaveAttribute("href", "/api/auth/sso/login");
+  });
+
   it("should toggle password visibility", async () => {
     const user = userEvent.setup();
     render(<LoginForm />);
@@ -80,6 +86,8 @@ describe("LoginForm", () => {
   it("should call API with correct data on submit", async () => {
     const user = userEvent.setup();
     vi.mocked(global.fetch).mockResolvedValueOnce({
+      ok: true,
+      status: 200,
       json: async () => ({
         success: true,
         data: { user: { questionnaireCompleted: true } },
@@ -93,17 +101,23 @@ describe("LoginForm", () => {
     await user.click(screen.getByRole("button", { name: /log in/i }));
 
     await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: "test@example.com", password: "Password1" }),
-      });
+      expect(global.fetch).toHaveBeenCalledWith(
+        "/api/auth/login",
+        expect.objectContaining({
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ email: "test@example.com", password: "Password1" }),
+        })
+      );
     });
   });
 
   it("should show error toast on failed login", async () => {
     const user = userEvent.setup();
     vi.mocked(global.fetch).mockResolvedValueOnce({
+      ok: false,
+      status: 401,
       json: async () => ({ success: false, error: "Invalid credentials" }),
     } as Response);
 
@@ -126,6 +140,8 @@ describe("LoginForm", () => {
   it("should redirect to dashboard when questionnaire completed", async () => {
     const user = userEvent.setup();
     vi.mocked(global.fetch).mockResolvedValueOnce({
+      ok: true,
+      status: 200,
       json: async () => ({
         success: true,
         data: { user: { questionnaireCompleted: true } },
@@ -143,9 +159,11 @@ describe("LoginForm", () => {
     });
   });
 
-  it("should redirect to dashboard even when questionnaire not completed", async () => {
+  it("should redirect to onboarding when questionnaire not completed", async () => {
     const user = userEvent.setup();
     vi.mocked(global.fetch).mockResolvedValueOnce({
+      ok: true,
+      status: 200,
       json: async () => ({
         success: true,
         data: { user: { questionnaireCompleted: false } },
@@ -159,7 +177,7 @@ describe("LoginForm", () => {
     await user.click(screen.getByRole("button", { name: /log in/i }));
 
     await waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith("/dashboard");
+      expect(mockPush).toHaveBeenCalledWith("/onboarding");
     });
   });
 

@@ -55,46 +55,32 @@ export function createProfileText(profile: {
     parts.push(`Interests: ${profile.interests.join(', ')}`);
   }
 
-  // Include questionnaire data for richer matching
   if (profile.questionnaireData) {
     const q = profile.questionnaireData;
-
-    // Leadership context
-    if (q.leadershipLevel) parts.push(`Leadership Level: ${q.leadershipLevel}`);
-    if (q.organizationSize) parts.push(`Organization Size: ${q.organizationSize}`);
-    if (q.yearsExperience) parts.push(`Years Experience: ${q.yearsExperience}`);
-
-    // Leadership priorities and challenges
-    if (Array.isArray(q.leadershipPriorities) && q.leadershipPriorities.length) {
-      parts.push(`Leadership Priorities: ${q.leadershipPriorities.join(', ')}`);
-    }
-    if (Array.isArray(q.leadershipChallenges) && q.leadershipChallenges.length) {
-      parts.push(`Leadership Challenges: ${q.leadershipChallenges.join(', ')}`);
-    }
-    if (Array.isArray(q.growthAreas) && q.growthAreas.length) {
-      parts.push(`Growth Areas: ${q.growthAreas.join(', ')}`);
-    }
-    if (Array.isArray(q.networkingGoals) && q.networkingGoals.length) {
-      parts.push(`Networking Goals: ${q.networkingGoals.join(', ')}`);
-    }
-
-    // Personal interests
-    if (Array.isArray(q.rechargeActivities) && q.rechargeActivities.length) {
-      parts.push(`Recharge Activities: ${q.rechargeActivities.join(', ')}`);
-    }
-    if (Array.isArray(q.customInterests) && q.customInterests.length) {
-      parts.push(`Custom Interests: ${q.customInterests.join(', ')}`);
-    }
-    if (Array.isArray(q.fitnessActivities) && q.fitnessActivities.length) {
-      parts.push(`Fitness Activities: ${q.fitnessActivities.join(', ')}`);
-    }
-
-    // Leadership style
-    if (Array.isArray(q.leadershipPhilosophy) && q.leadershipPhilosophy.length) {
-      parts.push(`Leadership Philosophy: ${q.leadershipPhilosophy.join(', ')}`);
-    }
-    if (q.decisionMakingStyle) parts.push(`Decision Making: ${q.decisionMakingStyle}`);
-    if (q.communicationStyle) parts.push(`Communication Style: ${q.communicationStyle}`);
+    if (typeof q.roleSummary === "string" && q.roleSummary)
+      parts.push(`Role: ${q.roleSummary}`);
+    if (typeof q.archetype === "string" && q.archetype)
+      parts.push(`Archetype: ${q.archetype}`);
+    if (Array.isArray(q.teamQualities) && q.teamQualities.length)
+      parts.push(`Team qualities: ${q.teamQualities.join(", ")}`);
+    if (typeof q.growthArea === "string" && q.growthArea)
+      parts.push(`Learning: ${q.growthArea}`);
+    if (typeof q.talkTopic === "string" && q.talkTopic)
+      parts.push(`Talk topic: ${q.talkTopic}`);
+    if (typeof q.refinedInterest === "string" && q.refinedInterest)
+      parts.push(`Focus: ${q.refinedInterest}`);
+    if (typeof q.personalInterest === "string" && q.personalInterest)
+      parts.push(`Outside work: ${q.personalInterest}`);
+    if (Array.isArray(q.personalityTags) && q.personalityTags.length)
+      parts.push(`Style: ${q.personalityTags.join(", ")}`);
+    if (typeof q.joyTrigger === "string" && q.joyTrigger)
+      parts.push(`Day-brightener: ${q.joyTrigger}`);
+    if (typeof q.threeWords === "string" && q.threeWords)
+      parts.push(`In three words: ${q.threeWords}`);
+    if (typeof q.headline === "string" && q.headline)
+      parts.push(`Summit headline: ${q.headline}`);
+    if (typeof q.funFact === "string" && q.funFact)
+      parts.push(`Fun fact: ${q.funFact}`);
   }
 
   return parts.join('\n');

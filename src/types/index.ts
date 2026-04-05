@@ -37,6 +37,8 @@ export interface UserPhoto {
   storageKey: string;
   url: string;
   caption?: string;
+  /** Normalized label for community gallery grouping (optional). */
+  activityTag?: string;
   displayOrder: number;
   createdAt: Date;
 }
@@ -53,34 +55,23 @@ export interface QuestionnaireResponse {
   lastUpdated: Date;
 }
 
+/** Global Summit 2026 — AI Networking Guide (onboarding questionnaire) */
 export interface QuestionnaireData {
-  // Section 1: Your Leadership Context
-  yearsExperience?: string;
-  leadershipLevel?: string;
-  organizationSize?: string;
-
-  // Section 2: What You're Building & Solving (4 questions)
-  leadershipPriorities?: string[];
-  leadershipChallenges?: string[];
-  growthAreas?: string[];
-  networkingGoals?: string[];
-
-  // Section 3: Beyond the Boardroom (6 questions)
-  rechargeActivities?: string[];
-  customInterests?: string[]; // User-typed custom interests
-  contentPreferences?: string[];
-  fitnessActivities?: string[];
-  idealWeekend?: string;
-  volunteerCauses?: string[];
-  energizers?: string[];
-
-  // Section 4: Your Leadership Style (6 questions)
-  leadershipPhilosophy?: string[];
-  decisionMakingStyle?: string;
-  failureApproach?: string;
-  relationshipValues?: string[]; // Ranked top 3
-  communicationStyle?: string;
-  leadershipSeason?: string;
+  roleSummary?: string;
+  archetype?: string;
+  teamQualities?: string[];
+  growthArea?: string;
+  talkTopic?: string;
+  /** Conditional follow-up after talkTopic (AI vs leadership keyword) */
+  refinedInterest?: string;
+  personalInterest?: string;
+  /** Set by conversational wizard after optional photo step */
+  personalInterestPhoto?: "uploaded" | "skipped";
+  personalityTags?: string[];
+  joyTrigger?: string;
+  threeWords?: string;
+  headline?: string;
+  funFact?: string;
 }
 
 export interface QuestionSection {
@@ -103,6 +94,9 @@ export interface Question {
   skipLogic?: SkipLogicRule[];
   customFieldId?: keyof QuestionnaireData; // For multi-select-custom: ID of field to store custom values
   customFieldPlaceholder?: string; // Placeholder text for custom input
+  /** Free-text questions */
+  textPlaceholder?: string;
+  textMultiline?: boolean;
 }
 
 export type QuestionType =
@@ -312,11 +306,9 @@ export interface MeetingWithUsers extends Meeting {
 // ============================================
 
 export interface SearchFilters {
-  leadershipLevels?: string[];
-  organizationSizes?: string[];
-  yearsExperience?: string[];
-  leadershipChallenges?: string[];
-  leadershipPriorities?: string[];
+  archetypes?: string[];
+  teamQualities?: string[];
+  personalityTags?: string[];
   interests?: string[];
   location?: string;
   keywords?: string;

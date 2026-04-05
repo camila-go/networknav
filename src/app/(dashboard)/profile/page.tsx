@@ -30,27 +30,21 @@ import {
   HelpCircle,
   BookOpenCheck,
 } from "lucide-react";
-import { resetOnboarding } from "@/components/onboarding";
+import { replayAppTourAndReload } from "@/components/onboarding";
 import { MATCH_TYPE_STYLES } from "@/lib/badge-styles";
 import {
   InterestChipsPanel,
   hasProfileInterestContent,
+  type ProfileInterestData,
 } from "@/components/profile/interest-chips-panel";
+import type { ProfileAnswerRow } from "@/lib/profile/questionnaire-answers-display";
 import { BadgeDisplay } from "@/components/gamification/badge-display";
 import { type BadgeProgress, parseBadgesFromApi } from "@/lib/gamification";
 import type { UserBadge } from "@/types";
 import { SHOW_GAMIFICATION_UI } from "@/lib/feature-flags";
+import { useToast } from "@/components/ui/use-toast";
 
-interface UserInterests {
-  rechargeActivities: string[];
-  fitnessActivities: string[];
-  volunteerCauses: string[];
-  contentPreferences: string[];
-  customInterests: string[];
-  idealWeekend: string | null;
-  leadershipPriorities: string[];
-  networkingGoals: string[];
-}
+const PROFILE_UI_PREFS_KEY = "nn_profile_ui_prefs_v1";
 
 interface ConnectionSummary {
   id: string;
@@ -70,7 +64,8 @@ interface ActivityStats {
 }
 
 export default function ProfilePage() {
-  const [interests, setInterests] = useState<UserInterests | null>(null);
+  const { toast } = useToast();
+  const [interests, setInterests] = useState<ProfileInterestData | null>(null);
   const [badges, setBadges] = useState<UserBadge[]>([]);
   const [badgeProgress, setBadgeProgress] = useState<BadgeProgress[]>([]);
   const [connections, setConnections] = useState<ConnectionSummary[]>([]);
@@ -80,6 +75,7 @@ export default function ProfilePage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [profileQuestionnaireCompleted, setProfileQuestionnaireCompleted] =
     useState(true);
+  const [profileAnswers, setProfileAnswers] = useState<ProfileAnswerRow[]>([]);
   
   // Settings state
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
@@ -97,6 +93,44 @@ export default function ProfilePage() {
     weeklyDigest: true,
     streakReminders: true,
   });
+  const [prefsHydrated, setPrefsHydrated] = useState(false);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(PROFILE_UI_PREFS_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as {
+          privacy?: Partial<typeof privacySettings>;
+          notifications?: Partial<typeof notificationSettings>;
+        };
+        if (parsed.privacy && typeof parsed.privacy === "object") {
+          setPrivacySettings((s) => ({ ...s, ...parsed.privacy }));
+        }
+        if (parsed.notifications && typeof parsed.notifications === "object") {
+          setNotificationSettings((s) => ({ ...s, ...parsed.notifications }));
+        }
+      }
+    } catch {
+      /* ignore */
+    } finally {
+      setPrefsHydrated(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!prefsHydrated) return;
+    try {
+      localStorage.setItem(
+        PROFILE_UI_PREFS_KEY,
+        JSON.stringify({
+          privacy: privacySettings,
+          notifications: notificationSettings,
+        })
+      );
+    } catch {
+      /* ignore */
+    }
+  }, [prefsHydrated, privacySettings, notificationSettings]);
 
   useEffect(() => {
     fetchProfileData();
@@ -104,17 +138,22 @@ export default function ProfilePage() {
 
   async function fetchProfileData() {
     try {
-      // Get current user ID
       const profileRes = await fetch("/api/profile");
       const profileData = await profileRes.json();
-      if (profileData.success && profileData.data?.id) {
-        setCurrentUserId(profileData.data.id);
-        
-        // Fetch user's data
+      const userId =
+        profileData.success && profileData.data?.user?.id
+          ? (profileData.data.user.id as string)
+          : profileData.success && profileData.data?.id
+            ? (profileData.data.id as string)
+            : null;
+
+      if (userId) {
+        setCurrentUserId(userId);
+
         const [interestsRes, badgesRes, connectionsRes, activityRes] = await Promise.all([
-          fetch(`/api/users/${profileData.data.id}/interests`),
-          fetch(`/api/activity/badges?userId=${profileData.data.id}`),
-          fetch(`/api/users/${profileData.data.id}/matches`),
+          fetch(`/api/users/${userId}/interests`),
+          fetch(`/api/activity/badges?userId=${userId}`),
+          fetch(`/api/users/${userId}/matches`),
           fetch("/api/activity"),
         ]);
 
@@ -130,6 +169,10 @@ export default function ProfilePage() {
           setProfileQuestionnaireCompleted(
             !!interestsData.data.questionnaireCompleted
           );
+          const rows = interestsData.data.profileAnswers as
+            | ProfileAnswerRow[]
+            | undefined;
+          setProfileAnswers(Array.isArray(rows) ? rows : []);
         }
         if (badgesData.badges !== undefined) {
           setBadges(parseBadgesFromApi(badgesData.badges));
@@ -190,6 +233,33 @@ export default function ProfilePage() {
           </Suspense>
         </div>
 
+        {profileAnswers.length > 0 && (
+          <div className="rounded-xl bg-white/5 border border-white/10 p-6">
+            <div className="mb-4">
+              <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                <BookOpenCheck className="h-5 w-5 text-cyan-400" />
+                Your summit guide answers
+              </h2>
+              <p className="text-sm text-white/50 mt-1">
+                What you shared in the chatbot onboarding—visible to your matches
+                the same way as your interests.
+              </p>
+            </div>
+            <dl className="space-y-4">
+              {profileAnswers.map((row) => (
+                <div key={row.id} className="border-b border-white/5 pb-4 last:border-0 last:pb-0">
+                  <dt className="text-xs font-medium text-white/45 uppercase tracking-wide">
+                    {row.label}
+                  </dt>
+                  <dd className="mt-1 text-sm text-white/90 leading-relaxed whitespace-pre-wrap">
+                    {row.value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        )}
+
         {/* Photo Gallery */}
         {currentUserId && (
           <div className="rounded-xl bg-white/5 border border-white/10 p-6">
@@ -245,13 +315,18 @@ export default function ProfilePage() {
           />
         )}
 
-        {/* Your Connections */}
+        {/* Your Connections — suggested matches (same as Matches), not chat attempts */}
         <div className="rounded-xl bg-white/5 border border-white/10 p-6">
-          <div className="flex items-center justify-between mb-4">
+          <div className="mb-4">
             <h2 className="text-xs font-semibold text-white/50 uppercase tracking-wider flex items-center gap-2">
               <Users className="h-4 w-4 text-cyan-400" />
               Your Connections ({connections.length})
             </h2>
+            <p className="mt-1.5 text-xs text-white/40 leading-relaxed">
+              People from your suggested match list (high-affinity and strategic).
+              This is not a count of chats or messages—open Matches to act on
+              suggestions.
+            </p>
           </div>
 
           {connections.length > 0 ? (
@@ -392,6 +467,10 @@ export default function ProfilePage() {
           
           {expandedSection === "privacy" && (
             <div className="px-6 pb-6 space-y-4 border-t border-white/10 pt-4">
+              <p className="text-xs text-white/45">
+                Privacy and notification preferences below are stored on this
+                device (preview until account-wide settings are available).
+              </p>
               {SHOW_GAMIFICATION_UI && (
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -567,16 +646,21 @@ export default function ProfilePage() {
           
           {expandedSection === "account" && (
             <div className="px-6 pb-6 space-y-4 border-t border-white/10 pt-4">
-              <div className="flex items-center justify-between p-3 rounded-full bg-white/5 hover:bg-white/10 transition-colors cursor-pointer">
+              <Link
+                href="/login"
+                className="flex items-center justify-between p-3 rounded-full bg-white/5 hover:bg-white/10 transition-colors"
+              >
                 <div className="flex items-center gap-3">
                   <Lock className="h-4 w-4 text-white/50" />
                   <div>
                     <p className="text-sm font-medium text-white">Change Password</p>
-                    <p className="text-xs text-white/50">Update your account password</p>
+                    <p className="text-xs text-white/50">
+                      Use “Forgot password” on the sign-in page to reset
+                    </p>
                   </div>
                 </div>
                 <ChevronDown className="h-4 w-4 text-white/50 -rotate-90" />
-              </div>
+              </Link>
               <div className="flex items-center justify-between p-3 rounded-full bg-white/5 hover:bg-white/10 transition-colors cursor-pointer">
                 <div className="flex items-center gap-3">
                   <Shield className="h-4 w-4 text-white/50" />
@@ -601,9 +685,17 @@ export default function ProfilePage() {
                 <Button
                   variant="outline"
                   className="w-full gap-2 border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300"
-                  onClick={() => {
-                    // Logout logic
-                    window.location.href = "/api/auth/logout";
+                  onClick={async () => {
+                    try {
+                      await fetch("/api/auth/logout", {
+                        method: "POST",
+                        credentials: "same-origin",
+                      });
+                    } catch {
+                      /* still leave session client-side */
+                    } finally {
+                      window.location.href = "/login";
+                    }
                   }}
                 >
                   <LogOut className="h-4 w-4" />
@@ -639,10 +731,7 @@ export default function ProfilePage() {
           {expandedSection === "help" && (
             <div className="px-6 pb-6 space-y-4 border-t border-white/10 pt-4">
               <button
-                onClick={() => {
-                  resetOnboarding();
-                  window.location.reload();
-                }}
+                onClick={() => replayAppTourAndReload()}
                 className="w-full flex items-center justify-between p-3 rounded-full bg-white/5 hover:bg-white/10 transition-colors"
               >
                 <div className="flex items-center gap-3">

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { ChevronLeft, ChevronRight, Plus, Trash2, Pencil, Check, X, ChevronUp, ChevronDown, Loader2, Image } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import type { UserPhoto } from "@/types";
 
@@ -24,9 +25,19 @@ export function PhotoGallery({ userId, isOwner, withContainer = false, container
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
-  const [editingCaption, setEditingCaption] = useState<{ id: string; value: string } | null>(null);
+  const [editingCaption, setEditingCaption] = useState<{
+    id: string;
+    value: string;
+    activityTag: string;
+  } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [uploadActivityTag, setUploadActivityTag] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  /** Latest activity label at confirm time (upload is async; avoids stale closure). */
+  const uploadActivityTagRef = useRef("");
+  useEffect(() => {
+    uploadActivityTagRef.current = uploadActivityTag;
+  }, [uploadActivityTag]);
 
   const fetchPhotos = useCallback(async () => {
     try {
@@ -119,10 +130,15 @@ export function PhotoGallery({ userId, isOwner, withContainer = false, container
       }
 
       // Step 3: Confirm upload and create DB record
+      const tagTrim = uploadActivityTag.trim();
       const confirmResponse = await fetch("/api/profile/photos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ storageKey, photoId }),
+        body: JSON.stringify({
+          storageKey,
+          photoId,
+          ...(tagTrim ? { activityTag: tagTrim } : {}),
+        }),
       });
       const confirmResult = await confirmResponse.json();
 
@@ -158,19 +174,26 @@ export function PhotoGallery({ userId, isOwner, withContainer = false, container
     }
   }
 
-  async function saveCaption(photoId: string, caption: string) {
+  async function saveCaption(photoId: string, caption: string, activityTag: string) {
     setEditingCaption(null);
-    // Optimistic update
-    setPhotos(prev =>
-      prev.map(p => p.id === photoId ? { ...p, caption: caption || undefined } : p)
-    );
 
     try {
-      await fetch(`/api/profile/photos/${photoId}`, {
+      const res = await fetch(`/api/profile/photos/${photoId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ caption: caption || null }),
+        body: JSON.stringify({
+          caption: caption.trim() || null,
+          activityTag,
+        }),
       });
+      const result = await res.json();
+      if (result.success && result.data?.photo) {
+        setPhotos((prev) =>
+          prev.map((p) => (p.id === photoId ? result.data.photo : p))
+        );
+      } else {
+        fetchPhotos();
+      }
     } catch (error) {
       console.error("Caption save failed:", error);
       fetchPhotos();
@@ -219,36 +242,64 @@ export function PhotoGallery({ userId, isOwner, withContainer = false, container
   const inner = (
     <div className="space-y-4">
       {isOwner && (
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-white/50">
-            {photos.length} / {MAX_PHOTOS} photos
-          </span>
-          <div className="flex items-center gap-2">
-            {uploadError && (
-              <span className="text-xs text-red-400">{uploadError}</span>
-            )}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
-              onChange={handleFileSelect}
-              className="hidden"
-            />
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              disabled={uploading || photos.length >= MAX_PHOTOS}
-              onClick={() => { setUploadError(null); fileInputRef.current?.click(); }}
-              className="border-white/20 text-white/80 hover:bg-white/10"
-            >
-              {uploading ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Plus className="mr-2 h-4 w-4" />
+        <div className="space-y-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div className="min-w-0 flex-1 space-y-1">
+              <label
+                htmlFor="gallery-upload-activity"
+                className="text-[11px] font-medium uppercase tracking-wide text-white/45"
+              >
+                Activity for community gallery (optional)
+              </label>
+              <input
+                id="gallery-upload-activity"
+                type="text"
+                maxLength={48}
+                value={uploadActivityTag}
+                onChange={(e) => setUploadActivityTag(e.target.value)}
+                disabled={uploading || photos.length >= MAX_PHOTOS}
+                placeholder="e.g. kayaking, fishing"
+                className="w-full max-w-sm rounded-md border border-white/15 bg-zinc-950/80 px-3 py-2 text-sm text-white placeholder:text-white/35 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 disabled:opacity-50"
+              />
+              <p className="text-[11px] text-white/40">
+                Add a label so this photo can cluster with others who pick the same activity
+                on the community gallery. Your chip shows on your profile whenever a label
+                is saved.
+              </p>
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              <span className="text-sm text-white/50 sm:mr-2">
+                {photos.length} / {MAX_PHOTOS} photos
+              </span>
+              {uploadError && (
+                <span className="text-xs text-red-400">{uploadError}</span>
               )}
-              {uploading ? "Uploading..." : "Add Photo"}
-            </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={uploading || photos.length >= MAX_PHOTOS}
+                onClick={() => {
+                  setUploadError(null);
+                  fileInputRef.current?.click();
+                }}
+                className="border-white/20 text-white/80 hover:bg-white/10"
+              >
+                {uploading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Plus className="mr-2 h-4 w-4" />
+                )}
+                {uploading ? "Uploading..." : "Add Photo"}
+              </Button>
+            </div>
           </div>
         </div>
       )}
@@ -267,19 +318,31 @@ export function PhotoGallery({ userId, isOwner, withContainer = false, container
         </div>
       ) : (
         <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-          {photos.map((photo, index) => (
+          {photos.map((photo, index) => {
+            const chipLabel = photo.activityTag?.trim();
+            return (
             <div key={photo.id} className="group relative aspect-square">
               {/* Thumbnail */}
               <button
                 type="button"
                 onClick={() => setLightboxIndex(index)}
-                className="w-full h-full rounded-lg overflow-hidden focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                className="relative w-full h-full rounded-lg overflow-hidden focus:outline-none focus:ring-2 focus:ring-cyan-500"
               >
                 <img
                   src={photo.url}
                   alt={photo.caption ?? `Photo ${index + 1}`}
-                  className="w-full h-full object-cover transition-opacity group-hover:opacity-80"
+                  className="w-full h-full object-cover select-none transition-opacity group-hover:opacity-80"
                 />
+                {chipLabel ? (
+                  <span className="pointer-events-none absolute bottom-1 left-1 right-1 z-[2] flex justify-start">
+                    <Badge
+                      variant="secondary"
+                      className="max-w-full justify-start rounded-md border-0 bg-black/85 px-1.5 py-0.5 text-left text-[10px] font-semibold uppercase tracking-wide text-cyan-200 shadow-md [overflow-wrap:anywhere] leading-snug"
+                    >
+                      {chipLabel}
+                    </Badge>
+                  </span>
+                ) : null}
               </button>
 
               {/* Owner controls overlay */}
@@ -329,7 +392,11 @@ export function PhotoGallery({ userId, isOwner, withContainer = false, container
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setEditingCaption({ id: photo.id, value: photo.caption ?? "" });
+                      setEditingCaption({
+                        id: photo.id,
+                        value: photo.caption ?? "",
+                        activityTag: photo.activityTag?.trim() ?? "",
+                      });
                     }}
                     className="absolute bottom-1 left-1 right-1 bg-black/70 text-white/70 hover:text-white rounded px-1.5 py-0.5 text-xs flex items-center gap-1 truncate"
                     title="Edit caption"
@@ -340,40 +407,72 @@ export function PhotoGallery({ userId, isOwner, withContainer = false, container
                 </div>
               )}
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
       {/* Caption editing modal */}
       {editingCaption && (
-        <div className="flex items-center gap-2 p-3 bg-white/5 rounded-lg border border-white/10">
+        <div className="space-y-2 rounded-lg border border-white/10 bg-white/5 p-3">
+          <div className="flex items-center gap-2">
+            <input
+              autoFocus
+              type="text"
+              value={editingCaption.value}
+              maxLength={120}
+              onChange={(e) =>
+                setEditingCaption((prev) =>
+                  prev ? { ...prev, value: e.target.value } : null
+                )
+              }
+              onKeyDown={(e) => {
+                if (e.key === "Enter")
+                  saveCaption(
+                    editingCaption.id,
+                    editingCaption.value,
+                    editingCaption.activityTag
+                  );
+                if (e.key === "Escape") setEditingCaption(null);
+              }}
+              placeholder="Caption..."
+              className="min-w-0 flex-1 bg-transparent text-sm text-white placeholder:text-white/40 outline-none"
+            />
+            <button
+              type="button"
+              onClick={() =>
+                saveCaption(
+                  editingCaption.id,
+                  editingCaption.value,
+                  editingCaption.activityTag
+                )
+              }
+              className="text-cyan-400 hover:text-cyan-300"
+              aria-label="Save"
+            >
+              <Check className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditingCaption(null)}
+              className="text-white/40 hover:text-white/70"
+              aria-label="Cancel"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
           <input
-            autoFocus
             type="text"
-            value={editingCaption.value}
-            maxLength={120}
-            onChange={(e) => setEditingCaption(prev => prev ? { ...prev, value: e.target.value } : null)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") saveCaption(editingCaption.id, editingCaption.value);
-              if (e.key === "Escape") setEditingCaption(null);
-            }}
-            placeholder="Add a caption..."
-            className="flex-1 bg-transparent text-sm text-white placeholder:text-white/40 outline-none"
+            maxLength={48}
+            value={editingCaption.activityTag}
+            onChange={(e) =>
+              setEditingCaption((prev) =>
+                prev ? { ...prev, activityTag: e.target.value } : null
+              )
+            }
+            placeholder="Gallery activity (e.g. kayaking)"
+            className="w-full max-w-sm rounded-md border border-white/10 bg-zinc-950/60 px-3 py-1.5 text-xs text-white placeholder:text-white/35 outline-none focus:ring-2 focus:ring-cyan-500/40"
           />
-          <button
-            type="button"
-            onClick={() => saveCaption(editingCaption.id, editingCaption.value)}
-            className="text-cyan-400 hover:text-cyan-300"
-          >
-            <Check className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setEditingCaption(null)}
-            className="text-white/40 hover:text-white/70"
-          >
-            <X className="h-4 w-4" />
-          </button>
         </div>
       )}
 
@@ -410,10 +509,17 @@ export function PhotoGallery({ userId, isOwner, withContainer = false, container
               />
 
               {/* Caption + counter */}
-              <div className="w-full px-6 py-3 flex items-center justify-between">
-                <p className="text-sm text-white/70">
-                  {photos[lightboxIndex].caption || ""}
-                </p>
+              <div className="w-full px-6 py-3 flex flex-wrap items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center gap-2 min-w-0">
+                  {photos[lightboxIndex].activityTag?.trim() ? (
+                    <Badge className="shrink-0 border-cyan-500/40 bg-cyan-950/80 text-cyan-200">
+                      {photos[lightboxIndex].activityTag!.trim()}
+                    </Badge>
+                  ) : null}
+                  <p className="text-sm text-white/70">
+                    {photos[lightboxIndex].caption || ""}
+                  </p>
+                </div>
                 <p className="text-xs text-white/40 shrink-0">
                   {lightboxIndex + 1} / {photos.length}
                 </p>

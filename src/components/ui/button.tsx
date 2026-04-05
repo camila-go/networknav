@@ -3,27 +3,27 @@ import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
+/** Primary CTA fill (brand); white label/icon on this surface. */
+export const PRIMARY_BUTTON_FILL = "#0A6171";
+
 /**
- * Primary CTA: white fill, dark text — use with `<Button />` default or custom `<a>`/`<button>`.
- * Includes focus ring tuned for a white control (not the dark page offset), hover/active depth,
- * and SVG/icon contrast (currentColor + slightly heavier stroke).
+ * Primary CTA: deep teal fill, white text — use with `<Button />` default or custom `<a>`/`<button>`.
+ * Hover/active lighten or deepen the fill; focus ring uses light ring on the same hue.
  */
 export const primaryActionClasses = [
-  "bg-white text-neutral-950 border border-black/12",
-  "shadow-md shadow-black/10",
-  "hover:bg-neutral-50 hover:border-black/20 hover:shadow-lg hover:shadow-black/20",
-  "active:bg-neutral-200/95 active:border-black/25 active:shadow-sm",
-  // Focus: visible on white fill; offset matches surface (overrides base dark offset via twMerge)
-  "focus-visible:ring-2 focus-visible:ring-black/50 focus-visible:ring-offset-2 focus-visible:ring-offset-white",
-  // Icons (Lucide uses currentColor + stroke)
-  "[&_svg]:shrink-0 [&_svg]:text-neutral-950 [&_svg]:stroke-[2.25]",
+  "bg-[#0A6171] text-white border border-white/20",
+  "shadow-md shadow-black/25",
+  "hover:bg-[#0c7586] hover:border-white/30 hover:shadow-lg hover:shadow-black/30",
+  "active:bg-[#085560] active:border-white/25 active:shadow-sm",
+  "focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0A6171]",
+  "[&_svg]:shrink-0 [&_svg]:text-white [&_svg]:stroke-[2.25]",
   "[&_img]:shrink-0",
 ].join(" ");
 
 /**
  * Button Component - WCAG AA Compliant
  *
- * Default (primary) is white fill with black text on dark UIs.
+ * Default (primary) uses brand fill (#0A6171) with white text on dark UIs.
  * Other variants keep semantic colors (destructive, success, etc.).
  */
 const buttonVariants = cva(

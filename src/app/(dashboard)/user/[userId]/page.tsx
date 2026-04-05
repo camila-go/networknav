@@ -13,22 +13,12 @@ import { BadgeDisplay } from "@/components/gamification/badge-display";
 import {
   InterestChipsPanel,
   hasProfileInterestContent,
+  type ProfileInterestData,
 } from "@/components/profile/interest-chips-panel";
 import type { UserBadge } from "@/types";
 import { parseBadgesFromApi } from "@/lib/gamification";
 import { PhotoGallery } from "@/components/profile/photo-gallery";
 import { SHOW_GAMIFICATION_UI } from "@/lib/feature-flags";
-
-interface UserInterests {
-  rechargeActivities: string[];
-  fitnessActivities: string[];
-  volunteerCauses: string[];
-  contentPreferences: string[];
-  customInterests: string[];
-  idealWeekend: string | null;
-  leadershipPriorities: string[];
-  networkingGoals: string[];
-}
 
 interface UserProfile {
   id: string;
@@ -85,7 +75,7 @@ export default function UserProfilePage() {
   const [connectionSearch, setConnectionSearch] = useState("");
   const [connectionFilter, setConnectionFilter] = useState<"all" | "high-affinity" | "strategic">("all");
   const [showAllConnections, setShowAllConnections] = useState(false);
-  const [interests, setInterests] = useState<UserInterests | null>(null);
+  const [interests, setInterests] = useState<ProfileInterestData | null>(null);
   const [profileQuestionnaireCompleted, setProfileQuestionnaireCompleted] =
     useState(true);
 

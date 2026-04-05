@@ -10,8 +10,80 @@ import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
 import { checkRateLimit } from "@/lib/security/rateLimit";
 import type { UserRole } from "@/types";
 
-// Rate limit for login: 5 attempts per 15 minutes per IP
-const LOGIN_RATE_LIMIT = { maxRequests: 5, windowMs: 15 * 60 * 1000 };
+// Rate limit for login (prod: strict; dev: room to debug without locking yourself out)
+const LOGIN_RATE_LIMIT =
+  process.env.NODE_ENV === "production"
+    ? { maxRequests: 5, windowMs: 15 * 60 * 1000 }
+    : { maxRequests: 100, windowMs: 15 * 60 * 1000 };
+
+const MSG_SSO_ONLY =
+  "This account uses corporate SSO. Use “Sign in with Corporate SSO” instead of email and password.";
+const MSG_NO_PASSWORD_ON_FILE =
+  "We found your profile, but there is no password on file. Use “Sign in with Corporate SSO”, or ask your administrator to set a password for email login.";
+
+/** True when this hash is not a bcrypt hash and password login is intentionally disabled (SSO users). */
+function isSsoOnlyPasswordHash(hash: string): boolean {
+  return hash === "SAML_SSO_NO_PASSWORD" || hash.startsWith("SAML_SSO:");
+}
+
+/**
+ * When email/password login has no user row in memory/Supabase loader, check if a profile
+ * exists anyway so we can return a clearer message than “invalid credentials”.
+ */
+async function loginHintIfProfileExistsWithoutPasswordLogin(
+  email: string
+): Promise<string | null> {
+  if (!isSupabaseConfigured || !supabaseAdmin) return null;
+  try {
+    const row = await selectUserProfileRowByEmailForLogin(email);
+    if (!row) return null;
+    const ph = row.password_hash as string | null | undefined;
+    if (ph == null || String(ph).trim() === "") {
+      return MSG_NO_PASSWORD_ON_FILE;
+    }
+    if (isSsoOnlyPasswordHash(String(ph))) {
+      return MSG_SSO_ONLY;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/** Escape `%`, `_`, `\` so `ilike` is an exact string match (case-insensitive). */
+function escapeForILikeExact(value: string): string {
+  return value.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
+}
+
+/**
+ * Resolve `user_profiles` by email even when DB casing differs from what the user typed
+ * (e.g. row `Camila.Gonzalez@…` vs login `camila.gonzalez@…`).
+ */
+async function selectUserProfileRowByEmailForLogin(
+  emailRaw: string
+): Promise<Record<string, unknown> | null> {
+  if (!supabaseAdmin) return null;
+  const trimmed = emailRaw.trim();
+  const lower = trimmed.toLowerCase();
+  const variants = [...new Set([lower, trimmed])];
+
+  for (const v of variants) {
+    const { data, error } = await supabaseAdmin
+      .from("user_profiles")
+      .select("*")
+      .eq("email", v)
+      .maybeSingle();
+    if (!error && data) return data as Record<string, unknown>;
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from("user_profiles")
+    .select("*")
+    .ilike("email", escapeForILikeExact(trimmed))
+    .maybeSingle();
+  if (!error && data) return data as Record<string, unknown>;
+  return null;
+}
 
 // Helper to find user from Supabase and add to memory store
 async function findUserFromSupabase(email: string): Promise<{
@@ -29,15 +101,10 @@ async function findUserFromSupabase(email: string): Promise<{
   if (!isSupabaseConfigured || !supabaseAdmin) return null;
 
   try {
-    // Use select("*") to avoid errors when optional columns (e.g. role) don't exist yet
-    const { data: profile, error } = await supabaseAdmin
-      .from('user_profiles')
-      .select('*')
-      .eq('email', email.toLowerCase())
-      .single();
+    const profile = await selectUserProfileRowByEmailForLogin(email);
 
-    if (error || !profile) {
-      console.log('Supabase profile lookup error:', error?.message || 'No profile found');
+    if (!profile) {
+      console.log("Supabase profile lookup: no row for email (after case-insensitive match)");
       return null;
     }
 
@@ -55,14 +122,16 @@ async function findUserFromSupabase(email: string): Promise<{
       questionnaire_data?: Record<string, unknown>;
     };
 
-    // Check if we have a password hash stored
+    // Check if we have a bcrypt password stored (SSO sentinel or empty = not valid for email login)
     if (!typedProfile.password_hash) {
-      console.log('User found in Supabase but no password hash stored - column may be missing');
-      console.log('Run: ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS password_hash TEXT;');
+      console.log(
+        "Supabase: profile exists for",
+        typedProfile.email,
+        "but password_hash is empty — email/password login unavailable."
+      );
       return null;
     }
-
-    console.log('✅ User loaded from Supabase:', typedProfile.name, typedProfile.email);
+    console.log("✅ User loaded from Supabase:", typedProfile.name, typedProfile.email);
 
     return {
       id: typedProfile.id,
@@ -145,7 +214,7 @@ export async function POST(request: NextRequest) {
         // Create a properly typed user object
         const storedUser = {
           id: supabaseUser.id,
-          email: supabaseUser.email,
+          email: supabaseUser.email.toLowerCase(),
           passwordHash: supabaseUser.passwordHash,
           role: supabaseUser.role,
           name: supabaseUser.name,
@@ -182,10 +251,21 @@ export async function POST(request: NextRequest) {
 
     if (!user) {
       console.log(`User ${email} not found in memory or Supabase`);
+      const hint = await loginHintIfProfileExistsWithoutPasswordLogin(email);
       return NextResponse.json(
         {
           success: false,
-          error: "Invalid email or password",
+          error: hint || "Invalid email or password",
+        },
+        { status: 401 }
+      );
+    }
+
+    if (isSsoOnlyPasswordHash(user.passwordHash)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: MSG_SSO_ONLY,
         },
         { status: 401 }
       );

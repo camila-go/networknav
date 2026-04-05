@@ -8,6 +8,7 @@ function rowToUserPhoto(row: {
   storage_key: string;
   url: string;
   caption: string | null;
+  activity_tag?: string | null;
   display_order: number;
   created_at: string;
 }): UserPhoto {
@@ -17,6 +18,7 @@ function rowToUserPhoto(row: {
     storageKey: row.storage_key,
     url: row.url,
     caption: row.caption ?? undefined,
+    activityTag: row.activity_tag ?? undefined,
     displayOrder: row.display_order,
     createdAt: new Date(row.created_at),
   };

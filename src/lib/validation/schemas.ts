@@ -131,11 +131,9 @@ export type BlockUserInput = z.infer<typeof blockUserSchema>;
 // ============================================
 
 export const searchFiltersSchema = z.object({
-  leadershipLevels: z.array(z.string()).optional(),
-  organizationSizes: z.array(z.string()).optional(),
-  yearsExperience: z.array(z.string()).optional(),
-  leadershipChallenges: z.array(z.string()).optional(),
-  leadershipPriorities: z.array(z.string()).optional(),
+  archetypes: z.array(z.string()).optional(),
+  teamQualities: z.array(z.string()).optional(),
+  personalityTags: z.array(z.string()).optional(),
   interests: z.array(z.string()).optional(),
   location: z.string().optional(),
   keywords: z.string().max(200).optional(),

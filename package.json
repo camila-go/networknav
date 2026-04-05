@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "node --import tsx server.ts",
+    "dev:clean": "rm -rf .next && node --import tsx server.ts",
     "dev:next": "next dev",
     "build": "next build",
     "start": "NODE_ENV=production node --import tsx server.ts",

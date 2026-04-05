@@ -1,9 +1,19 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import {
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useCallback,
+  useRef,
+  useMemo,
+} from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FilterSidebar } from "./filter-sidebar";
-import { AttendeeCard } from "./attendee-card";
+import {
+  AttendeeCard,
+  EXPLORE_HIGH_AFFINITY_MIN_PERCENT,
+} from "./attendee-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -26,6 +36,10 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
+import {
+  EXPLORE_SEARCH_FOCUS_EVENT,
+  EXPLORE_SEARCH_FOCUS_STORAGE_KEY,
+} from "@/lib/explore-search-focus";
 import type { SearchFilters, AttendeeSearchResult } from "@/types";
 
 export function ExploreContainer() {
@@ -46,6 +60,8 @@ export function ExploreContainer() {
   const [totalResults, setTotalResults] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [viewerFirstName, setViewerFirstName] = useState<string | undefined>();
+  const [emphasizeSearchField, setEmphasizeSearchField] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const pageSize = 12;
 
@@ -63,11 +79,78 @@ export function ExploreContainer() {
     if (searchParamsKeyRef.current === key) return;
     searchParamsKeyRef.current = key;
     const q = searchParams.get("q")?.trim() ?? "";
-    if (q) {
-      setKeywords(q);
-      setDebouncedKeywords(q);
-    }
+    setKeywords(q);
+    setDebouncedKeywords(q);
   }, [searchParams]);
+
+  // Header magnifier: sessionStorage (nav from other tabs) + CustomEvent (already on /explore). URL ?focusSearch=1 still supported.
+  const emphasizeClearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
+
+  const triggerSearchFieldHighlight = useCallback(() => {
+    setEmphasizeSearchField(true);
+
+    const focusTry = () => {
+      const el = searchInputRef.current;
+      if (!el) return;
+      el.focus({ preventScroll: false });
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    };
+
+    window.setTimeout(focusTry, 0);
+    window.setTimeout(focusTry, 120);
+    window.setTimeout(focusTry, 400);
+
+    if (emphasizeClearTimerRef.current) {
+      clearTimeout(emphasizeClearTimerRef.current);
+    }
+    emphasizeClearTimerRef.current = window.setTimeout(() => {
+      emphasizeClearTimerRef.current = null;
+      setEmphasizeSearchField(false);
+    }, 3800);
+  }, []);
+
+  useEffect(() => {
+    const onFocusRequest = () => triggerSearchFieldHighlight();
+    window.addEventListener(EXPLORE_SEARCH_FOCUS_EVENT, onFocusRequest);
+    return () =>
+      window.removeEventListener(EXPLORE_SEARCH_FOCUS_EVENT, onFocusRequest);
+  }, [triggerSearchFieldHighlight]);
+
+  useLayoutEffect(() => {
+    let fromStorage = false;
+    try {
+      if (sessionStorage.getItem(EXPLORE_SEARCH_FOCUS_STORAGE_KEY) === "1") {
+        sessionStorage.removeItem(EXPLORE_SEARCH_FOCUS_STORAGE_KEY);
+        fromStorage = true;
+      }
+    } catch {
+      /* private mode */
+    }
+
+    const fromUrl = searchParams.get("focusSearch") === "1";
+    if (!fromStorage && !fromUrl) return;
+
+    triggerSearchFieldHighlight();
+
+    if (fromUrl) {
+      const p = new URLSearchParams(searchParams.toString());
+      p.delete("focusSearch");
+      const qs = p.toString();
+      window.setTimeout(() => {
+        router.replace(qs ? `/explore?${qs}` : "/explore", { scroll: false });
+      }, 150);
+    }
+  }, [searchParams, router, triggerSearchFieldHighlight]);
+
+  useEffect(() => {
+    return () => {
+      if (emphasizeClearTimerRef.current) {
+        clearTimeout(emphasizeClearTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -193,6 +276,14 @@ export function ExploreContainer() {
     })),
   ];
   const showActiveFiltersRow = activeTagsForDisplay.length > 0;
+
+  const highAffinityOnPage = useMemo(
+    () =>
+      results.filter(
+        (r) => r.matchPercentage >= EXPLORE_HIGH_AFFINITY_MIN_PERCENT
+      ).length,
+    [results]
+  );
   const MAX_VISIBLE_TAGS = 6;
   const visibleActiveTags = activeTagsForDisplay.slice(0, MAX_VISIBLE_TAGS);
   const overflowTagCount = activeTagsForDisplay.length - visibleActiveTags.length;
@@ -209,7 +300,7 @@ export function ExploreContainer() {
 
   return (
     <div className="flex flex-col h-full bg-black min-h-0">
-    <div className="flex flex-1 min-h-0 w-full bg-black">
+    <div className="flex min-h-0 w-full min-w-0 flex-1 overflow-visible bg-black">
       {/* Desktop filter sidebar */}
       <aside className="hidden lg:block w-72 border-r border-white/10 bg-black/50 flex-shrink-0">
         <FilterSidebar
@@ -252,11 +343,16 @@ export function ExploreContainer() {
       )}
 
       {/* Main content */}
-      <main className="flex-1 flex flex-col min-w-0">
+      <main className="flex min-w-0 flex-1 flex-col overflow-visible">
         {/* Search header */}
-        <div className="sticky top-0 z-10 bg-black/80 backdrop-blur-sm border-b border-white/10 p-4 space-y-3">
+        <div
+          className={cn(
+            "sticky top-0 z-10 overflow-visible bg-black/80 backdrop-blur-sm border-b border-white/10 p-4 space-y-3",
+            "motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-2 motion-safe:duration-300 motion-safe:delay-75 motion-reduce:animate-none"
+          )}
+        >
           {/* Search bar row */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 overflow-visible">
             {/* Mobile filter button */}
             <Button
               variant="outline"
@@ -267,15 +363,36 @@ export function ExploreContainer() {
               <SlidersHorizontal className="h-4 w-4" />
             </Button>
 
-            {/* Search input */}
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/50" />
+            {/* Search input — full width in toolbar (header magnifier adds ?focusSearch=1 to focus + highlight) */}
+            <div
+              className={cn(
+                "relative z-[2] min-w-0 flex-1 overflow-visible rounded-xl transition-[box-shadow,transform] duration-300",
+                emphasizeSearchField &&
+                  "ring-2 ring-cyan-300 ring-offset-2 ring-offset-[#0a0a0a]"
+              )}
+              style={
+                emphasizeSearchField
+                  ? {
+                      boxShadow:
+                        "0 0 0 2px rgb(34, 211, 238), 0 0 36px rgba(34, 211, 238, 0.6)",
+                    }
+                  : undefined
+              }
+            >
+              <Search className="absolute left-3 top-1/2 z-[1] h-4 w-4 -translate-y-1/2 text-white/50" />
               <Input
+                ref={searchInputRef}
+                id="explore-search-input"
                 type="text"
                 placeholder="Search by name, company, or keywords..."
                 value={keywords}
                 onChange={(e) => setKeywords(e.target.value)}
-                className="pl-9 pr-9 bg-white/5 border-white/20 text-white placeholder:text-white/50 focus:border-cyan-500/50"
+                className={cn(
+                  "pl-9 pr-9 bg-white/5 text-white placeholder:text-white/50 focus:border-cyan-500/50",
+                  emphasizeSearchField
+                    ? "border-cyan-400/70"
+                    : "border-white/20"
+                )}
               />
               {keywords && (
                 <button
@@ -287,18 +404,20 @@ export function ExploreContainer() {
               )}
             </div>
 
-            {/* Sort select */}
-            <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
-              <SelectTrigger className="w-24 sm:w-36 flex-shrink-0 bg-white/5 border-white/20 text-white text-sm">
-                <SelectValue placeholder="Sort" />
-              </SelectTrigger>
-              <SelectContent className="bg-gray-900 border-white/20">
-                <SelectItem value="relevance" className="text-white hover:bg-white/10">Relevance</SelectItem>
-                <SelectItem value="match" className="text-white hover:bg-white/10">Match %</SelectItem>
-                <SelectItem value="name" className="text-white hover:bg-white/10">Name</SelectItem>
-                <SelectItem value="level" className="text-white hover:bg-white/10">Level</SelectItem>
-              </SelectContent>
-            </Select>
+            {/* Sort select — desktop/tablet only */}
+            <div className="hidden md:flex md:items-center">
+              <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
+                <SelectTrigger className="w-24 sm:w-36 flex-shrink-0 bg-white/5 border-white/20 text-white text-sm">
+                  <SelectValue placeholder="Sort" />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-900 border-white/20">
+                  <SelectItem value="relevance" className="text-white hover:bg-white/10">Relevance</SelectItem>
+                  <SelectItem value="match" className="text-white hover:bg-white/10">Match %</SelectItem>
+                  <SelectItem value="name" className="text-white hover:bg-white/10">Name</SelectItem>
+                  <SelectItem value="level" className="text-white hover:bg-white/10">Level</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
             {/* View toggle */}
             <div className="hidden sm:flex items-center gap-1 rounded-full border border-white/20 p-1">
@@ -422,9 +541,22 @@ export function ExploreContainer() {
           ) : (
             <>
               {/* Results count */}
-              <p className="text-sm text-white/50 mb-4">
+              <p className="text-sm text-white/50 mb-1">
                 Showing {results.length} of {totalResults} attendee
                 {totalResults !== 1 ? "s" : ""}
+              </p>
+              <p className="mb-4 text-sm">
+                {highAffinityOnPage > 0 ? (
+                  <span className="text-[#5dc4dc]">
+                    {highAffinityOnPage} high affinity match
+                    {highAffinityOnPage !== 1 ? "es" : ""} on this page
+                  </span>
+                ) : (
+                  <span className="text-white/45">
+                    No high affinity matches on this page — try sorting by
+                    &quot;Match strength&quot; or broadening your search.
+                  </span>
+                )}
               </p>
 
               {/* Mobile: Horizontal swipeable cards */}
@@ -542,6 +674,7 @@ function MobileCardSwiper({
               onRequestMeeting={onRequestMeeting}
               onPass={onPassAttendee}
               viewerFirstName={viewerFirstName}
+              variant="carousel"
             />
           </div>
         ))}

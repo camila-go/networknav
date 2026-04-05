@@ -41,16 +41,32 @@ export function RegisterForm() {
       const response = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify(data),
       });
 
-      const result = await response.json();
-
-      if (!result.success) {
+      let result: {
+        success?: boolean;
+        error?: string;
+        details?: unknown;
+        data?: { user?: { questionnaireCompleted?: boolean } };
+      };
+      try {
+        result = await response.json();
+      } catch {
         toast({
           variant: "destructive",
           title: "Registration failed",
-          description: result.error || "Please try again",
+          description: "Invalid response from server. Check the console and try again.",
+        });
+        return;
+      }
+
+      if (!response.ok || !result.success) {
+        toast({
+          variant: "destructive",
+          title: "Registration failed",
+          description: result.error || `Request failed (${response.status}). Please try again.`,
         });
         return;
       }
@@ -58,7 +74,7 @@ export function RegisterForm() {
       toast({
         variant: "success",
         title: "Account created!",
-        description: "Let's set up your profile...",
+        description: "A few quick questions so we can match you well…",
       });
 
       router.push("/onboarding");
@@ -155,16 +171,21 @@ export function RegisterForm() {
         <div className="flex gap-2">
           <Input
             id="password"
-            type={showPassword ? "text" : "password"}
             placeholder="••••••••"
             autoComplete="new-password"
             {...register("password")}
             className={cn(inputStyles, "flex-1", errors.password && "border-red-500/50")}
+            type={showPassword ? "text" : "password"}
           />
           <button
             type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="px-3 rounded-full bg-white/5 border border-white/20 text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+            aria-label={showPassword ? "Hide password" : "Show password"}
+            aria-pressed={showPassword}
+            className="relative z-10 inline-flex h-10 min-w-10 shrink-0 items-center justify-center rounded-full bg-white/5 border border-white/20 text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+            onMouseDown={(e) => {
+              e.preventDefault();
+            }}
+            onClick={() => setShowPassword((v) => !v)}
           >
             {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
           </button>
@@ -196,16 +217,21 @@ export function RegisterForm() {
         <div className="flex gap-2">
           <Input
             id="confirmPassword"
-            type={showConfirmPassword ? "text" : "password"}
             placeholder="••••••••"
             autoComplete="new-password"
             {...register("confirmPassword")}
             className={cn(inputStyles, "flex-1", errors.confirmPassword && "border-red-500/50")}
+            type={showConfirmPassword ? "text" : "password"}
           />
           <button
             type="button"
-            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-            className="px-3 rounded-full bg-white/5 border border-white/20 text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+            aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+            aria-pressed={showConfirmPassword}
+            className="relative z-10 inline-flex h-10 min-w-10 shrink-0 items-center justify-center rounded-full bg-white/5 border border-white/20 text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+            onMouseDown={(e) => {
+              e.preventDefault();
+            }}
+            onClick={() => setShowConfirmPassword((v) => !v)}
           >
             {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
           </button>
@@ -216,21 +242,6 @@ export function RegisterForm() {
           </p>
         )}
       </div>
-
-      {/* Show all validation errors summary */}
-      {Object.keys(errors).length > 0 && (
-        <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
-          <p className="font-medium mb-1">Please fix the following:</p>
-          <ul className="list-disc list-inside space-y-0.5">
-            {errors.name && <li>{errors.name.message}</li>}
-            {errors.email && <li>{errors.email.message}</li>}
-            {errors.position && <li>{errors.position.message}</li>}
-            {errors.title && <li>{errors.title.message}</li>}
-            {errors.password && <li>{errors.password.message}</li>}
-            {errors.confirmPassword && <li>{errors.confirmPassword.message}</li>}
-          </ul>
-        </div>
-      )}
 
       <Button type="submit" className="w-full" disabled={isSubmitting}>
         {isSubmitting ? (

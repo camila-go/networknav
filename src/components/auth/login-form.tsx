@@ -13,11 +13,10 @@ import { useToast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
 
 interface LoginFormProps {
-  ssoEnabled?: boolean;
   ssoForce?: boolean;
 }
 
-export function LoginForm({ ssoEnabled = false, ssoForce = false }: LoginFormProps) {
+export function LoginForm({ ssoForce = false }: LoginFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
@@ -47,28 +46,49 @@ export function LoginForm({ ssoEnabled = false, ssoForce = false }: LoginFormPro
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify(data),
       });
 
-      const result = await response.json();
-
-      if (!result.success) {
+      let result: {
+        success?: boolean;
+        error?: string;
+        data?: { user?: { questionnaireCompleted?: boolean } };
+      };
+      try {
+        result = await response.json();
+      } catch {
         toast({
           variant: "destructive",
           title: "Login failed",
-          description: result.error || "Please check your credentials",
+          description: "Invalid response from server. Check the console and try again.",
         });
         return;
       }
 
+      if (!response.ok || !result.success) {
+        toast({
+          variant: "destructive",
+          title: "Login failed",
+          description: result.error || `Request failed (${response.status}). Please check your credentials.`,
+        });
+        return;
+      }
+
+      const questionnaireDone =
+        result.data?.user?.questionnaireCompleted === true;
+
       toast({
         variant: "success",
         title: "Welcome back!",
-        description: "Redirecting to your dashboard...",
+        description: questionnaireDone
+          ? "Redirecting to your dashboard…"
+          : "Let’s finish your profile questions…",
       });
 
-      // Always redirect to dashboard (matches page)
-      router.push("/dashboard");
+      router.push(
+        questionnaireDone ? "/dashboard" : "/onboarding"
+      );
       router.refresh();
     } catch {
       toast({
@@ -81,13 +101,15 @@ export function LoginForm({ ssoEnabled = false, ssoForce = false }: LoginFormPro
 
   const inputStyles = "bg-white/5 border-white/20 text-white placeholder:text-white/40 focus:border-cyan-500/50 focus:ring-cyan-500/20";
 
-  // SSO-only mode: show only the SSO button
+  const ssoButtonClass =
+    "h-12 w-full rounded-full border-0 bg-white font-semibold text-black shadow-sm hover:bg-white/95";
+
   if (ssoForce) {
     return (
       <div className="space-y-4">
-        <Button asChild className="w-full" size="lg">
+        <Button asChild className={ssoButtonClass} size="lg">
           <a href="/api/auth/sso/login">
-            <Shield className="mr-2 h-5 w-5" />
+            <Shield className="mr-2 h-5 w-5 text-black" aria-hidden />
             Sign in with Corporate SSO
           </a>
         </Button>
@@ -100,24 +122,20 @@ export function LoginForm({ ssoEnabled = false, ssoForce = false }: LoginFormPro
 
   return (
     <div className="space-y-4">
-      {ssoEnabled && (
-        <>
-          <Button asChild className="w-full" size="lg">
-            <a href="/api/auth/sso/login">
-              <Shield className="mr-2 h-5 w-5" />
-              Sign in with Corporate SSO
-            </a>
-          </Button>
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-white/10" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-[#0a1628] px-2 text-white/40">or</span>
-            </div>
-          </div>
-        </>
-      )}
+      <Button asChild className="w-full" size="lg">
+        <a href="/api/auth/sso/login">
+          <Shield className="mr-2 h-5 w-5" aria-hidden />
+          Sign in with Corporate SSO
+        </a>
+      </Button>
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center">
+          <span className="w-full border-t border-white/10" />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-[#0a1628] px-2 text-white/40">or</span>
+        </div>
+      </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div className="space-y-2">
@@ -148,16 +166,21 @@ export function LoginForm({ ssoEnabled = false, ssoForce = false }: LoginFormPro
           <div className="flex gap-2">
             <Input
               id="password"
-              type={showPassword ? "text" : "password"}
               placeholder="••••••••"
               autoComplete="current-password"
               {...register("password")}
               className={cn(inputStyles, "flex-1", errors.password && "border-red-500/50")}
+              type={showPassword ? "text" : "password"}
             />
             <button
               type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="px-3 rounded-full bg-white/5 border border-white/20 text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-pressed={showPassword}
+              className="relative z-10 inline-flex h-10 min-w-10 shrink-0 items-center justify-center rounded-full bg-white/5 border border-white/20 text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+              onMouseDown={(e) => {
+                e.preventDefault();
+              }}
+              onClick={() => setShowPassword((v) => !v)}
             >
               {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
             </button>

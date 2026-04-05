@@ -243,7 +243,22 @@ export function OnboardingModal() {
   );
 }
 
+/**
+ * Allow the in-app tour to run again. Does not clear questionnaire completion —
+ * the modal only opens when the user is treated as having finished onboarding
+ * (local questionnaire key or ?welcome=true) while the tour itself is not
+ * marked complete.
+ */
 export function resetOnboarding() {
   localStorage.removeItem(ONBOARDING_STORAGE_KEY);
-  localStorage.removeItem(QUESTIONNAIRE_COMPLETED_KEY);
+}
+
+/** From Profile → Help: replay tour after reload on any dashboard route. */
+export function replayAppTourAndReload() {
+  if (typeof window === "undefined") return;
+  resetOnboarding();
+  if (!localStorage.getItem(QUESTIONNAIRE_COMPLETED_KEY)) {
+    localStorage.setItem(QUESTIONNAIRE_COMPLETED_KEY, "true");
+  }
+  window.location.reload();
 }

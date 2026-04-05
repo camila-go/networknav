@@ -102,6 +102,12 @@ export type Database = {
         Update: NotificationPreferencesUpdate;
         Relationships: [];
       };
+      network_pulse_votes: {
+        Row: NetworkPulseVoteRow;
+        Insert: NetworkPulseVoteInsert;
+        Update: NetworkPulseVoteUpdate;
+        Relationships: [];
+      };
     };
     Views: {};
     Functions: {
@@ -622,6 +628,7 @@ export type UserPhotoRow = {
   storage_key: string;
   url: string;
   caption: string | null;
+  activity_tag: string | null;
   display_order: number;
   created_at: string;
 };
@@ -632,12 +639,14 @@ export type UserPhotoInsert = {
   storage_key: string;
   url: string;
   caption?: string | null;
+  activity_tag?: string | null;
   display_order?: number;
   created_at?: string;
 };
 
 export type UserPhotoUpdate = {
   caption?: string | null;
+  activity_tag?: string | null;
   display_order?: number;
 };
 
@@ -737,6 +746,33 @@ export type NotificationPreferencesUpdate = {
   email?: boolean;
   in_app?: boolean;
   push?: boolean;
+};
+
+// ============================================
+// Network Pulse votes
+// ============================================
+
+export type NetworkPulseVoteRow = {
+  id: string;
+  poll_id: string;
+  user_id: string;
+  option_id: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type NetworkPulseVoteInsert = {
+  id?: string;
+  poll_id: string;
+  user_id: string;
+  option_id: string;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type NetworkPulseVoteUpdate = {
+  option_id?: string;
+  updated_at?: string;
 };
 
 // ============================================

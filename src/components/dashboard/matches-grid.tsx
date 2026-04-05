@@ -1,11 +1,24 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { MatchCard } from "./match-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Sparkles, Flame, Target, MessageCircle, Rocket, Heart, Star, TrendingUp } from "lucide-react";
-import type { MatchWithUser, Commonality, StreakStatus } from "@/types";
+import {
+  Sparkles,
+  Flame,
+  Target,
+  MessageCircle,
+  Rocket,
+  Heart,
+  Star,
+  TrendingUp,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
+import type { MatchWithUser, MatchType, StreakStatus } from "@/types";
 import { SHOW_GAMIFICATION_UI } from "@/lib/feature-flags";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 // Personalized encouragement messages based on user state
 const ENCOURAGEMENT_MESSAGES = {
@@ -167,6 +180,11 @@ export function MatchesGrid({ onMatchesLoaded }: MatchesGridProps = {}) {
   const highAffinityMatches = matches.filter((m) => m.type === "high-affinity" && !m.passed);
   const strategicMatches = matches.filter((m) => m.type === "strategic" && !m.passed);
 
+  const allActiveMatchesInterleaved = useMemo(
+    () => interleaveMatchesByType(matches.filter((m) => !m.passed)),
+    [matches]
+  );
+
   async function handlePass(matchId: string) {
     try {
       await fetch(`/api/matches/${matchId}`, {
@@ -185,11 +203,18 @@ export function MatchesGrid({ onMatchesLoaded }: MatchesGridProps = {}) {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {[...Array(6)].map((_, i) => (
-          <div key={i} className="h-80 shimmer rounded-2xl" />
-        ))}
-      </div>
+      <>
+        <div className="grid grid-cols-1 gap-6 md:hidden">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="h-80 shimmer rounded-2xl" />
+          ))}
+        </div>
+        <div className="hidden min-h-[min(920px,88vh)] w-full grid-cols-3 grid-rows-2 gap-6 md:grid">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="min-h-[200px] rounded-2xl shimmer" />
+          ))}
+        </div>
+      </>
     );
   }
 
@@ -224,7 +249,7 @@ export function MatchesGrid({ onMatchesLoaded }: MatchesGridProps = {}) {
 
       <TabsContent value="all">
         <MatchGrid
-          matches={matches.filter((m) => !m.passed)}
+          matches={allActiveMatchesInterleaved}
           onPass={handlePass}
           viewerFirstName={viewerFirstName}
         />
@@ -250,6 +275,107 @@ export function MatchesGrid({ onMatchesLoaded }: MatchesGridProps = {}) {
   );
 }
 
+/**
+ * For "All matches", alternate high-affinity and strategic so the grid/swiper
+ * isn't dominated by one banner color (API order often groups by type).
+ * Preserves relative order within each type. Starts with high-affinity when both exist.
+ */
+function interleaveMatchesByType<T extends { type: MatchType }>(items: T[]): T[] {
+  const highAffinity = items.filter((m) => m.type === "high-affinity");
+  const strategic = items.filter((m) => m.type === "strategic");
+  const rest = items.filter(
+    (m) => m.type !== "high-affinity" && m.type !== "strategic"
+  );
+
+  if (highAffinity.length === 0 || strategic.length === 0) {
+    return items;
+  }
+
+  const out: T[] = [];
+  let hi = 0;
+  let si = 0;
+  let preferHighAffinity = true;
+
+  while (hi < highAffinity.length || si < strategic.length) {
+    if (preferHighAffinity) {
+      if (hi < highAffinity.length) {
+        out.push(highAffinity[hi++]);
+      } else {
+        out.push(strategic[si++]);
+      }
+    } else {
+      if (si < strategic.length) {
+        out.push(strategic[si++]);
+      } else {
+        out.push(highAffinity[hi++]);
+      }
+    }
+    preferHighAffinity = !preferHighAffinity;
+  }
+
+  return rest.length > 0 ? [...out, ...rest] : out;
+}
+
+function getCarouselSlideStride(scrollEl: HTMLDivElement): number {
+  const slide = scrollEl.querySelector<HTMLElement>("[data-match-slide]");
+  if (!slide) return Math.max(scrollEl.clientWidth * 0.85 + 16, 1);
+  const gap =
+    parseInt(getComputedStyle(scrollEl).gap || "16", 10) || 16;
+  const w = slide.getBoundingClientRect().width;
+  // Avoid 0 when slides are display:none (desktop) or not laid out — scrollLeft/0 → NaN → dots break
+  return Math.max(w + gap, 1);
+}
+
+function getDesktopMatchPageStride(scrollEl: HTMLDivElement): number {
+  return scrollEl.clientWidth;
+}
+
+function chunkMatches<T>(items: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < items.length; i += size) {
+    out.push(items.slice(i, i + size));
+  }
+  return out;
+}
+
+const DESKTOP_MATCHES_PER_PAGE = 6;
+
+function DesktopMatchPageGrid({
+  pageMatches,
+  onPass,
+  viewerFirstName,
+  pageIndex,
+}: {
+  pageMatches: MatchWithUser[];
+  onPass: (id: string) => void;
+  viewerFirstName?: string;
+  pageIndex: number;
+}) {
+  const multiRow = pageMatches.length > 3;
+
+  return (
+    <div
+      data-desktop-match-page
+      className={cn(
+        "grid w-full min-w-full shrink-0 snap-center snap-always grid-cols-3 gap-6",
+        multiRow
+          ? "min-h-[min(920px,88vh)] grid-rows-2"
+          : "min-h-[460px]"
+      )}
+    >
+      {pageMatches.map((match, i) => (
+        <div
+          key={match.id}
+          className="animate-fade-in flex min-h-0 h-full flex-col"
+          style={{ animationDelay: `${pageIndex * 80 + i * 60}ms` }}
+        >
+          <MatchCard match={match} onPass={onPass} viewerFirstName={viewerFirstName} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function MatchGrid({
   matches,
   onPass,
@@ -261,15 +387,112 @@ function MatchGrid({
 }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const desktopPageScrollRef = useRef<HTMLDivElement>(null);
+  const [desktopPageIndex, setDesktopPageIndex] = useState(0);
 
-  // Track scroll position to update active index
+  const desktopPages = useMemo(
+    () => chunkMatches(matches, DESKTOP_MATCHES_PER_PAGE),
+    [matches]
+  );
+
+  const mobileMatchIds = useMemo(
+    () => matches.map((m) => m.id).join("\0"),
+    [matches]
+  );
+
+  useEffect(() => {
+    setDesktopPageIndex((i) =>
+      desktopPages.length === 0 ? 0 : Math.min(i, desktopPages.length - 1)
+    );
+  }, [desktopPages.length]);
+
+  useEffect(() => {
+    setActiveIndex(0);
+    const el = scrollRef.current;
+    if (el) el.scrollTo({ left: 0, behavior: "auto" });
+  }, [mobileMatchIds]);
+
+  // Mobile: IntersectionObserver tracks the centered slide — iOS often under-reports scroll events
+  useEffect(() => {
+    const root = scrollRef.current;
+    if (!root || matches.length <= 1) return;
+
+    const mq = window.matchMedia("(max-width: 767px)");
+    let observer: IntersectionObserver | null = null;
+
+    const attach = () => {
+      observer?.disconnect();
+      observer = null;
+      if (!mq.matches) return;
+
+      const slides = root.querySelectorAll<HTMLElement>("[data-match-slide]");
+      if (slides.length === 0) return;
+
+      observer = new IntersectionObserver(
+        (entries) => {
+          let bestIdx = 0;
+          let bestRatio = 0;
+          for (const entry of entries) {
+            if (!entry.isIntersecting) continue;
+            const idx = [...slides].indexOf(entry.target as HTMLElement);
+            if (idx < 0) continue;
+            const r = entry.intersectionRatio;
+            if (r > bestRatio) {
+              bestRatio = r;
+              bestIdx = idx;
+            }
+          }
+          if (bestRatio > 0.05) {
+            setActiveIndex((prev) => (prev === bestIdx ? prev : bestIdx));
+          }
+        },
+        { root, rootMargin: "-8% 0px -8% 0px", threshold: [0.1, 0.25, 0.5, 0.75, 0.95] }
+      );
+
+      slides.forEach((el) => observer!.observe(el));
+    };
+
+    attach();
+    mq.addEventListener("change", attach);
+    return () => {
+      mq.removeEventListener("change", attach);
+      observer?.disconnect();
+    };
+  }, [mobileMatchIds, matches.length]);
+
+  // Track scroll position to update active index (fallback + fine-tune)
   const handleScroll = () => {
     if (!scrollRef.current) return;
     const scrollLeft = scrollRef.current.scrollLeft;
-    const cardWidth = scrollRef.current.offsetWidth * 0.85 + 16; // card width + gap
-    const newIndex = Math.round(scrollLeft / cardWidth);
-    setActiveIndex(Math.min(newIndex, matches.length - 1));
+    const stride = getCarouselSlideStride(scrollRef.current);
+    if (stride < 8) return;
+    const newIndex = Math.round(scrollLeft / stride);
+    if (!Number.isFinite(newIndex)) return;
+    setActiveIndex(Math.min(Math.max(0, newIndex), matches.length - 1));
   };
+
+  const handleDesktopPageScroll = () => {
+    const el = desktopPageScrollRef.current;
+    if (!el || desktopPages.length <= 1) return;
+    const stride = getDesktopMatchPageStride(el);
+    if (stride < 8) return;
+    const idx = Math.round(el.scrollLeft / stride);
+    setDesktopPageIndex(
+      Math.min(Math.max(0, idx), desktopPages.length - 1)
+    );
+  };
+
+  const goDesktopPage = (index: number) => {
+    const el = desktopPageScrollRef.current;
+    if (!el || desktopPages.length === 0) return;
+    const stride = getDesktopMatchPageStride(el);
+    const i = Math.min(Math.max(0, index), desktopPages.length - 1);
+    el.scrollTo({ left: stride * i, behavior: "smooth" });
+    setDesktopPageIndex(i);
+  };
+
+  const currentPageMatches = desktopPages[desktopPageIndex] ?? [];
+  const currentPageSize = currentPageMatches.length;
 
   if (matches.length === 0) {
     return (
@@ -292,56 +515,86 @@ function MatchGrid({
           <span className="text-xs text-white/40">Swipe to browse →</span>
         </div>
 
-        <div 
+        <div
           ref={scrollRef}
           onScroll={handleScroll}
-          className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-4 scrollbar-hide scroll-smooth"
-          style={{ scrollPaddingLeft: '0px' }}
+          className="flex touch-manipulation items-stretch gap-4 overflow-x-auto overflow-y-hidden snap-x snap-mandatory pb-0 scrollbar-hide scroll-smooth"
+          style={{
+            scrollPaddingLeft: "0px",
+            WebkitOverflowScrolling: "touch",
+            overscrollBehaviorX: "contain",
+          }}
         >
-          {matches.map((match, index) => (
+          {matches.map((match) => (
             <div
               key={match.id}
-              className="flex-shrink-0 w-[85vw] max-w-[340px] snap-start"
+              data-match-slide
+              className="flex h-[min(720px,calc(100dvh-9.5rem))] w-[85vw] max-w-[340px] flex-shrink-0 snap-start flex-col"
             >
-              <MatchCard match={match} onPass={onPass} viewerFirstName={viewerFirstName} />
+              <MatchCard
+                match={match}
+                onPass={onPass}
+                viewerFirstName={viewerFirstName}
+                variant="carousel"
+              />
             </div>
           ))}
         </div>
+      </div>
 
-        {/* Pagination dots */}
-        {matches.length > 1 && matches.length <= 10 && (
-          <div className="flex justify-center gap-1.5 mt-3">
-            {matches.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => {
-                  if (scrollRef.current) {
-                    const cardWidth = scrollRef.current.offsetWidth * 0.85 + 16;
-                    scrollRef.current.scrollTo({ left: cardWidth * index, behavior: 'smooth' });
-                  }
-                }}
-                className={`h-1.5 rounded-full transition-all ${
-                  index === activeIndex 
-                    ? 'w-6 bg-cyan-400' 
-                    : 'w-1.5 bg-white/30 hover:bg-white/50'
-                }`}
+      {/* Desktop: 3×2 grid (6 per page), same pagination pattern as explore search */}
+      <div className="hidden md:block">
+        <p className="mb-4 text-sm text-white/50">
+          Showing {currentPageSize} of {matches.length} match
+          {matches.length !== 1 ? "es" : ""}
+        </p>
+        <div className="flex flex-col">
+          <div
+            ref={desktopPageScrollRef}
+            onScroll={handleDesktopPageScroll}
+            className="flex snap-x snap-mandatory gap-0 overflow-x-auto overflow-y-visible pb-0 scrollbar-hide scroll-smooth"
+          >
+            {desktopPages.map((pageMatches, pageIndex) => (
+              <DesktopMatchPageGrid
+                key={pageMatches[0]?.id ?? `page-${pageIndex}`}
+                pageMatches={pageMatches}
+                onPass={onPass}
+                viewerFirstName={viewerFirstName}
+                pageIndex={pageIndex}
               />
             ))}
           </div>
-        )}
-      </div>
 
-      {/* Desktop: Grid layout */}
-      <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {matches.map((match, index) => (
-          <div
-            key={match.id}
-            className="animate-fade-in"
-            style={{ animationDelay: `${index * 100}ms` }}
-          >
-            <MatchCard match={match} onPass={onPass} viewerFirstName={viewerFirstName} />
-          </div>
-        ))}
+          {desktopPages.length > 1 ? (
+            <div className="mt-8 flex items-center justify-center gap-4">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => goDesktopPage(desktopPageIndex - 1)}
+                disabled={desktopPageIndex === 0}
+                className="border-[#343434] text-white/70 hover:bg-white/5 hover:text-white disabled:opacity-50"
+              >
+                <ChevronLeft className="mr-1 h-4 w-4" />
+                Previous
+              </Button>
+              <span className="text-sm text-white/50">
+                Page {desktopPageIndex + 1} of {desktopPages.length}
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => goDesktopPage(desktopPageIndex + 1)}
+                disabled={desktopPageIndex >= desktopPages.length - 1}
+                className="border-[#343434] font-bold text-white hover:bg-white/5 disabled:opacity-50"
+              >
+                Next
+                <ChevronRight className="ml-1 h-4 w-4" />
+              </Button>
+            </div>
+          ) : null}
+        </div>
       </div>
     </>
   );

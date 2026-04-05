@@ -1,204 +1,217 @@
-import type { QuestionSection } from "@/types";
+import type { Question, QuestionSection } from "@/types";
+
+/** Injected after `personalInterest` in conversational wizard only (optional photo + chip). */
+export const PERSONAL_INTEREST_PHOTO_QUESTION: Question = {
+  id: "personalInterestPhoto",
+  text: "Optional: activity photo",
+  conversationalPrompt:
+    "If you’d like, add a photo of you doing that—and a short label (like “gardening”). It shows on your profile and our community gallery. Optional; you can skip.",
+  type: "text",
+  required: false,
+  textPlaceholder: "",
+  textMultiline: false,
+};
+
+export const SUMMIT_RESPONSE_HINT =
+  "Keep answers short—1 sentence or quick taps work great.";
+
+/** Conditional Q6A — same capture key as leadership branch */
+export const REFINED_INTEREST_AI: Question = {
+  id: "refinedInterest",
+  text: "Nice—AI is everywhere right now. Are you more interested in using it, leading it, or figuring it out?",
+  conversationalPrompt:
+    "Nice—AI is everywhere right now. Are you more interested in using it, leading it, or figuring it out?",
+  type: "text",
+  required: false,
+  textPlaceholder: "One sentence is plenty",
+  textMultiline: false,
+};
+
+export const REFINED_INTEREST_LEADERSHIP: Question = {
+  id: "refinedInterest",
+  text: "Love that. Are you more focused on leading teams, influencing strategy, or developing yourself?",
+  conversationalPrompt:
+    "Love that. Are you more focused on leading teams, influencing strategy, or developing yourself?",
+  type: "text",
+  required: false,
+  textPlaceholder: "One sentence is plenty",
+  textMultiline: false,
+};
+
+export function detectRefinedInterestVariant(
+  talkTopic: string | undefined
+): "ai" | "leadership" | null {
+  if (!talkTopic?.trim()) return null;
+  const t = talkTopic.toLowerCase();
+  if (
+    /\bai\b/.test(t) ||
+    /\bml\b/.test(t) ||
+    t.includes("artificial intelligence") ||
+    t.includes("machine learning") ||
+    t.includes("genai") ||
+    t.includes("llm")
+  ) {
+    return "ai";
+  }
+  if (/\bleadership\b/.test(t) || t.includes("leading teams")) {
+    return "leadership";
+  }
+  return null;
+}
 
 export const QUESTIONNAIRE_SECTIONS: QuestionSection[] = [
-  // ============================================
-  // SECTION 1: Your Leadership Context
-  // ============================================
   {
-    id: "leadership-context",
-    title: "Your Leadership Context",
-    subtitle: "Quick intro - this takes about 60 seconds",
-    icon: "🎯",
+    id: "getting-to-know-you",
+    title: "Getting to know you",
+    subtitle: "About 3 minutes",
+    icon: "👋",
     questions: [
       {
-        id: "yearsExperience",
-        text: "How many years have you been in leadership roles?",
-        conversationalPrompt: "First things first — how long have you been in a leadership role?",
+        id: "roleSummary",
+        text: "In one sentence—what do you actually do (not your title)?",
+        conversationalPrompt:
+          "In one sentence—what do you actually do (not your title)?",
+        type: "text",
+        required: true,
+        textPlaceholder: "e.g. I help teams ship AI products customers trust",
+        textMultiline: true,
+      },
+      {
+        id: "archetype",
+        text: "Which of these best describes you? (don't overthink it)",
+        conversationalPrompt:
+          "Which of these best describes you? (don't overthink it)",
         type: "single-select",
         required: true,
         options: [
-          { value: "0-2", label: "New to leadership (0-2 years)", icon: "🌱" },
-          { value: "3-5", label: "Emerging leader (3-5 years)", icon: "🌿" },
-          { value: "6-10", label: "Experienced leader (6-10 years)", icon: "📈" },
-          { value: "11-15", label: "Seasoned leader (11-15 years)", icon: "⭐" },
-          { value: "16-20", label: "Veteran leader (16-20 years)", icon: "🏅" },
-          { value: "20+", label: "20+ years leading", icon: "👑" },
+          { value: "builder", label: "Builder" },
+          { value: "strategist", label: "Strategist" },
+          { value: "creative", label: "Creative" },
+          { value: "analyst", label: "Analyst" },
+          { value: "operator", label: "Operator" },
+          { value: "connector", label: "Connector" },
         ],
       },
       {
-        id: "leadershipLevel",
-        text: "What best describes your leadership level?",
-        conversationalPrompt: "And where do you sit in the org? Pick the one that fits best.",
-        type: "icon-select",
+        id: "teamQualities",
+        text: "When you're on a team, what qualities do you bring to the group?",
+        conversationalPrompt:
+          "When you're on a team, what qualities do you bring to the group?",
+        type: "multi-select",
         required: true,
+        minSelections: 1,
+        maxSelections: 3,
         options: [
-          { value: "c-suite", label: "C-Suite", icon: "🏢", description: "CEO, COO, CFO, CTO, etc." },
-          { value: "senior-executive", label: "Senior Executive", icon: "🎯", description: "SVP, EVP" },
-          { value: "vp", label: "VP / Executive Director", icon: "📊" },
-          { value: "director", label: "Director / Senior Manager", icon: "⭐" },
-          { value: "manager", label: "Manager / Team Lead", icon: "💪" },
-          { value: "founder", label: "Founder / Entrepreneur", icon: "🚀" },
+          { value: "perspective", label: "Perspective" },
+          { value: "problem-solving", label: "Problem-solving" },
+          { value: "collaboration", label: "Collaboration" },
+          { value: "energy", label: "Energy" },
+          { value: "ideas", label: "Ideas" },
         ],
+      },
+      {
+        id: "growthArea",
+        text: "What's something you've been wanting to learn or get better at?",
+        conversationalPrompt:
+          "What's something you've been wanting to learn or get better at?",
+        type: "text",
+        required: true,
+        textPlaceholder: "Could be a skill, a topic, a habit…",
+        textMultiline: true,
+      },
+      {
+        id: "talkTopic",
+        text: "What's a topic you could talk about for 10 minutes with no prep?",
+        conversationalPrompt:
+          "What's a topic you could talk about for 10 minutes with no prep?",
+        type: "text",
+        required: true,
+        textPlaceholder: "Anything you're genuinely into",
+        textMultiline: true,
       },
     ],
   },
-
-  // ============================================
-  // SECTION 2: Your Goals & Interests
-  // ============================================
   {
-    id: "goals-interests",
-    title: "Your Goals & Interests",
-    subtitle: "Help us find the right connections for you",
-    icon: "🚀",
+    id: "life-outside-work",
+    title: "Life & style",
+    subtitle: "The good stuff",
+    icon: "✨",
     questions: [
       {
-        id: "leadershipPriorities",
-        text: "What are your top leadership priorities right now?",
-        conversationalPrompt: "Now let's talk about what's on your plate. What are you focused on as a leader right now?",
+        id: "personalInterest",
+        text: "Outside of work—what do you genuinely enjoy?",
+        conversationalPrompt: "Outside of work—what do you genuinely enjoy?",
+        type: "text",
+        required: true,
+        textPlaceholder: "Hobbies, people, places…",
+        textMultiline: true,
+      },
+      {
+        id: "personalityTags",
+        text: "Pick a few that fit you:",
+        conversationalPrompt: "Pick a few that fit you:",
         type: "multi-select",
         required: true,
         minSelections: 2,
-        maxSelections: 4,
+        maxSelections: 6,
         options: [
-          { value: "scaling", label: "Scaling the team or organization", icon: "📈" },
-          { value: "transformation", label: "Leading organizational transformation", icon: "🔄" },
-          { value: "innovation", label: "Driving innovation and new initiatives", icon: "💡" },
-          { value: "mentoring", label: "Developing and mentoring future leaders", icon: "👥" },
-          { value: "strategy", label: "Refining strategy and vision", icon: "🎯" },
-          { value: "culture", label: "Building stronger team culture", icon: "🤝" },
-          { value: "work-life", label: "Managing work-life integration", icon: "⚖️" },
-          { value: "excellence", label: "Achieving operational excellence", icon: "🏆" },
+          { value: "early-bird", label: "Early bird" },
+          { value: "night-owl", label: "Night owl" },
+          { value: "planner", label: "Planner" },
+          { value: "go-with-the-flow", label: "Go-with-the-flow" },
+          { value: "social", label: "Social" },
+          { value: "recharge-solo", label: "Recharge solo" },
         ],
       },
       {
-        id: "networkingGoals",
-        text: "What would make this conference networking valuable for you?",
-        conversationalPrompt: "What are you hoping to get out of the connections you make here?",
-        type: "multi-select",
+        id: "joyTrigger",
+        text: "What's a small thing that makes your day better?",
+        conversationalPrompt: "What's a small thing that makes your day better?",
+        type: "text",
         required: true,
-        minSelections: 2,
-        maxSelections: 3,
-        options: [
-          { value: "mentors", label: "Finding mentors or advisors", icon: "🧭" },
-          { value: "peers", label: "Connecting with peers facing similar challenges", icon: "🤝" },
-          { value: "cross-industry", label: "Learning from leaders in different industries", icon: "💡" },
-          { value: "partnerships", label: "Exploring collaboration opportunities", icon: "🔄" },
-          { value: "give-back", label: "Sharing my expertise and giving back", icon: "🎤" },
-          { value: "expand-network", label: "Expanding my professional network", icon: "🌟" },
-        ],
-      },
-      {
-        id: "rechargeActivities",
-        text: "How do you recharge outside of work?",
-        conversationalPrompt: "Enough shop talk for a sec — what do you do to recharge when you're off the clock?",
-        type: "multi-select-custom",
-        required: true,
-        minSelections: 3,
-        maxSelections: 8,
-        customFieldId: "customInterests",
-        customFieldPlaceholder: "Add your own interest (e.g., Pottery, Hiking, Board games)",
-        options: [
-          { value: "reading", label: "Reading (business or pleasure)", icon: "📚" },
-          { value: "fitness", label: "Fitness & Sports", icon: "🏃" },
-          { value: "gaming", label: "Gaming", icon: "🎮" },
-          { value: "cooking", label: "Cooking & Culinary adventures", icon: "🍳" },
-          { value: "travel", label: "Travel & Exploration", icon: "✈️" },
-          { value: "music", label: "Music (listening or playing)", icon: "🎵" },
-          { value: "creative", label: "Creative pursuits", icon: "🎨" },
-          { value: "volunteering", label: "Volunteering & Community service", icon: "🤲" },
-          { value: "outdoors", label: "Outdoor Adventures", icon: "🏔️" },
-          { value: "movies", label: "Movies & Entertainment", icon: "🎬" },
-          { value: "meditation", label: "Meditation & Mindfulness", icon: "🧘" },
-          { value: "learning", label: "Continuous learning", icon: "🎓" },
-        ],
+        textPlaceholder: "Coffee, a walk, a playlist…",
+        textMultiline: false,
       },
     ],
   },
-
-  // ============================================
-  // SECTION 3: Your Style
-  // ============================================
   {
-    id: "leadership-style",
-    title: "Your Style",
-    subtitle: "Almost done! This helps us find your tribe",
-    icon: "🤝",
+    id: "summit-profile",
+    title: "Your Summit profile",
+    subtitle: "Almost done",
+    icon: "🎤",
     questions: [
       {
-        id: "leadershipPhilosophy",
-        text: "How would you describe your leadership philosophy?",
-        conversationalPrompt: "Home stretch! How would you describe the way you lead?",
-        type: "multi-select",
+        id: "threeWords",
+        text: "Describe yourself in 3 words",
+        conversationalPrompt: "Describe yourself in 3 words",
+        type: "text",
         required: true,
-        minSelections: 2,
-        maxSelections: 4,
-        options: [
-          { value: "servant", label: "Servant leadership - I serve my team", icon: "🤝" },
-          { value: "results", label: "Results-driven - focused on outcomes", icon: "🎯" },
-          { value: "people-first", label: "People-first - relationships matter most", icon: "👥" },
-          { value: "visionary", label: "Visionary - painting the future", icon: "💡" },
-          { value: "coach", label: "Coach and developer - growing others", icon: "🎓" },
-          { value: "data-informed", label: "Data-informed - metrics guide decisions", icon: "📊" },
-          { value: "collaborative", label: "Collaborative - we win together", icon: "🤲" },
-          { value: "decisive", label: "Decisive - moving fast and adapting", icon: "⚡" },
-        ],
+        textPlaceholder: "Three words, any order",
+        textMultiline: false,
       },
       {
-        id: "communicationStyle",
-        text: "How do you prefer to communicate?",
-        conversationalPrompt: "When you're in a conversation, what's your natural style?",
-        type: "single-select",
+        id: "headline",
+        text: 'Your headline for the Summit: (Example: "Here to learn, connect, and challenge assumptions")',
+        conversationalPrompt: "Your headline for the Summit:",
+        type: "text",
         required: true,
-        options: [
-          { value: "direct", label: "Direct and straight to the point", icon: "💬" },
-          { value: "warm", label: "Warm and relationship-focused", icon: "🌊" },
-          { value: "facts-first", label: "Data and facts first", icon: "📊" },
-          { value: "storytelling", label: "Context and storytelling", icon: "📖" },
-          { value: "efficient", label: "Quick and efficient", icon: "⚡" },
-          { value: "deliberate", label: "Thoughtful and deliberate", icon: "🤔" },
-        ],
+        textPlaceholder: "Here to learn, connect, and…",
+        textMultiline: true,
       },
       {
-        id: "relationshipValues",
-        text: "What do you value most in professional relationships?",
-        conversationalPrompt: "What matters most to you when building professional relationships?",
-        type: "multi-select",
+        id: "funFact",
+        text: "Fun fact—something people wouldn't guess about you?",
+        conversationalPrompt:
+          "Fun fact—something people wouldn't guess about you?",
+        type: "text",
         required: true,
-        minSelections: 2,
-        maxSelections: 3,
-        options: [
-          { value: "authenticity", label: "Authenticity - being real", icon: "💯" },
-          { value: "expertise", label: "Expertise - learning from the best", icon: "🧠" },
-          { value: "mutual-benefit", label: "Mutual benefit - helping each other", icon: "🤝" },
-          { value: "trust", label: "Trust - knowing they have my back", icon: "🛡️" },
-          { value: "innovation", label: "Innovation - thinking bigger together", icon: "💡" },
-          { value: "shared-values", label: "Shared values - aligned on what matters", icon: "❤️" },
-        ],
-      },
-      {
-        id: "energizers",
-        text: "What energizes you as a person?",
-        conversationalPrompt: "Last one! What gives you energy and makes you feel alive?",
-        type: "multi-select",
-        required: true,
-        minSelections: 2,
-        maxSelections: 4,
-        options: [
-          { value: "deep-conversations", label: "Deep, meaningful conversations", icon: "🧠" },
-          { value: "connecting", label: "Connecting with people", icon: "🎉" },
-          { value: "winning", label: "Overcoming challenges", icon: "🏆" },
-          { value: "growth", label: "Learning and personal growth", icon: "🌱" },
-          { value: "helping", label: "Helping others succeed", icon: "🤝" },
-          { value: "creating", label: "Creating something new", icon: "🎨" },
-          { value: "new-experiences", label: "New experiences", icon: "🌍" },
-        ],
+        textPlaceholder: "The weirder, the better",
+        textMultiline: true,
       },
     ],
   },
 ];
 
-// Helper functions
 export function getTotalQuestions(): number {
   return QUESTIONNAIRE_SECTIONS.reduce(
     (total, section) => total + section.questions.length,
@@ -236,4 +249,3 @@ export function getQuestionById(
   }
   return undefined;
 }
-

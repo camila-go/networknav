@@ -34,6 +34,7 @@ export async function GET() {
           const p = profile as {
             id: string; email: string; password_hash?: string; role?: string;
             name?: string; position?: string; title?: string; company?: string;
+            location?: string; photo_url?: string; bio?: string;
             questionnaire_completed?: boolean;
           };
           const storedUser = {
@@ -45,6 +46,9 @@ export async function GET() {
             position: p.position || '',
             title: p.title || '',
             company: p.company || '',
+            location: p.location,
+            photoUrl: p.photo_url,
+            bio: p.bio,
             questionnaireCompleted: p.questionnaire_completed || false,
             createdAt: new Date(),
             updatedAt: new Date(),
@@ -79,6 +83,9 @@ export async function GET() {
             position: user.position,
             title: user.title,
             company: user.company,
+            location: user.location ?? "",
+            photoUrl: user.photoUrl ?? "",
+            bio: user.bio ?? "",
           },
           questionnaireCompleted: user.questionnaireCompleted,
         },

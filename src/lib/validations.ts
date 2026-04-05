@@ -66,33 +66,19 @@ export const profileSchema = z.object({
 // ============================================
 
 export const questionnaireResponseSchema = z.object({
-  // Section 1: Leadership Context
-  yearsExperience: z.string().optional(),
-  leadershipLevel: z.string().optional(),
-  organizationSize: z.string().optional(),
-
-  // Section 2: Building & Solving
-  leadershipPriorities: z.array(z.string()).max(5).optional(),
-  leadershipChallenges: z.array(z.string()).max(5).optional(),
-  growthAreas: z.array(z.string()).max(5).optional(),
-  networkingGoals: z.array(z.string()).max(4).optional(),
-
-  // Section 3: Beyond the Boardroom
-  rechargeActivities: z.array(z.string()).max(8).optional(),
-  customInterests: z.array(z.string()).max(10).optional(), // User-typed custom interests
-  contentPreferences: z.array(z.string()).max(6).optional(),
-  fitnessActivities: z.array(z.string()).max(5).optional(),
-  idealWeekend: z.string().optional(),
-  volunteerCauses: z.array(z.string()).max(4).optional(),
-  energizers: z.array(z.string()).max(5).optional(),
-
-  // Section 4: Leadership Style
-  leadershipPhilosophy: z.array(z.string()).max(5).optional(),
-  decisionMakingStyle: z.string().optional(),
-  failureApproach: z.string().optional(),
-  relationshipValues: z.array(z.string()).max(3).optional(),
-  communicationStyle: z.string().optional(),
-  leadershipSeason: z.string().optional(),
+  roleSummary: z.string().max(2000).optional(),
+  archetype: z.string().optional(),
+  teamQualities: z.array(z.string()).max(5).optional(),
+  growthArea: z.string().max(2000).optional(),
+  talkTopic: z.string().max(2000).optional(),
+  refinedInterest: z.string().max(2000).optional(),
+  personalInterest: z.string().max(2000).optional(),
+  personalInterestPhoto: z.enum(["uploaded", "skipped"]).optional(),
+  personalityTags: z.array(z.string()).max(8).optional(),
+  joyTrigger: z.string().max(500).optional(),
+  threeWords: z.string().max(200).optional(),
+  headline: z.string().max(500).optional(),
+  funFact: z.string().max(2000).optional(),
 });
 
 // ============================================

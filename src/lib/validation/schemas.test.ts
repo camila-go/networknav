@@ -282,7 +282,7 @@ describe("Extended Validation Schemas", () => {
   describe("searchFiltersSchema", () => {
     it("should accept valid filter combinations", () => {
       const result = searchFiltersSchema.safeParse({
-        leadershipLevels: ["senior-director"],
+        archetypes: ["builder"],
         keywords: "innovation",
       });
       expect(result.success).toBe(true);

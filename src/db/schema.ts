@@ -418,6 +418,7 @@ export const userPhotos = pgTable("user_photos", {
   storageKey: text("storage_key").notNull(),
   url: text("url").notNull(),
   caption: text("caption"),
+  activityTag: text("activity_tag"),
   displayOrder: integer("display_order").default(0).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

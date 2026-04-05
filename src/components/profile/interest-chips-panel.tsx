@@ -1,41 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import {
-  Sparkles,
-  Dumbbell,
-  BookOpen,
-  HandHeart,
-  Target,
-  Heart,
-  Users,
-} from "lucide-react";
+import { Heart, Sparkles, Users, MessageCircle } from "lucide-react";
 import { exploreInterestSearchHref } from "@/lib/explore-interest-link";
+import { getQuestionById } from "@/lib/questionnaire-data";
 
 export interface ProfileInterestData {
-  rechargeActivities: string[];
-  fitnessActivities: string[];
-  volunteerCauses: string[];
-  contentPreferences: string[];
-  customInterests: string[];
-  idealWeekend: string | null;
-  leadershipPriorities: string[];
-  networkingGoals: string[];
+  archetype: string | null;
+  teamQualities: string[];
+  personalityTags: string[];
+  talkTopic: string | null;
+  headline: string | null;
+  personalInterest: string | null;
 }
 
-export function hasProfileInterestContent(
-  interests: ProfileInterestData
-): boolean {
-  return !!(
-    (interests.idealWeekend && interests.idealWeekend.trim()) ||
-    interests.rechargeActivities.length ||
-    interests.fitnessActivities.length ||
-    interests.volunteerCauses.length ||
-    interests.contentPreferences.length ||
-    interests.customInterests.length ||
-    interests.leadershipPriorities.length ||
-    interests.networkingGoals.length
-  );
+function optionLabel(questionId: string, value: string): string {
+  const q = getQuestionById(questionId)?.question;
+  const opt = q?.options?.find((o) => o.value === value);
+  return opt?.label || value.replace(/-/g, " ");
 }
 
 function InterestChip({
@@ -60,11 +42,22 @@ function InterestChip({
   );
 }
 
+export function hasProfileInterestContent(
+  interests: ProfileInterestData
+): boolean {
+  return !!(
+    (interests.archetype && interests.archetype.trim()) ||
+    interests.teamQualities.length ||
+    interests.personalityTags.length ||
+    (interests.talkTopic && interests.talkTopic.trim()) ||
+    (interests.headline && interests.headline.trim()) ||
+    (interests.personalInterest && interests.personalInterest.trim())
+  );
+}
+
 interface InterestChipsPanelProps {
   interests: ProfileInterestData;
-  /** Main section title */
   title: string;
-  /** Slightly different fitness gradient on /profile vs /user */
   variant?: "profile" | "public";
 }
 
@@ -73,21 +66,16 @@ export function InterestChipsPanel({
   title,
   variant = "public",
 }: InterestChipsPanelProps) {
-  const fitnessChip =
+  const accentRing =
     variant === "profile"
-      ? "bg-gradient-to-r from-emerald-500/20 to-green-500/20 text-emerald-300 border-emerald-500/30"
-      : "bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-300 border-green-500/30";
-  const fitnessRing =
-    variant === "profile"
-      ? "focus-visible:ring-emerald-400/50"
-      : "focus-visible:ring-green-400/50";
-
-  const customChip =
-    variant === "profile"
-      ? "bg-gradient-to-r from-pink-500/20 to-rose-500/20 text-pink-300 border-pink-500/30"
-      : "bg-gradient-to-r from-pink-500/20 to-fuchsia-500/20 text-pink-300 border-pink-500/30";
+      ? "focus-visible:ring-violet-400/50"
+      : "focus-visible:ring-cyan-400/50";
 
   if (!hasProfileInterestContent(interests)) return null;
+
+  const archetypeLabel = interests.archetype
+    ? optionLabel("archetype", interests.archetype)
+    : null;
 
   return (
     <div className="rounded-xl bg-white/5 border border-white/10 p-6">
@@ -97,160 +85,96 @@ export function InterestChipsPanel({
       </h2>
 
       <div className="space-y-4">
-        {interests.rechargeActivities.length > 0 && (
+        {archetypeLabel && (
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Users className="h-3.5 w-3.5 text-amber-400" />
+              <span className="text-xs font-medium text-white/60">
+                Archetype
+              </span>
+            </div>
+            <InterestChip
+              label={archetypeLabel}
+              chipClass="bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-200 border-amber-500/30"
+              ringClass={accentRing}
+            />
+          </div>
+        )}
+
+        {interests.teamQualities.length > 0 && (
           <div>
             <div className="flex items-center gap-2 mb-2">
               <Sparkles className="h-3.5 w-3.5 text-violet-400" />
               <span className="text-xs font-medium text-white/60">
-                How I Recharge
+                On a team I bring
               </span>
             </div>
             <div className="flex flex-wrap gap-2">
-              {interests.rechargeActivities.map((activity, i) => (
+              {interests.teamQualities.map((v, i) => (
                 <InterestChip
-                  key={`r-${i}`}
-                  label={activity}
+                  key={`t-${i}`}
+                  label={optionLabel("teamQualities", v)}
                   chipClass="bg-gradient-to-r from-violet-500/20 to-purple-500/20 text-violet-300 border-violet-500/30"
-                  ringClass="focus-visible:ring-violet-400/50"
+                  ringClass={accentRing}
                 />
               ))}
             </div>
           </div>
         )}
 
-        {interests.fitnessActivities.length > 0 && (
+        {interests.personalityTags.length > 0 && (
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <Dumbbell
-                className={`h-3.5 w-3.5 ${variant === "profile" ? "text-emerald-400" : "text-green-400"}`}
-              />
+              <Sparkles className="h-3.5 w-3.5 text-fuchsia-400" />
               <span className="text-xs font-medium text-white/60">
-                Fitness &amp; Wellness
+                Summit style
               </span>
             </div>
             <div className="flex flex-wrap gap-2">
-              {interests.fitnessActivities.map((activity, i) => (
+              {interests.personalityTags.map((v, i) => (
                 <InterestChip
-                  key={`f-${i}`}
-                  label={activity}
-                  chipClass={fitnessChip}
-                  ringClass={fitnessRing}
+                  key={`p-${i}`}
+                  label={optionLabel("personalityTags", v)}
+                  chipClass="bg-gradient-to-r from-fuchsia-500/20 to-pink-500/20 text-fuchsia-200 border-fuchsia-500/30"
+                  ringClass={accentRing}
                 />
               ))}
             </div>
           </div>
         )}
 
-        {interests.contentPreferences.length > 0 && (
+        {interests.talkTopic && interests.talkTopic.trim() && (
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <BookOpen className="h-3.5 w-3.5 text-blue-400" />
+              <MessageCircle className="h-3.5 w-3.5 text-cyan-400" />
               <span className="text-xs font-medium text-white/60">
-                What I&apos;m Learning
+                Could talk forever about
               </span>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {interests.contentPreferences.map((pref, i) => (
-                <InterestChip
-                  key={`c-${i}`}
-                  label={pref}
-                  chipClass="bg-gradient-to-r from-blue-500/20 to-cyan-500/20 text-blue-300 border-blue-500/30"
-                  ringClass="focus-visible:ring-blue-400/50"
-                />
-              ))}
-            </div>
+            <p className="text-sm text-white/80 leading-relaxed">
+              {interests.talkTopic.trim()}
+            </p>
           </div>
         )}
 
-        {interests.volunteerCauses.length > 0 && (
+        {interests.personalInterest && interests.personalInterest.trim() && (
           <div>
-            <div className="flex items-center gap-2 mb-2">
-              <HandHeart className="h-3.5 w-3.5 text-rose-400" />
-              <span className="text-xs font-medium text-white/60">
-                Causes I Care About
-              </span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {interests.volunteerCauses.map((cause, i) => (
-                <InterestChip
-                  key={`v-${i}`}
-                  label={cause}
-                  chipClass="bg-gradient-to-r from-rose-500/20 to-pink-500/20 text-rose-300 border-rose-500/30"
-                  ringClass="focus-visible:ring-rose-400/50"
-                />
-              ))}
-            </div>
+            <span className="text-xs font-medium text-white/60 block mb-2">
+              Outside of work
+            </span>
+            <p className="text-sm text-white/80 leading-relaxed">
+              {interests.personalInterest.trim()}
+            </p>
           </div>
         )}
 
-        {interests.leadershipPriorities.length > 0 && (
+        {interests.headline && interests.headline.trim() && (
           <div>
-            <div className="flex items-center gap-2 mb-2">
-              <Target className="h-3.5 w-3.5 text-amber-400" />
-              <span className="text-xs font-medium text-white/60">
-                Leadership Focus
-              </span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {interests.leadershipPriorities.map((priority, i) => (
-                <InterestChip
-                  key={`l-${i}`}
-                  label={priority}
-                  chipClass="bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-300 border-amber-500/30"
-                  ringClass="focus-visible:ring-amber-400/50"
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {interests.networkingGoals.length > 0 && (
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <Users className="h-3.5 w-3.5 text-teal-400" />
-              <span className="text-xs font-medium text-white/60">
-                Networking Goals
-              </span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {interests.networkingGoals.map((goal, i) => (
-                <InterestChip
-                  key={`n-${i}`}
-                  label={goal}
-                  chipClass="bg-gradient-to-r from-teal-500/20 to-cyan-500/20 text-teal-200 border-teal-500/30"
-                  ringClass="focus-visible:ring-teal-400/50"
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {interests.customInterests.length > 0 && (
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <Heart className="h-3.5 w-3.5 text-pink-400" />
-              <span className="text-xs font-medium text-white/60">
-                Other Interests
-              </span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {interests.customInterests.map((interest, i) => (
-                <InterestChip
-                  key={`o-${i}`}
-                  label={interest}
-                  chipClass={customChip}
-                  ringClass="focus-visible:ring-pink-400/50"
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {interests.idealWeekend && (
-          <div className="mt-4 p-4 bg-gradient-to-br from-white/5 to-white/[0.02] rounded-xl border border-white/10">
-            <p className="text-xs font-medium text-white/40 mb-2">Ideal Weekend</p>
-            <p className="text-sm text-white/80 italic">
-              &ldquo;{interests.idealWeekend}&rdquo;
+            <span className="text-xs font-medium text-white/60 block mb-2">
+              Summit headline
+            </span>
+            <p className="text-sm text-white/90 italic border-l-2 border-cyan-500/40 pl-3">
+              {interests.headline.trim()}
             </p>
           </div>
         )}

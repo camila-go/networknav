@@ -35,38 +35,82 @@ interface MatchScore {
   strategicScore: number;
 }
 
+/** Free-text Summit fields: token overlap boosts affinity (exact string match is rare). */
+const TEXT_OVERLAP_FIELDS: (keyof QuestionnaireData)[] = [
+  "roleSummary",
+  "growthArea",
+  "talkTopic",
+  "refinedInterest",
+  "personalInterest",
+  "joyTrigger",
+  "threeWords",
+  "headline",
+  "funFact",
+];
+
+const TEXT_OVERLAP_WEIGHT = 0.42;
+
+function tokenizeForOverlap(text: string): Set<string> {
+  return new Set(
+    text
+      .toLowerCase()
+      .split(/[^a-z0-9]+/)
+      .filter((t) => t.length >= 3)
+  );
+}
+
+function jaccardStringSets(a: Set<string>, b: Set<string>): number {
+  if (a.size === 0 && b.size === 0) return 0;
+  let inter = 0;
+  for (const x of a) {
+    if (b.has(x)) inter++;
+  }
+  const union = a.size + b.size - inter;
+  return union === 0 ? 0 : inter / union;
+}
+
+/**
+ * Average Jaccard similarity of word tokens across paired text fields (both sides non-empty).
+ */
+export function calculateTextFieldOverlap(
+  r1: Partial<QuestionnaireData>,
+  r2: Partial<QuestionnaireData>
+): number {
+  let sum = 0;
+  let n = 0;
+  for (const key of TEXT_OVERLAP_FIELDS) {
+    const v1 = r1[key];
+    const v2 = r2[key];
+    if (typeof v1 !== "string" || typeof v2 !== "string") continue;
+    const s1 = v1.trim();
+    const s2 = v2.trim();
+    if (s1.length < 3 || s2.length < 3) continue;
+    const t1 = tokenizeForOverlap(s1);
+    const t2 = tokenizeForOverlap(s2);
+    if (t1.size === 0 || t2.size === 0) continue;
+    sum += jaccardStringSets(t1, t2);
+    n++;
+  }
+  return n === 0 ? 0 : sum / n;
+}
+
 // ============================================
 // Attribute Weights Configuration
 // ============================================
 
 const ATTRIBUTE_WEIGHTS: Record<keyof QuestionnaireData, { weight: number; category: CommonalityCategory }> = {
-  // Section 1: Leadership Context (high weight for professional matching)
-  yearsExperience: { weight: 0.6, category: "professional" },
-  leadershipLevel: { weight: 0.85, category: "professional" },
-  organizationSize: { weight: 0.5, category: "professional" },
-
-  // Section 2: Building & Solving (high weight for challenge/goal alignment)
-  leadershipPriorities: { weight: 0.9, category: "professional" },
-  leadershipChallenges: { weight: 0.95, category: "professional" },
-  growthAreas: { weight: 0.85, category: "professional" },
-  networkingGoals: { weight: 0.8, category: "professional" },
-
-  // Section 3: Beyond the Boardroom (hobby/lifestyle)
-  rechargeActivities: { weight: 0.7, category: "hobby" },
-  customInterests: { weight: 0.85, category: "hobby" }, // User-typed interests (high weight - specific)
-  contentPreferences: { weight: 0.65, category: "hobby" },
-  fitnessActivities: { weight: 0.6, category: "hobby" },
-  idealWeekend: { weight: 0.55, category: "lifestyle" },
-  volunteerCauses: { weight: 0.7, category: "values" },
-  energizers: { weight: 0.75, category: "lifestyle" },
-
-  // Section 4: Leadership Style (values/style alignment)
-  leadershipPhilosophy: { weight: 0.9, category: "values" },
-  decisionMakingStyle: { weight: 0.7, category: "values" },
-  failureApproach: { weight: 0.65, category: "values" },
-  relationshipValues: { weight: 0.85, category: "values" },
-  communicationStyle: { weight: 0.6, category: "values" },
-  leadershipSeason: { weight: 0.5, category: "professional" },
+  roleSummary: { weight: 0.55, category: "professional" },
+  archetype: { weight: 0.9, category: "professional" },
+  teamQualities: { weight: 0.88, category: "professional" },
+  growthArea: { weight: 0.75, category: "professional" },
+  talkTopic: { weight: 0.72, category: "hobby" },
+  refinedInterest: { weight: 0.65, category: "professional" },
+  personalInterest: { weight: 0.8, category: "hobby" },
+  personalityTags: { weight: 0.78, category: "lifestyle" },
+  joyTrigger: { weight: 0.5, category: "lifestyle" },
+  threeWords: { weight: 0.45, category: "values" },
+  headline: { weight: 0.55, category: "professional" },
+  funFact: { weight: 0.6, category: "hobby" },
 };
 
 // ============================================
@@ -74,26 +118,12 @@ const ATTRIBUTE_WEIGHTS: Record<keyof QuestionnaireData, { weight: number; categ
 // ============================================
 
 const COMPLEMENTARY_PAIRS: Record<string, string[]> = {
-  // Leadership level complements (mentorship opportunities)
-  "leadershipLevel:c-suite": ["leadershipLevel:director", "leadershipLevel:vp"],
-  "leadershipLevel:vp": ["leadershipLevel:c-suite", "leadershipLevel:manager"],
-  "leadershipLevel:director": ["leadershipLevel:c-suite", "leadershipLevel:senior-executive"],
-  "leadershipLevel:manager": ["leadershipLevel:vp", "leadershipLevel:director"],
-  "leadershipLevel:emerging": ["leadershipLevel:director", "leadershipLevel:vp", "leadershipLevel:manager"],
-  
-  // Organization size complements (different perspectives)
-  "organizationSize:startup": ["organizationSize:enterprise", "organizationSize:large"],
-  "organizationSize:enterprise": ["organizationSize:startup", "organizationSize:small"],
-  
-  // Leadership style complements
-  "decisionMakingStyle:decisive": ["decisionMakingStyle:collaborative", "decisionMakingStyle:thoughtful"],
-  "decisionMakingStyle:data-driven": ["decisionMakingStyle:decisive", "decisionMakingStyle:adaptive"],
-  "decisionMakingStyle:collaborative": ["decisionMakingStyle:decisive", "decisionMakingStyle:strategic"],
-  
-  // Challenge/Growth complements (can help each other)
-  "leadershipChallenges:talent": ["growthAreas:teams", "leadershipPriorities:mentoring"],
-  "leadershipChallenges:change": ["growthAreas:change-mgmt", "leadershipPriorities:transformation"],
-  "leadershipChallenges:communication": ["growthAreas:storytelling", "growthAreas:presence"],
+  "archetype:builder": ["archetype:strategist", "archetype:creative"],
+  "archetype:strategist": ["archetype:operator", "archetype:analyst"],
+  "archetype:analyst": ["archetype:creative", "archetype:connector"],
+  "archetype:creative": ["archetype:operator", "archetype:builder"],
+  "archetype:operator": ["archetype:strategist", "archetype:connector"],
+  "archetype:connector": ["archetype:builder", "archetype:analyst"],
 };
 
 // ============================================
@@ -134,6 +164,12 @@ export function extractItemsets(responses: Partial<QuestionnaireData>): Attribut
   }
 
   return items;
+}
+
+/** True when questionnaire JSON has at least one weighted attribute (non-empty). */
+export function hasUsableQuestionnaire(data: unknown): boolean {
+  if (data == null || typeof data !== "object") return false;
+  return extractItemsets(data as Partial<QuestionnaireData>).length > 0;
 }
 
 /**
@@ -285,8 +321,13 @@ export function calculateMatchScore(
   const items1 = extractItemsets(responses1);
   const items2 = extractItemsets(responses2);
 
-  // Calculate affinity (similarity) score
-  const affinityScore = calculateWeightedSimilarity(items1, items2);
+  // Affinity: structured overlap + soft similarity on free-text answers (Summit questionnaire)
+  const baseAffinity = calculateWeightedSimilarity(items1, items2);
+  const textOverlap = calculateTextFieldOverlap(responses1, responses2);
+  const affinityScore = Math.min(
+    1,
+    baseAffinity + textOverlap * TEXT_OVERLAP_WEIGHT
+  );
 
   // Calculate strategic (complementary) score
   const strategicScore = calculateStrategicScore(items1, items2);
@@ -312,21 +353,22 @@ export function calculateMatchScore(
 }
 
 /**
- * Determine if a match is high-affinity or strategic
+ * Determine if a match is high-affinity or strategic.
+ * Strategic wins only when complementarity clearly exceeds similarity; ties favor high-affinity.
  */
 export function determineMatchType(
-  matchScore: MatchScore
+  matchScore: Pick<MatchScore, "affinityScore" | "strategicScore">
 ): "high-affinity" | "strategic" {
-  // If affinity score is significantly higher, it's a high-affinity match
-  if (matchScore.affinityScore > matchScore.strategicScore * 1.3) {
-    return "high-affinity";
-  }
-  // If strategic score is higher or close, it's strategic
-  if (matchScore.strategicScore >= matchScore.affinityScore * 0.8) {
+  const a = matchScore.affinityScore;
+  const s = matchScore.strategicScore;
+
+  if (s > a * 1.25) {
     return "strategic";
   }
-  // Default to high-affinity if both are low
-  return "high-affinity";
+  if (a > s * 1.25) {
+    return "high-affinity";
+  }
+  return a >= s ? "high-affinity" : "strategic";
 }
 
 // ============================================
@@ -335,25 +377,18 @@ export function determineMatchType(
 
 function generateCommonalityDescription(item: AttributeItem): string {
   const descriptions: Record<string, (value: string) => string> = {
-    yearsExperience: (v) => `Similar leadership experience (${v} years)`,
-    leadershipLevel: (v) => `Both at ${formatValue(v)} level`,
-    organizationSize: (v) => `Both lead in ${formatValue(v)} organizations`,
-    leadershipPriorities: (v) => `Shared priority: ${formatValue(v)}`,
-    leadershipChallenges: (v) => `Both navigating ${formatValue(v)} challenges`,
-    growthAreas: (v) => `Both developing ${formatValue(v)} skills`,
-    networkingGoals: (v) => `Aligned networking goal: ${formatValue(v)}`,
-    rechargeActivities: (v) => `Both enjoy ${formatValue(v)}`,
-    contentPreferences: (v) => `Shared interest in ${formatValue(v)} content`,
-    fitnessActivities: (v) => `Both active in ${formatValue(v)}`,
-    idealWeekend: (v) => `Similar weekend preferences: ${formatValue(v)}`,
-    volunteerCauses: (v) => `Both passionate about ${formatValue(v)}`,
-    energizers: (v) => `Energized by ${formatValue(v)}`,
-    leadershipPhilosophy: (v) => `Share ${formatValue(v)} leadership style`,
-    decisionMakingStyle: (v) => `Both ${formatValue(v)} decision makers`,
-    failureApproach: (v) => `Similar approach to setbacks: ${formatValue(v)}`,
-    relationshipValues: (v) => `Both value ${formatValue(v)} in relationships`,
-    communicationStyle: (v) => `${formatValue(v)} communication style`,
-    leadershipSeason: (v) => `Both in ${formatValue(v)} mode`,
+    roleSummary: (v) => `Similar how-we-work note: ${v.slice(0, 80)}${v.length > 80 ? "…" : ""}`,
+    archetype: (v) => `Both lean ${formatValue(v)}`,
+    teamQualities: (v) => `Both bring ${formatValue(v)} to teams`,
+    growthArea: (v) => `Learning overlap: ${formatValue(v)}`,
+    talkTopic: (v) => `Could riff on ${formatValue(v)}`,
+    refinedInterest: (v) => `Aligned focus: ${v.slice(0, 60)}${v.length > 60 ? "…" : ""}`,
+    personalInterest: (v) => `Life-outside-work: ${formatValue(v)}`,
+    personalityTags: (v) => `Same summit rhythm: ${formatValue(v)}`,
+    joyTrigger: (v) => `Small joys: ${formatValue(v)}`,
+    threeWords: (v) => `Self-summary overlap: ${formatValue(v)}`,
+    headline: (v) => `Summit intent: ${v.slice(0, 70)}${v.length > 70 ? "…" : ""}`,
+    funFact: (v) => `Fun fact energy: ${v.slice(0, 60)}${v.length > 60 ? "…" : ""}`,
   };
 
   const generator = descriptions[item.attribute];
@@ -372,17 +407,8 @@ function generateStrategicDescription(
   const val = formatValue(item.value);
   const compVal = formatValue(complementValue);
 
-  if (attr === "leadershipLevel") {
-    return `Cross-level connection: ${val} ↔ ${compVal}`;
-  }
-  if (attr === "organizationSize") {
-    return `Different scale perspectives: ${val} vs ${compVal}`;
-  }
-  if (attr === "decisionMakingStyle") {
-    return `Complementary decision styles: ${val} + ${compVal}`;
-  }
-  if (attr.includes("Challenges") || attr.includes("Growth")) {
-    return `Can help with each other's growth areas`;
+  if (attr === "archetype") {
+    return `Complementary styles: ${val} + ${compVal}`;
   }
 
   return `Complementary expertise: ${val} + ${compVal}`;

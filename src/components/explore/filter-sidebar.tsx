@@ -22,11 +22,9 @@ interface FilterOption {
 }
 
 interface FilterOptions {
-  leadershipLevels: FilterOption[];
-  organizationSizes: FilterOption[];
-  yearsExperience: FilterOption[];
-  leadershipChallenges: FilterOption[];
-  leadershipPriorities: FilterOption[];
+  archetypes: FilterOption[];
+  teamQualities: FilterOption[];
+  personalityTags: FilterOption[];
   interests: FilterOption[];
 }
 
@@ -45,11 +43,9 @@ export function FilterSidebar({
 }: FilterSidebarProps) {
   const [filterOptions, setFilterOptions] = useState<FilterOptions | null>(null);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
-    leadershipLevels: true,
-    organizationSizes: false,
-    yearsExperience: false,
-    leadershipChallenges: false,
-    leadershipPriorities: false,
+    archetypes: true,
+    teamQualities: false,
+    personalityTags: false,
     interests: false,
   });
 
@@ -153,84 +149,50 @@ export function FilterSidebar({
       {/* Filter sections */}
       <ScrollArea className="flex-1">
         <div className="p-4 space-y-4">
-          {/* Leadership Level */}
           <FilterSection
-            title="Leadership Level"
-            expanded={expandedSections.leadershipLevels}
-            onToggle={() => toggleSection("leadershipLevels")}
-            activeCount={(filters.leadershipLevels || []).length}
-            onClear={() => clearFilter("leadershipLevels")}
+            title="Archetype"
+            expanded={expandedSections.archetypes}
+            onToggle={() => toggleSection("archetypes")}
+            activeCount={(filters.archetypes || []).length}
+            onClear={() => clearFilter("archetypes")}
           >
             <FilterOptionList
-              options={filterOptions.leadershipLevels}
-              selectedValues={filters.leadershipLevels || []}
-              onToggle={(value) => toggleFilter("leadershipLevels", value)}
+              options={filterOptions.archetypes}
+              selectedValues={filters.archetypes || []}
+              onToggle={(value) => toggleFilter("archetypes", value)}
             />
           </FilterSection>
 
-          {/* Organization Size */}
           <FilterSection
-            title="Organization Size"
-            expanded={expandedSections.organizationSizes}
-            onToggle={() => toggleSection("organizationSizes")}
-            activeCount={(filters.organizationSizes || []).length}
-            onClear={() => clearFilter("organizationSizes")}
+            title="Team strengths"
+            expanded={expandedSections.teamQualities}
+            onToggle={() => toggleSection("teamQualities")}
+            activeCount={(filters.teamQualities || []).length}
+            onClear={() => clearFilter("teamQualities")}
           >
             <FilterOptionList
-              options={filterOptions.organizationSizes}
-              selectedValues={filters.organizationSizes || []}
-              onToggle={(value) => toggleFilter("organizationSizes", value)}
+              options={filterOptions.teamQualities}
+              selectedValues={filters.teamQualities || []}
+              onToggle={(value) => toggleFilter("teamQualities", value)}
             />
           </FilterSection>
 
-          {/* Years Experience */}
           <FilterSection
-            title="Years in Leadership"
-            expanded={expandedSections.yearsExperience}
-            onToggle={() => toggleSection("yearsExperience")}
-            activeCount={(filters.yearsExperience || []).length}
-            onClear={() => clearFilter("yearsExperience")}
+            title="Summit style"
+            expanded={expandedSections.personalityTags}
+            onToggle={() => toggleSection("personalityTags")}
+            activeCount={(filters.personalityTags || []).length}
+            onClear={() => clearFilter("personalityTags")}
           >
             <FilterOptionList
-              options={filterOptions.yearsExperience}
-              selectedValues={filters.yearsExperience || []}
-              onToggle={(value) => toggleFilter("yearsExperience", value)}
+              options={filterOptions.personalityTags}
+              selectedValues={filters.personalityTags || []}
+              onToggle={(value) => toggleFilter("personalityTags", value)}
             />
           </FilterSection>
 
-          {/* Leadership Challenges */}
           <FilterSection
-            title="Leadership Challenges"
-            expanded={expandedSections.leadershipChallenges}
-            onToggle={() => toggleSection("leadershipChallenges")}
-            activeCount={(filters.leadershipChallenges || []).length}
-            onClear={() => clearFilter("leadershipChallenges")}
-          >
-            <FilterOptionList
-              options={filterOptions.leadershipChallenges}
-              selectedValues={filters.leadershipChallenges || []}
-              onToggle={(value) => toggleFilter("leadershipChallenges", value)}
-            />
-          </FilterSection>
-
-          {/* Leadership Priorities */}
-          <FilterSection
-            title="Leadership Priorities"
-            expanded={expandedSections.leadershipPriorities}
-            onToggle={() => toggleSection("leadershipPriorities")}
-            activeCount={(filters.leadershipPriorities || []).length}
-            onClear={() => clearFilter("leadershipPriorities")}
-          >
-            <FilterOptionList
-              options={filterOptions.leadershipPriorities}
-              selectedValues={filters.leadershipPriorities || []}
-              onToggle={(value) => toggleFilter("leadershipPriorities", value)}
-            />
-          </FilterSection>
-
-          {/* Interests */}
-          <FilterSection
-            title="Interests & Hobbies"
+            title="Tags (broad)"
             expanded={expandedSections.interests}
             onToggle={() => toggleSection("interests")}
             activeCount={(filters.interests || []).length}

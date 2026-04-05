@@ -32,22 +32,17 @@ export async function POST(request: NextRequest) {
 
     // Calculate completion percentage
     const requiredFields = [
-      "yearsExperience",
-      "leadershipLevel",
-      "organizationSize",
-      "leadershipPriorities",
-      "leadershipChallenges",
-      "growthAreas",
-      "networkingGoals",
-      "rechargeActivities",
-      "contentPreferences",
-      "idealWeekend",
-      "energizers",
-      "leadershipPhilosophy",
-      "decisionMakingStyle",
-      "failureApproach",
-      "relationshipValues",
-      "communicationStyle",
+      "roleSummary",
+      "archetype",
+      "teamQualities",
+      "growthArea",
+      "talkTopic",
+      "personalInterest",
+      "personalityTags",
+      "joyTrigger",
+      "threeWords",
+      "headline",
+      "funFact",
     ];
 
     const answeredRequired = requiredFields.filter((field) => {
@@ -87,8 +82,8 @@ export async function POST(request: NextRequest) {
         
         // Build interests array from questionnaire
         const interests = [
-          ...(result.data.rechargeActivities || []),
-          ...(result.data.customInterests || []),
+          ...(result.data.personalityTags || []),
+          ...(result.data.archetype ? [result.data.archetype] : []),
         ];
 
         // Generate AI embedding if OpenAI is configured

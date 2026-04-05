@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase/client";
+import { normalizeActivityTag } from "@/lib/profile/activity-tag";
 import type { UserPhoto } from "@/types";
 
 function rowToUserPhoto(row: {
@@ -9,6 +10,7 @@ function rowToUserPhoto(row: {
   storage_key: string;
   url: string;
   caption: string | null;
+  activity_tag?: string | null;
   display_order: number;
   created_at: string;
 }): UserPhoto {
@@ -18,6 +20,7 @@ function rowToUserPhoto(row: {
     storageKey: row.storage_key,
     url: row.url,
     caption: row.caption ?? undefined,
+    activityTag: row.activity_tag ?? undefined,
     displayOrder: row.display_order,
     createdAt: new Date(row.created_at),
   };
@@ -45,10 +48,17 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const updates: { caption?: string | null; display_order?: number } = {};
+    const updates: {
+      caption?: string | null;
+      display_order?: number;
+      activity_tag?: string | null;
+    } = {};
 
     if ("caption" in body) updates.caption = body.caption ?? null;
     if ("displayOrder" in body) updates.display_order = body.displayOrder;
+    if ("activityTag" in body) {
+      updates.activity_tag = normalizeActivityTag(body.activityTag ?? null);
+    }
 
     if (Object.keys(updates).length === 0) {
       return NextResponse.json(

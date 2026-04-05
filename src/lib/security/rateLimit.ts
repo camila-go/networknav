@@ -28,6 +28,8 @@ export const RATE_LIMITS = {
   // Matching & discovery
   'compute-matches': { maxRequests: 10, windowMs: 60 * 60 * 1000 }, // 10 per hour
   'search': { maxRequests: 100, windowMs: 60 * 60 * 1000 }, // 100 per hour
+  /** Jynx FAB — network Q&A (LLM) */
+  'jynx-network-assistant': { maxRequests: 40, windowMs: 60 * 60 * 1000 },
   
   // Meetings & connections
   'schedule-meeting': { maxRequests: 20, windowMs: 60 * 60 * 1000 }, // 20 per hour

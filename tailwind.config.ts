@@ -133,6 +133,11 @@ const config = {
           "0%, 100%": { transform: "scale(1)" },
           "50%": { transform: "scale(1.09)" },
         },
+        /** Community gallery — slow zoom/pan on stacked photos (paired with crossfade) */
+        "gallery-ken-burns": {
+          "0%": { transform: "scale(1.03) translate(0%, 0%)" },
+          "100%": { transform: "scale(1.12) translate(-2%, -1.5%)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -144,6 +149,9 @@ const config = {
         shimmer: "shimmer 2s linear infinite",
         /** ~7s cycle + slightly wider peak scale — readable “breath”, not frantic */
         "radiant-breathe": "radiant-breathe 7s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite",
+        /** ~5.7s leg; alternate reverses for continuous motion between crossfades */
+        "gallery-ken-burns":
+          "gallery-ken-burns 5.7s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite alternate",
       },
       fontFamily: {
         sans: ["var(--font-sans)", "system-ui", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "sans-serif"],

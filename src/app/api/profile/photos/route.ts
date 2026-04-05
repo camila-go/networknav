@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase/client";
+import { normalizeActivityTag } from "@/lib/profile/activity-tag";
 import type { UserPhoto } from "@/types";
 
 const MAX_PHOTOS = 12;
@@ -11,6 +12,7 @@ function rowToUserPhoto(row: {
   storage_key: string;
   url: string;
   caption: string | null;
+  activity_tag?: string | null;
   display_order: number;
   created_at: string;
 }): UserPhoto {
@@ -20,6 +22,7 @@ function rowToUserPhoto(row: {
     storageKey: row.storage_key,
     url: row.url,
     caption: row.caption ?? undefined,
+    activityTag: row.activity_tag ?? undefined,
     displayOrder: row.display_order,
     createdAt: new Date(row.created_at),
   };
@@ -86,10 +89,11 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { storageKey, photoId, caption } = body as {
+    const { storageKey, photoId, caption, activityTag } = body as {
       storageKey: string;
       photoId: string;
       caption?: string;
+      activityTag?: string;
     };
 
     if (!storageKey || !photoId) {
@@ -98,6 +102,12 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    const rawTag =
+      typeof activityTag === "string" && activityTag.trim().length > 0
+        ? activityTag
+        : caption;
+    const normalizedTag = normalizeActivityTag(rawTag);
 
     // Validate storage key matches the authenticated user
     const expectedKey = `${session.userId}/gallery/${photoId}`;
@@ -155,6 +165,7 @@ export async function POST(request: NextRequest) {
         storage_key: storageKey,
         url: publicUrl,
         caption: caption ?? null,
+        activity_tag: normalizedTag,
         display_order: nextOrder,
       })
       .select("*")
@@ -162,12 +173,19 @@ export async function POST(request: NextRequest) {
 
     if (insertError || !newPhoto) {
       console.error("Photo insert error:", insertError);
-      // Clean up storage on insert failure
       await supabaseAdmin.storage.from("profile-photos").remove([storageKey]);
-      return NextResponse.json(
-        { success: false, error: "Failed to save photo" },
-        { status: 500 }
-      );
+
+      const err = insertError as { code?: string; message?: string } | undefined;
+      const code = err?.code;
+      const hint =
+        code === "23503"
+          ? "Database rejected this photo (user profile or table missing). Run migrations and ensure you registered with Supabase."
+          : code === "42703"
+            ? "Database is missing expected columns (e.g. activity_tag). Apply latest migrations."
+            : err?.message?.trim() || "Failed to save photo";
+
+      const status = code === "23503" || code === "42703" ? 400 : 500;
+      return NextResponse.json({ success: false, error: hint }, { status });
     }
 
     return NextResponse.json({

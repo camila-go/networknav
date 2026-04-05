@@ -27,6 +27,10 @@ export interface TeamsActionButtonsProps {
    */
   composeMessage?: string;
   className?: string;
+  /** Merged onto the Chat CTA (e.g. alternate fill on match cards). */
+  chatClassName?: string;
+  /** Merged onto the Pass button when shown. */
+  passClassName?: string;
 }
 
 /**
@@ -41,6 +45,8 @@ export function TeamsActionButtons({
   showPass = Boolean(onPass),
   composeMessage,
   className,
+  chatClassName,
+  passClassName,
 }: TeamsActionButtonsProps) {
   const chatUrl = teamsChartUrl(targetEmail, { composeMessage });
   const hasPass = Boolean(showPass && onPass);
@@ -55,14 +61,20 @@ export function TeamsActionButtons({
     : `Chat with ${targetName} in Microsoft Teams (opens in new tab)`;
 
   return (
-    <div className={cn("flex w-full flex-wrap items-stretch gap-3", className)}>
+    <div
+      className={cn(
+        "flex w-full flex-wrap items-stretch gap-2 sm:gap-3",
+        className
+      )}
+    >
       {hasPass && (
         <button
           type="button"
           onClick={handlePass}
           className={cn(
             buttonVariants({ variant: "outline", size: "default" }),
-            "flex-1 basis-0 min-w-[min(100%,9rem)] gap-2 border-white/25 text-white/90 hover:text-white"
+            "min-w-0 flex-1 basis-0 gap-2 border-white/25 text-white/90 hover:text-white sm:min-w-[min(100%,8rem)]",
+            passClassName
           )}
         >
           <span>Pass</span>
@@ -89,7 +101,10 @@ export function TeamsActionButtons({
         className={cn(
           buttonVariants({ variant: "default", size: "default" }),
           "no-underline gap-2",
-          hasPass ? "flex-1 basis-0 min-w-[min(100%,9rem)]" : "w-full"
+          hasPass
+            ? "min-w-0 flex-1 basis-0 sm:min-w-[min(100%,8rem)]"
+            : "w-full",
+          chatClassName
         )}
       >
         <Image
@@ -102,7 +117,7 @@ export function TeamsActionButtons({
         />
         <span>Chat</span>
         <ExternalLink
-          className={cn(tabIconClass, "text-black/65")}
+          className={cn(tabIconClass, "text-white/70")}
           strokeWidth={TAB_STROKE}
           aria-hidden
         />

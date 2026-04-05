@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth";
 import { userMatches, users } from "@/lib/stores";
 import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
 import { isLiveDatabaseMode } from "@/lib/supabase/data-mode";
+import { ensureMatchesLoaded } from "@/lib/network/ensure-matches-loaded";
 import { cookies } from "next/headers";
 
 interface UserMatchSummary {
@@ -62,7 +63,51 @@ export async function GET(
       }
     }
 
-    if (publicMatches.length === 0 && isSupabaseConfigured && supabaseAdmin) {
+    /** Live DB: same pool as Matches — suggested connections you have not Passed on (not chat attempts). */
+    if (
+      publicMatches.length === 0 &&
+      isLiveDatabaseMode() &&
+      supabaseAdmin
+    ) {
+      try {
+        let targetEmail: string | undefined =
+          session?.userId === targetUserId ? session.email : undefined;
+        if (!targetEmail) {
+          const { data: row } = await supabaseAdmin
+            .from("user_profiles")
+            .select("email")
+            .eq("id", targetUserId)
+            .maybeSingle();
+          const em = (row as { email?: string } | null)?.email;
+          if (typeof em === "string" && em.trim()) {
+            targetEmail = em.trim();
+          }
+        }
+        const loaded = await ensureMatchesLoaded(targetUserId, targetEmail);
+        publicMatches = loaded
+          .filter((m) => !m.passed)
+          .map((match) => ({
+            id: match.matchedUserId,
+            name: match.matchedUser.profile.name,
+            position:
+              match.matchedUser.profile.position ||
+              match.matchedUser.profile.title,
+            company: match.matchedUser.profile.company,
+            matchType: match.type,
+            photoUrl: match.matchedUser.profile.photoUrl,
+          }));
+      } catch (err) {
+        console.error("Live matches load for profile connections:", err);
+      }
+    }
+
+    /* Demo / non-live only: placeholder attendees when no in-memory matches. */
+    if (
+      publicMatches.length === 0 &&
+      isSupabaseConfigured &&
+      supabaseAdmin &&
+      !isLiveDatabaseMode()
+    ) {
       try {
         const { data: supabaseUsers } = await supabaseAdmin
           .from("user_profiles")

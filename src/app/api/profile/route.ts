@@ -4,6 +4,7 @@ import { profileSchema } from "@/lib/validations";
 import { users } from "@/lib/stores";
 import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
 import { cookies } from "next/headers";
+import type { UserRole } from "@/types";
 
 export async function GET(request: NextRequest) {
   try {
@@ -33,14 +34,101 @@ export async function GET(request: NextRequest) {
           break;
         }
       }
-      
+
+      // Cold start / new instance: load from Supabase by profile id or session email
+      if (!currentUser && session && isSupabaseConfigured && supabaseAdmin) {
+        try {
+          const { data: byId } = await supabaseAdmin
+            .from("user_profiles")
+            .select(
+              "id, email, name, position, title, company, location, photo_url, bio"
+            )
+            .eq("id", currentUserId)
+            .maybeSingle();
+          const row = byId as {
+            id: string;
+            email: string;
+            name?: string;
+            position?: string;
+            title?: string;
+            company?: string;
+            location?: string;
+            photo_url?: string;
+            bio?: string;
+          } | null;
+          if (row) {
+            currentUser = {
+              id: row.id,
+              email: row.email,
+              passwordHash: "",
+              role: "user" as UserRole,
+              name: row.name || "User",
+              position: row.position || "",
+              title: row.title || row.position || "",
+              company: row.company || "",
+              location: row.location,
+              photoUrl: row.photo_url,
+              bio: row.bio,
+              questionnaireCompleted: false,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            };
+          }
+        } catch {
+          // fall through
+        }
+      }
+
+      if (!currentUser && session && isSupabaseConfigured && supabaseAdmin) {
+        try {
+          const { data: byEmail } = await supabaseAdmin
+            .from("user_profiles")
+            .select(
+              "id, email, name, position, title, company, location, photo_url, bio"
+            )
+            .eq("email", session.email.toLowerCase())
+            .maybeSingle();
+          const row = byEmail as {
+            id: string;
+            email: string;
+            name?: string;
+            position?: string;
+            title?: string;
+            company?: string;
+            location?: string;
+            photo_url?: string;
+            bio?: string;
+          } | null;
+          if (row) {
+            currentUser = {
+              id: row.id,
+              email: row.email,
+              passwordHash: "",
+              role: "user" as UserRole,
+              name: row.name || "User",
+              position: row.position || "",
+              title: row.title || row.position || "",
+              company: row.company || "",
+              location: row.location,
+              photoUrl: row.photo_url,
+              bio: row.bio,
+              questionnaireCompleted: false,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            };
+          }
+        } catch {
+          // fall through
+        }
+      }
+
       if (!currentUser) {
         return NextResponse.json(
           { success: false, error: "User not found" },
           { status: 404 }
         );
       }
-      
+
       return NextResponse.json({
         success: true,
         data: {

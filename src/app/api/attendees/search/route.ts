@@ -29,146 +29,110 @@ function calculateMatchData(
   let matchPoints = 0;
   let totalPoints = 0;
 
-  // Leadership level proximity
-  const levelOrder = ["emerging", "manager", "director", "vp", "senior-executive", "c-suite", "founder"];
-  if (currentResponses.leadershipLevel && candidateResponses.leadershipLevel) {
-    totalPoints += 10;
-    const currentIdx = levelOrder.indexOf(currentResponses.leadershipLevel as string);
-    const candidateIdx = levelOrder.indexOf(candidateResponses.leadershipLevel as string);
-    const distance = Math.abs(currentIdx - candidateIdx);
-    if (distance <= 1) {
-      matchPoints += 10;
+  if (currentResponses.archetype && candidateResponses.archetype) {
+    totalPoints += 12;
+    if (currentResponses.archetype === candidateResponses.archetype) {
+      matchPoints += 12;
       commonalities.push({
         category: "professional",
-        description: `Similar leadership level: ${getLabel("leadershipLevel", candidateResponses.leadershipLevel as string)}`,
-        weight: 0.85,
+        description: `Same vibe: ${getLabel("archetype", candidateResponses.archetype as string)}`,
+        weight: 0.9,
       });
-    } else if (distance === 2) {
-      matchPoints += 5;
+    } else {
+      matchPoints += 4;
     }
   }
 
-  // Organization size match
-  if (currentResponses.organizationSize && candidateResponses.organizationSize) {
+  const currentTeam = (currentResponses.teamQualities as string[]) || [];
+  const candidateTeam = (candidateResponses.teamQualities as string[]) || [];
+  if (currentTeam.length > 0 && candidateTeam.length > 0) {
+    totalPoints += 14;
+    const sharedTeam = currentTeam.filter((t) => candidateTeam.includes(t));
+    matchPoints += Math.min(sharedTeam.length * 4, 14);
+    if (sharedTeam.length > 0) {
+      commonalities.push({
+        category: "professional",
+        description: `Shared team strengths: ${sharedTeam.slice(0, 2).map((t) => getLabel("teamQualities", t)).join(", ")}`,
+        weight: 0.88,
+      });
+    }
+  }
+
+  const currentTags = (currentResponses.personalityTags as string[]) || [];
+  const candidateTags = (candidateResponses.personalityTags as string[]) || [];
+  if (currentTags.length > 0 && candidateTags.length > 0) {
+    totalPoints += 14;
+    const sharedTags = currentTags.filter((t) => candidateTags.includes(t));
+    matchPoints += Math.min(sharedTags.length * 4, 14);
+    if (sharedTags.length > 0) {
+      commonalities.push({
+        category: "lifestyle",
+        description: `Similar rhythm: ${sharedTags.slice(0, 2).map((t) => getLabel("personalityTags", t)).join(", ")}`,
+        weight: 0.8,
+      });
+    }
+  }
+
+  const growthA = (currentResponses.growthArea as string)?.trim().toLowerCase() || "";
+  const growthB = (candidateResponses.growthArea as string)?.trim().toLowerCase() || "";
+  if (growthA.length > 4 && growthB.length > 4) {
     totalPoints += 8;
-    if (currentResponses.organizationSize === candidateResponses.organizationSize) {
+    if (growthA === growthB) {
       matchPoints += 8;
       commonalities.push({
         category: "professional",
-        description: `Both at ${getLabel("organizationSize", currentResponses.organizationSize as string)} organizations`,
-        weight: 0.7,
+        description: "Both leveling up in a similar area",
+        weight: 0.82,
       });
+    } else {
+      const wordsA = new Set(growthA.split(/\W+/).filter((w) => w.length > 3));
+      const overlap = growthB.split(/\W+/).filter((w) => w.length > 3 && wordsA.has(w));
+      if (overlap.length > 0) {
+        matchPoints += 5;
+        commonalities.push({
+          category: "professional",
+          description: "Overlapping learning interests",
+          weight: 0.7,
+        });
+      }
     }
   }
 
-  // Leadership priorities overlap
-  const currentPriorities = (currentResponses.leadershipPriorities as string[]) || [];
-  const candidatePriorities = (candidateResponses.leadershipPriorities as string[]) || [];
-  if (currentPriorities.length > 0 && candidatePriorities.length > 0) {
-    totalPoints += 15;
-    const sharedPriorities = currentPriorities.filter((p) => candidatePriorities.includes(p));
-    matchPoints += Math.min(sharedPriorities.length * 3, 15);
-    if (sharedPriorities.length > 0) {
-      commonalities.push({
-        category: "professional",
-        description: `Shared priorities: ${sharedPriorities.slice(0, 2).map((p) => getLabel("leadershipPriorities", p)).join(", ")}`,
-        weight: 0.85,
-      });
-    }
-  }
-
-  // Leadership challenges overlap
-  const currentChallenges = (currentResponses.leadershipChallenges as string[]) || [];
-  const candidateChallenges = (candidateResponses.leadershipChallenges as string[]) || [];
-  if (currentChallenges.length > 0 && candidateChallenges.length > 0) {
-    totalPoints += 15;
-    const sharedChallenges = currentChallenges.filter((c) => candidateChallenges.includes(c));
-    matchPoints += Math.min(sharedChallenges.length * 3, 15);
-    if (sharedChallenges.length > 0) {
-      commonalities.push({
-        category: "professional",
-        description: `Similar challenges: ${sharedChallenges.slice(0, 2).map((c) => getLabel("leadershipChallenges", c)).join(", ")}`,
-        weight: 0.9,
-      });
-    }
-  }
-
-  // Recharge activities overlap (hobbies)
-  const currentRecharge = (currentResponses.rechargeActivities as string[]) || [];
-  const candidateRecharge = (candidateResponses.rechargeActivities as string[]) || [];
-  if (currentRecharge.length > 0 && candidateRecharge.length > 0) {
-    totalPoints += 12;
-    const sharedRecharge = currentRecharge.filter((r) => candidateRecharge.includes(r));
-    matchPoints += Math.min(sharedRecharge.length * 2, 12);
-    if (sharedRecharge.length > 0) {
-      commonalities.push({
-        category: "hobby",
-        description: `Both enjoy ${sharedRecharge.slice(0, 2).map((r) => getLabel("rechargeActivities", r)).join(" and ")}`,
-        weight: 0.7,
-      });
-    }
-  }
-
-  // Content preferences overlap
-  const currentContent = (currentResponses.contentPreferences as string[]) || [];
-  const candidateContent = (candidateResponses.contentPreferences as string[]) || [];
-  if (currentContent.length > 0 && candidateContent.length > 0) {
-    totalPoints += 8;
-    const sharedContent = currentContent.filter((c) => candidateContent.includes(c));
-    matchPoints += Math.min(sharedContent.length * 2, 8);
-    if (sharedContent.length > 0) {
-      commonalities.push({
-        category: "hobby",
-        description: `Shared interest in ${sharedContent.slice(0, 2).map((c) => getLabel("contentPreferences", c)).join(", ")}`,
-        weight: 0.6,
-      });
-    }
-  }
-
-  // Custom interests overlap (user-typed interests)
-  const currentCustom = (currentResponses.customInterests as string[]) || [];
-  const candidateCustom = (candidateResponses.customInterests as string[]) || [];
-  if (currentCustom.length > 0 && candidateCustom.length > 0) {
+  const talkA = (currentResponses.talkTopic as string)?.toLowerCase() || "";
+  const talkB = (candidateResponses.talkTopic as string)?.toLowerCase() || "";
+  if (talkA.length > 5 && talkB.length > 5) {
     totalPoints += 10;
-    // Case-insensitive matching for custom interests
-    const currentLower = currentCustom.map(i => i.toLowerCase());
-    const sharedCustom = candidateCustom.filter((i) => currentLower.includes(i.toLowerCase()));
-    matchPoints += Math.min(sharedCustom.length * 4, 10);
-    if (sharedCustom.length > 0) {
+    const terms = talkA.split(/\s+/).filter((t) => t.length > 3);
+    const hits = terms.filter((t) => talkB.includes(t));
+    if (hits.length >= 2) {
+      matchPoints += 10;
       commonalities.push({
         category: "hobby",
-        description: `Both enjoy ${sharedCustom.slice(0, 2).join(" and ")}`,
-        weight: 0.85, // Higher weight for custom interests (more specific)
+        description: "Could go deep on similar topics",
+        weight: 0.78,
       });
+    } else if (hits.length === 1) {
+      matchPoints += 4;
     }
   }
 
-  // Leadership philosophy overlap
-  const currentPhilosophy = (currentResponses.leadershipPhilosophy as string[]) || [];
-  const candidatePhilosophy = (candidateResponses.leadershipPhilosophy as string[]) || [];
-  if (currentPhilosophy.length > 0 && candidatePhilosophy.length > 0) {
-    totalPoints += 12;
-    const sharedPhilosophy = currentPhilosophy.filter((p) => candidatePhilosophy.includes(p));
-    matchPoints += Math.min(sharedPhilosophy.length * 3, 12);
-    if (sharedPhilosophy.length > 0) {
-      commonalities.push({
-        category: "values",
-        description: `Share ${sharedPhilosophy.slice(0, 2).map((p) => getLabel("leadershipPhilosophy", p)).join(" and ")} philosophy`,
-        weight: 0.85,
-      });
-    }
-  }
-
-  // Communication style match
-  if (currentResponses.communicationStyle && candidateResponses.communicationStyle) {
-    totalPoints += 5;
-    if (currentResponses.communicationStyle === candidateResponses.communicationStyle) {
-      matchPoints += 5;
-      commonalities.push({
-        category: "values",
-        description: `Similar communication style: ${getLabel("communicationStyle", currentResponses.communicationStyle as string)}`,
-        weight: 0.75,
-      });
+  if (
+    typeof currentResponses.personalInterest === "string" &&
+    typeof candidateResponses.personalInterest === "string"
+  ) {
+    const a = currentResponses.personalInterest.toLowerCase();
+    const b = candidateResponses.personalInterest.toLowerCase();
+    if (a.length > 5 && b.length > 5) {
+      totalPoints += 8;
+      const words = a.split(/\W+/).filter((w) => w.length > 4);
+      if (words.some((w) => b.includes(w))) {
+        matchPoints += 8;
+        commonalities.push({
+          category: "hobby",
+          description: "Life-outside-work overlap",
+          weight: 0.75,
+        });
+      }
     }
   }
 
@@ -180,53 +144,57 @@ function calculateMatchData(
   return { percentage, commonalities: commonalities.slice(0, 5) };
 }
 
+/** Archetype option values (must stay aligned with questionnaire `archetype` question). */
+const ARCHETYPE_VALUES = new Set([
+  "builder",
+  "strategist",
+  "creative",
+  "analyst",
+  "operator",
+  "connector",
+]);
+
 // Check if user matches filters
 function matchesFilters(
   responses: Record<string, unknown>,
   userProfile: { location?: string },
-  filters: SearchFilters
+  filters: SearchFilters,
+  /** Denormalized chips on `user_profiles.interests` (personality + archetype from questionnaire API). */
+  profileInterestTags?: string[] | null
 ): boolean {
-  // Leadership level filter
-  if (filters.leadershipLevels && filters.leadershipLevels.length > 0) {
-    if (!responses.leadershipLevel || !filters.leadershipLevels.includes(responses.leadershipLevel as string)) {
+  const chips =
+    profileInterestTags?.filter((c): c is string => typeof c === "string" && c.length > 0) ?? [];
+
+  const userArchetype =
+    (typeof responses.archetype === "string" ? responses.archetype : undefined) ??
+    chips.find((c) => ARCHETYPE_VALUES.has(c));
+
+  if (filters.archetypes && filters.archetypes.length > 0) {
+    if (!userArchetype || !filters.archetypes.includes(userArchetype)) {
       return false;
     }
   }
 
-  // Organization size filter
-  if (filters.organizationSizes && filters.organizationSizes.length > 0) {
-    if (!responses.organizationSize || !filters.organizationSizes.includes(responses.organizationSize as string)) {
-      return false;
-    }
-  }
-
-  // Years experience filter
-  if (filters.yearsExperience && filters.yearsExperience.length > 0) {
-    if (!responses.yearsExperience || !filters.yearsExperience.includes(responses.yearsExperience as string)) {
-      return false;
-    }
-  }
-
-  // Leadership challenges filter (OR logic - match any)
-  if (filters.leadershipChallenges && filters.leadershipChallenges.length > 0) {
-    const userChallenges = (responses.leadershipChallenges as string[]) || [];
-    const hasMatch = filters.leadershipChallenges.some((c) => userChallenges.includes(c));
+  if (filters.teamQualities && filters.teamQualities.length > 0) {
+    const userQ = (responses.teamQualities as string[]) || [];
+    const hasMatch = filters.teamQualities.some((p) => userQ.includes(p));
     if (!hasMatch) return false;
   }
 
-  // Leadership priorities filter (OR logic - match any)
-  if (filters.leadershipPriorities && filters.leadershipPriorities.length > 0) {
-    const userPriorities = (responses.leadershipPriorities as string[]) || [];
-    const hasMatch = filters.leadershipPriorities.some((p) => userPriorities.includes(p));
+  const personalityFromJson = (responses.personalityTags as string[]) || [];
+  const personalityFromChips = chips.filter((c) => !ARCHETYPE_VALUES.has(c));
+  const userPersonalityTags = [...new Set([...personalityFromJson, ...personalityFromChips])];
+
+  if (filters.personalityTags && filters.personalityTags.length > 0) {
+    const hasMatch = filters.personalityTags.some((p) => userPersonalityTags.includes(p));
     if (!hasMatch) return false;
   }
 
-  // Interests filter (checks recharge activities, energizers, and custom interests)
   if (filters.interests && filters.interests.length > 0) {
     const userInterests = [
-      ...((responses.rechargeActivities as string[]) || []),
-      ...((responses.energizers as string[]) || []),
-      ...((responses.customInterests as string[]) || []).map(i => i.toLowerCase()),
+      ...userPersonalityTags,
+      ...((responses.teamQualities as string[]) || []),
+      ...(userArchetype ? [userArchetype] : []),
     ];
     const hasMatch = filters.interests.some((i) => userInterests.includes(i));
     if (!hasMatch) return false;
@@ -244,23 +212,20 @@ function matchesFilters(
 }
 
 const INTEREST_FIELD_IDS = [
-  "rechargeActivities",
-  "fitnessActivities",
-  "volunteerCauses",
-  "contentPreferences",
-  "customInterests",
-  "leadershipPriorities",
-  "networkingGoals",
-  "growthAreas",
-  "energizers",
+  "personalityTags",
+  "teamQualities",
 ] as const;
 
 /** Text blob for interest-scoped search (chips + “find people who enjoy X”) */
 function interestSearchBlob(
   responses: Record<string, unknown>,
-  profileInterestTags: string[]
+  profileInterestTags: string[],
+  galleryActivityTags: string[] = []
 ): string {
-  const parts: string[] = [...profileInterestTags.map((t) => t.toLowerCase())];
+  const parts: string[] = [
+    ...profileInterestTags.map((t) => t.toLowerCase()),
+    ...galleryActivityTags.map((t) => t.toLowerCase()),
+  ];
   for (const id of INTEREST_FIELD_IDS) {
     const arr = responses[id as string];
     if (!Array.isArray(arr)) continue;
@@ -270,8 +235,9 @@ function interestSearchBlob(
       parts.push(getLabel(id, v).toLowerCase());
     }
   }
-  if (typeof responses.idealWeekend === "string" && responses.idealWeekend.trim()) {
-    parts.push(responses.idealWeekend.toLowerCase());
+  for (const k of ["talkTopic", "personalInterest", "headline", "funFact", "roleSummary"] as const) {
+    const s = responses[k as string];
+    if (typeof s === "string" && s.trim()) parts.push(s.toLowerCase());
   }
   return parts.join(" ");
 }
@@ -300,7 +266,8 @@ function collectAllQuestionnaireStrings(r: Record<string, unknown>): string[] {
 function fullSearchBlob(
   userProfile: { name: string; position: string; title: string; company?: string },
   responses: Record<string, unknown>,
-  profileInterestTags: string[]
+  profileInterestTags: string[],
+  galleryActivityTags: string[] = []
 ): string {
   const parts: string[] = [
     userProfile.name,
@@ -308,19 +275,12 @@ function fullSearchBlob(
     userProfile.title,
     userProfile.company || "",
     ...profileInterestTags,
+    ...galleryActivityTags,
     ...collectAllQuestionnaireStrings(responses),
   ];
   const labelKeys = [
     ...INTEREST_FIELD_IDS,
-    "leadershipLevel",
-    "organizationSize",
-    "leadershipPriorities",
-    "leadershipChallenges",
-    "leadershipPhilosophy",
-    "communicationStyle",
-    "decisionMakingStyle",
-    "failureApproach",
-    "relationshipValues",
+    "archetype",
   ] as const;
   for (const id of labelKeys) {
     const v = responses[id as string];
@@ -335,10 +295,39 @@ function fullSearchBlob(
   return parts.join(" ").toLowerCase();
 }
 
+/** Tokens for stem-style matching (fish ↔ fishing, kayak ↔ kayaking). */
+function tokenizeBlobWords(blobLower: string): string[] {
+  return blobLower
+    .split(/[^a-z0-9]+/)
+    .filter((w) => w.length > 0);
+}
+
+/**
+ * Match if the blob contains the term, or any word overlaps by prefix/containment
+ * (handles inflections not stored literally in questionnaire / gallery tags).
+ */
+function termMatchesInBlob(term: string, blobLower: string): boolean {
+  if (!term) return true;
+  if (blobLower.includes(term)) return true;
+  if (term.length < 3) return false;
+  for (const w of tokenizeBlobWords(blobLower)) {
+    if (w.length < 3) continue;
+    if (w.startsWith(term) || term.startsWith(w)) return true;
+    if (w.includes(term) || term.includes(w)) return true;
+  }
+  return false;
+}
+
+function blobMatchesAllSearchTerms(blob: string, searchTerms: string[]): boolean {
+  const hay = blob.toLowerCase();
+  return searchTerms.every((t) => termMatchesInBlob(t, hay));
+}
+
 function matchedInterestLabels(
   searchTerms: string[],
   responses: Record<string, unknown>,
-  profileInterestTags: string[]
+  profileInterestTags: string[],
+  galleryActivityTags: string[] = []
 ): string[] {
   const labels: string[] = [];
   const seen = new Set<string>();
@@ -349,7 +338,7 @@ function matchedInterestLabels(
       if (typeof val !== "string") continue;
       const label = getLabel(id, val);
       const hay = `${val} ${label}`.toLowerCase();
-      if (searchTerms.some((t) => hay.includes(t))) {
+      if (searchTerms.some((t) => termMatchesInBlob(t, hay))) {
         if (!seen.has(label)) {
           seen.add(label);
           labels.push(label);
@@ -360,16 +349,24 @@ function matchedInterestLabels(
   const customs = (responses.customInterests as string[]) || [];
   for (const c of customs) {
     const low = c.toLowerCase();
-    if (searchTerms.some((t) => low.includes(t)) && !seen.has(c)) {
+    if (searchTerms.some((t) => termMatchesInBlob(t, low)) && !seen.has(c)) {
       seen.add(c);
       labels.push(c);
     }
   }
   for (const t of profileInterestTags) {
     const low = t.toLowerCase();
-    if (searchTerms.some((st) => low.includes(st)) && !seen.has(t)) {
+    if (searchTerms.some((st) => termMatchesInBlob(st, low)) && !seen.has(t)) {
       seen.add(t);
       labels.push(t);
+    }
+  }
+  for (const raw of galleryActivityTags) {
+    const low = raw.toLowerCase().trim();
+    if (!low) continue;
+    if (searchTerms.some((st) => termMatchesInBlob(st, low)) && !seen.has(raw)) {
+      seen.add(raw);
+      labels.push(raw);
     }
   }
   return labels.slice(0, 5);
@@ -382,7 +379,8 @@ function keywordMatchResult(
   responses: Record<string, unknown>,
   keywords: string,
   profileInterestTags: string[],
-  scope: SearchScope
+  scope: SearchScope,
+  galleryActivityTags: string[] = []
 ): { ok: boolean; labels: string[] } {
   const searchTerms = keywords.toLowerCase().split(/\s+/).filter(Boolean);
   if (searchTerms.length === 0) {
@@ -390,11 +388,21 @@ function keywordMatchResult(
   }
   const blob =
     scope === "interests"
-      ? interestSearchBlob(responses, profileInterestTags)
-      : fullSearchBlob(userProfile, responses, profileInterestTags);
+      ? interestSearchBlob(responses, profileInterestTags, galleryActivityTags)
+      : fullSearchBlob(
+          userProfile,
+          responses,
+          profileInterestTags,
+          galleryActivityTags
+        );
   const ok = searchTerms.every((term) => blob.includes(term));
   const labels = ok
-    ? matchedInterestLabels(searchTerms, responses, profileInterestTags)
+    ? matchedInterestLabels(
+        searchTerms,
+        responses,
+        profileInterestTags,
+        galleryActivityTags
+      )
     : [];
   return { ok, labels };
 }
@@ -410,11 +418,15 @@ function getDemoUsers(currentResponses: Record<string, unknown>): AttendeeSearch
       company: "TechCorp",
       location: "San Francisco, CA",
       responses: {
-        leadershipLevel: "vp",
-        organizationSize: "1000-5000",
-        leadershipPriorities: ["innovation", "scaling", "talent-development"],
-        leadershipChallenges: ["talent-retention", "technical-debt", "scaling-culture"],
-        rechargeActivities: ["hiking", "reading", "cooking"],
+        archetype: "builder",
+        teamQualities: ["problem-solving", "collaboration"],
+        personalityTags: ["planner", "early-bird"],
+        talkTopic: "distributed systems and team culture",
+        growthArea: "public speaking",
+        personalInterest: "trail running and sourdough",
+        roleSummary: "I run engineering orgs that ship reliably.",
+        headline: "Here to learn, connect, and swap war stories",
+        funFact: "I've run three marathons on three continents",
       },
     },
     {
@@ -425,11 +437,15 @@ function getDemoUsers(currentResponses: Record<string, unknown>): AttendeeSearch
       company: "FinanceFlow",
       location: "New York, NY",
       responses: {
-        leadershipLevel: "c-suite",
-        organizationSize: "5000+",
-        leadershipPriorities: ["digital-transformation", "culture", "profitability"],
-        leadershipChallenges: ["digital-disruption", "regulatory-compliance"],
-        rechargeActivities: ["golf", "reading", "travel"],
+        archetype: "strategist",
+        teamQualities: ["perspective", "ideas"],
+        personalityTags: ["night-owl", "social"],
+        talkTopic: "capital markets and fintech regulation",
+        growthArea: "storytelling for investors",
+        personalInterest: "jazz vinyl and cooking",
+        roleSummary: "I lead a fintech through growth and compliance.",
+        headline: "Looking for bold ideas and honest feedback",
+        funFact: "I once debated policy on live radio by accident",
       },
     },
     {
@@ -440,11 +456,15 @@ function getDemoUsers(currentResponses: Record<string, unknown>): AttendeeSearch
       company: "MedConnect AI",
       location: "Austin, TX",
       responses: {
-        leadershipLevel: "founder",
-        organizationSize: "startup",
-        leadershipPriorities: ["innovation", "fundraising", "product-market-fit"],
-        leadershipChallenges: ["fundraising", "hiring", "work-life-balance"],
-        rechargeActivities: ["hiking", "painting", "meditation"],
+        archetype: "connector",
+        teamQualities: ["energy", "collaboration"],
+        personalityTags: ["go-with-the-flow", "social"],
+        talkTopic: "AI in clinical workflows",
+        growthArea: "enterprise sales",
+        personalInterest: "painting and rescue dogs",
+        roleSummary: "I build AI tools clinicians actually use.",
+        headline: "Here to meet operators and skeptics alike",
+        funFact: "Fluent in three languages, learning a fourth",
       },
     },
     {
@@ -455,12 +475,15 @@ function getDemoUsers(currentResponses: Record<string, unknown>): AttendeeSearch
       company: "McKinsey & Company",
       location: "Chicago, IL",
       responses: {
-        leadershipLevel: "director",
-        organizationSize: "5000+",
-        leadershipPriorities: ["mentoring", "culture", "client-impact"],
-        leadershipChallenges: ["talent-retention", "burnout"],
-        rechargeActivities: ["cooking", "wine-tasting", "photography", "gaming"],
-        customInterests: ["strategy games", "chess"],
+        archetype: "analyst",
+        teamQualities: ["perspective", "problem-solving"],
+        personalityTags: ["planner", "recharge-solo"],
+        talkTopic: "scenario planning and board dynamics",
+        growthArea: "facilitation at scale",
+        personalInterest: "chess and architecture tours",
+        roleSummary: "I help leaders make decisions under uncertainty.",
+        headline: "Seeking sharp questions, not easy answers",
+        funFact: "Published a zine about Chicago bridges",
       },
     },
     {
@@ -471,12 +494,15 @@ function getDemoUsers(currentResponses: Record<string, unknown>): AttendeeSearch
       company: "NeuralScale",
       location: "Seattle, WA",
       responses: {
-        leadershipLevel: "c-suite",
-        organizationSize: "50-200",
-        leadershipPriorities: ["innovation", "talent-development", "technical-excellence"],
-        leadershipChallenges: ["scaling-culture", "technical-debt", "hiring"],
-        rechargeActivities: ["reading", "gaming", "music"],
-        customInterests: ["board games", "VR gaming", "tech meetups"],
+        archetype: "builder",
+        teamQualities: ["ideas", "problem-solving"],
+        personalityTags: ["night-owl", "social"],
+        talkTopic: "ML infrastructure and responsible AI",
+        growthArea: "people leadership at scale",
+        personalInterest: "board games and hiking",
+        roleSummary: "I scale ML platforms for product teams.",
+        headline: "Here for technical depth and real-world ethics",
+        funFact: "Speedruns puzzle games for charity",
       },
     },
     {
@@ -487,11 +513,15 @@ function getDemoUsers(currentResponses: Record<string, unknown>): AttendeeSearch
       company: "CloudScale Enterprise",
       location: "Denver, CO",
       responses: {
-        leadershipLevel: "vp",
-        organizationSize: "1000-5000",
-        leadershipPriorities: ["revenue-growth", "team-building", "customer-success"],
-        leadershipChallenges: ["market-competition", "sales-enablement"],
-        rechargeActivities: ["golf", "travel", "cooking"],
+        archetype: "operator",
+        teamQualities: ["energy", "collaboration"],
+        personalityTags: ["early-bird", "planner"],
+        talkTopic: "enterprise GTM and forecasting",
+        growthArea: "coaching sales managers",
+        personalInterest: "fly fishing and BBQ",
+        roleSummary: "I build repeatable revenue engines.",
+        headline: "Want to trade playbooks with peers",
+        funFact: "Won a chili cook-off with a secret spice blend",
       },
     },
     {
@@ -502,12 +532,15 @@ function getDemoUsers(currentResponses: Record<string, unknown>): AttendeeSearch
       company: "GameStudio Interactive",
       location: "Los Angeles, CA",
       responses: {
-        leadershipLevel: "director",
-        organizationSize: "200-500",
-        leadershipPriorities: ["innovation", "strategy", "culture"],
-        leadershipChallenges: ["hiring", "work-life-balance"],
-        rechargeActivities: ["gaming", "movies", "fitness"],
-        customInterests: ["esports", "game design", "streaming"],
+        archetype: "creative",
+        teamQualities: ["ideas", "energy"],
+        personalityTags: ["go-with-the-flow", "social"],
+        talkTopic: "live ops and player communities",
+        growthArea: "narrative design",
+        personalInterest: "indie games and streaming",
+        roleSummary: "I ship games players come back to nightly.",
+        headline: "Here for creative collisions",
+        funFact: "Voice-cameo in a game nobody noticed",
       },
     },
   ];
@@ -529,13 +562,13 @@ function getDemoUsers(currentResponses: Record<string, unknown>): AttendeeSearch
       },
       matchPercentage: percentage || Math.floor(Math.random() * 30) + 40,
       topCommonalities: commonalities.length > 0 ? commonalities : [
-        { category: "professional", description: "Leadership experience", weight: 0.8 },
+        { category: "professional", description: "Summit networking profile", weight: 0.8 },
       ],
       questionnaire: {
-        leadershipLevel: demo.responses.leadershipLevel,
-        organizationSize: demo.responses.organizationSize,
-        leadershipPriorities: demo.responses.leadershipPriorities,
-        leadershipChallenges: demo.responses.leadershipChallenges,
+        archetype: demo.responses.archetype,
+        teamQualities: demo.responses.teamQualities,
+        personalityTags: demo.responses.personalityTags,
+        headline: demo.responses.headline,
       },
     };
   });
@@ -586,15 +619,28 @@ export async function POST(request: NextRequest) {
     
     // Try Supabase first for current user's questionnaire data
     if (isSupabaseConfigured && supabaseAdmin) {
-      const { data: currentProfile } = await supabaseAdmin
-        .from('user_profiles')
-        .select('questionnaire_data')
-        .eq('user_id', currentUserId)
-        .single();
-      
-      const profileData = currentProfile as { questionnaire_data?: Record<string, unknown> } | null;
-      if (profileData?.questionnaire_data) {
-        currentResponses = profileData.questionnaire_data;
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        currentUserId
+      );
+      let currentProfile: { questionnaire_data?: Record<string, unknown> } | null = null;
+      if (isUuid) {
+        const byId = await supabaseAdmin
+          .from("user_profiles")
+          .select("questionnaire_data")
+          .eq("id", currentUserId)
+          .maybeSingle();
+        currentProfile = byId.data as typeof currentProfile;
+      }
+      if (!currentProfile?.questionnaire_data) {
+        const byAuth = await supabaseAdmin
+          .from("user_profiles")
+          .select("questionnaire_data")
+          .eq("user_id", currentUserId)
+          .maybeSingle();
+        currentProfile = byAuth.data as typeof currentProfile;
+      }
+      if (currentProfile?.questionnaire_data) {
+        currentResponses = currentProfile.questionnaire_data;
       }
     }
     
@@ -613,7 +659,8 @@ export async function POST(request: NextRequest) {
         currentUserEmail,
         currentResponses,
         filters,
-        keywords
+        keywords,
+        searchScope
       );
       results.push(...supabaseResults);
     }
@@ -681,10 +728,10 @@ export async function POST(request: NextRequest) {
           topCommonalities: commonalities,
           searchMatchLabels,
           questionnaire: {
-            leadershipLevel: candidateResponses.responses.leadershipLevel as string,
-            organizationSize: candidateResponses.responses.organizationSize as string,
-            leadershipPriorities: candidateResponses.responses.leadershipPriorities as string[],
-            leadershipChallenges: candidateResponses.responses.leadershipChallenges as string[],
+            archetype: candidateResponses.responses.archetype as string,
+            teamQualities: candidateResponses.responses.teamQualities as string[],
+            personalityTags: candidateResponses.responses.personalityTags as string[],
+            headline: candidateResponses.responses.headline as string,
           },
         });
       }
@@ -708,14 +755,15 @@ export async function POST(request: NextRequest) {
       case "name":
         results.sort((a, b) => a.user.profile.name.localeCompare(b.user.profile.name));
         break;
-      case "level":
-        const levelOrder = ["c-suite", "senior-executive", "vp", "director", "manager", "emerging", "founder"];
+      case "level": {
+        const archetypeOrder = ["strategist", "builder", "operator", "analyst", "creative", "connector"];
         results.sort((a, b) => {
-          const aLevel = a.questionnaire?.leadershipLevel || "";
-          const bLevel = b.questionnaire?.leadershipLevel || "";
-          return levelOrder.indexOf(aLevel) - levelOrder.indexOf(bLevel);
+          const aArc = a.questionnaire?.archetype || "";
+          const bArc = b.questionnaire?.archetype || "";
+          return archetypeOrder.indexOf(aArc) - archetypeOrder.indexOf(bArc);
         });
         break;
+      }
       case "relevance":
       default:
         results.sort((a, b) => {
@@ -765,26 +813,37 @@ async function searchSupabaseUsers(
   if (!supabaseAdmin) return [];
 
   try {
-    // Build query - exclude current user by both id and user_id
+    // Exclude self by profile `id` + email only. Do not filter on `user_id` neq:
+    // many rows have null auth `user_id`, and in SQL `NULL <> x` drops those rows.
     let query = supabaseAdmin
       .from('user_profiles')
       .select('id, user_id, name, email, position, title, company, photo_url, location, questionnaire_data, questionnaire_completed, interests')
       .eq('is_active', true)
-      .neq('user_id', currentUserId)
       .not('name', 'is', null);
 
-    // Exclude current user by email if available
     if (currentUserEmail) {
       query = query.neq('email', currentUserEmail.toLowerCase());
     }
-    
-    // Also exclude by profile id if currentUserId looks like a UUID
+
     if (currentUserId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
       query = query.neq('id', currentUserId);
     }
 
-    const rowLimit = keywords?.trim() ? 500 : 100;
-    const { data: profiles, error } = await query.limit(rowLimit);
+    const hasKeyword = Boolean(keywords?.trim());
+    const hasStructuralFilters = Boolean(
+      filters &&
+        ((filters.archetypes?.length ?? 0) > 0 ||
+          (filters.teamQualities?.length ?? 0) > 0 ||
+          (filters.personalityTags?.length ?? 0) > 0 ||
+          (filters.interests?.length ?? 0) > 0 ||
+          Boolean(filters.location?.trim()))
+    );
+    // Keyword scans are in-memory over fetched rows; cap raised so hobbies/gallery
+    // matches aren’t lost when many profiles share the same recency bucket.
+    const rowLimit = hasKeyword ? 4000 : hasStructuralFilters ? 2000 : 100;
+    const { data: profiles, error } = await query
+      .order("updated_at", { ascending: false })
+      .limit(rowLimit);
 
     if (error) {
       console.error('Supabase search error:', error);
@@ -793,6 +852,29 @@ async function searchSupabaseUsers(
 
     if (!profiles || profiles.length === 0) {
       return [];
+    }
+
+    const profileIds = (profiles as UserProfileRow[])
+      .map((p) => p.id)
+      .filter((id): id is string => Boolean(id));
+    const galleryTagsByUserId = new Map<string, string[]>();
+    if (profileIds.length > 0) {
+      const { data: photoRows, error: photoErr } = await supabaseAdmin
+        .from("user_photos")
+        .select("user_id, activity_tag")
+        .in("user_id", profileIds)
+        .not("activity_tag", "is", null);
+      if (!photoErr && photoRows?.length) {
+        for (const row of photoRows) {
+          const uid = row.user_id as string | undefined;
+          const tag = String((row as { activity_tag?: string }).activity_tag ?? "").trim();
+          if (!uid || !tag) continue;
+          if (!galleryTagsByUserId.has(uid)) galleryTagsByUserId.set(uid, []);
+          const arr = galleryTagsByUserId.get(uid)!;
+          const low = tag.toLowerCase();
+          if (!arr.some((t) => t.toLowerCase() === low)) arr.push(tag);
+        }
+      }
     }
 
     const results: AttendeeSearchResult[] = [];
@@ -808,10 +890,18 @@ async function searchSupabaseUsers(
             (x): x is string => typeof x === "string"
           )
         : [];
+      const galleryActivityTags = galleryTagsByUserId.get(profile.id) ?? [];
 
       // Apply filters
       if (filters && Object.keys(filters).length > 0) {
-        if (!matchesFilters(candidateResponses, { location: profile.location || undefined }, filters)) {
+        if (
+          !matchesFilters(
+            candidateResponses,
+            { location: profile.location || undefined },
+            filters,
+            profileInterestTags
+          )
+        ) {
           continue;
         }
       }
@@ -828,7 +918,8 @@ async function searchSupabaseUsers(
           candidateResponses,
           keywords,
           profileInterestTags,
-          searchScope
+          searchScope,
+          galleryActivityTags
         );
         if (!ok) continue;
         if (labels.length > 0) searchMatchLabels = labels;
@@ -858,10 +949,10 @@ async function searchSupabaseUsers(
         topCommonalities: commonalities,
         searchMatchLabels,
         questionnaire: {
-          leadershipLevel: (candidateResponses.leadershipLevel as string) || '',
-          organizationSize: (candidateResponses.organizationSize as string) || '',
-          leadershipPriorities: (candidateResponses.leadershipPriorities as string[]) || [],
-          leadershipChallenges: (candidateResponses.leadershipChallenges as string[]) || [],
+          archetype: (candidateResponses.archetype as string) || '',
+          teamQualities: (candidateResponses.teamQualities as string[]) || [],
+          personalityTags: (candidateResponses.personalityTags as string[]) || [],
+          headline: (candidateResponses.headline as string) || '',
         },
       });
     }
@@ -890,43 +981,33 @@ export async function GET() {
   
   // Build filter options from questionnaire data
   const filterOptions = {
-    leadershipLevels: QUESTIONNAIRE_SECTIONS[0].questions
-      .find((q) => q.id === "leadershipLevel")
-      ?.options?.map((o) => ({ value: o.value, label: o.label, icon: o.icon })) || [],
-    organizationSizes: QUESTIONNAIRE_SECTIONS[0].questions
-      .find((q) => q.id === "organizationSize")
-      ?.options?.map((o) => ({ value: o.value, label: o.label })) || [],
-    yearsExperience: QUESTIONNAIRE_SECTIONS[0].questions
-      .find((q) => q.id === "yearsExperience")
-      ?.options?.map((o) => ({ value: o.value, label: o.label })) || [],
-    leadershipChallenges: QUESTIONNAIRE_SECTIONS[1].questions
-      .find((q) => q.id === "leadershipChallenges")
-      ?.options?.map((o) => ({ value: o.value, label: o.label, icon: o.icon })) || [],
-    leadershipPriorities: QUESTIONNAIRE_SECTIONS[1].questions
-      .find((q) => q.id === "leadershipPriorities")
-      ?.options?.map((o) => ({ value: o.value, label: o.label, icon: o.icon })) || [],
+    archetypes:
+      QUESTIONNAIRE_SECTIONS[0].questions
+        .find((q) => q.id === "archetype")
+        ?.options?.map((o) => ({ value: o.value, label: o.label })) || [],
+    teamQualities:
+      QUESTIONNAIRE_SECTIONS[0].questions
+        .find((q) => q.id === "teamQualities")
+        ?.options?.map((o) => ({ value: o.value, label: o.label })) || [],
+    personalityTags:
+      QUESTIONNAIRE_SECTIONS[1].questions
+        .find((q) => q.id === "personalityTags")
+        ?.options?.map((o) => ({ value: o.value, label: o.label })) || [],
     interests: [
-      // Recharge activities from Section 1 (Goals & Interests)
       ...(QUESTIONNAIRE_SECTIONS[1].questions
-        .find((q) => q.id === "rechargeActivities")
-        ?.options?.map((o) => ({ value: o.value, label: o.label, icon: o.icon, category: "How I Recharge" })) || []),
-      // Energizers from Section 2 (Your Style)  
-      ...(QUESTIONNAIRE_SECTIONS[2].questions
-        .find((q) => q.id === "energizers")
-        ?.options?.map((o) => ({ value: o.value, label: o.label, icon: o.icon, category: "What Energizes Me" })) || []),
-      // Additional common interests not in the questionnaire
-      { value: "golf", label: "Golf", icon: "⛳", category: "Sports" },
-      { value: "tennis", label: "Tennis", icon: "🎾", category: "Sports" },
-      { value: "yoga", label: "Yoga", icon: "🧘", category: "Wellness" },
-      { value: "wine-tasting", label: "Wine Tasting", icon: "🍷", category: "Culinary" },
-      { value: "photography", label: "Photography", icon: "📷", category: "Creative" },
-      { value: "hiking", label: "Hiking", icon: "🥾", category: "Outdoors" },
-      { value: "running", label: "Running", icon: "🏃", category: "Fitness" },
-      { value: "podcasts", label: "Podcasts", icon: "🎧", category: "Learning" },
-      { value: "art", label: "Art & Museums", icon: "🎨", category: "Culture" },
-      { value: "theater", label: "Theater", icon: "🎭", category: "Culture" },
-      { value: "board-games", label: "Board Games", icon: "🎲", category: "Social" },
-      { value: "mentoring", label: "Mentoring Others", icon: "👨‍🏫", category: "Giving Back" },
+        .find((q) => q.id === "personalityTags")
+        ?.options?.map((o) => ({
+          value: o.value,
+          label: o.label,
+          category: "Summit style",
+        })) || []),
+      ...(QUESTIONNAIRE_SECTIONS[0].questions
+        .find((q) => q.id === "teamQualities")
+        ?.options?.map((o) => ({
+          value: o.value,
+          label: o.label,
+          category: "Team strengths",
+        })) || []),
     ],
   };
 

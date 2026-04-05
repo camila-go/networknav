@@ -5,10 +5,23 @@
  * The SAML instance is lazy-initialized as a singleton.
  */
 
+import { readFileSync, existsSync } from "fs";
+import { join } from "path";
 import { SAML, ValidateInResponseTo, type SamlConfig } from "@node-saml/node-saml";
 
 const APP_URL =
   process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+
+/** Strategic Education dev IdP (PingFederate HTTP-Redirect); same host prod uses for dev SSO. */
+export const STRATEGIC_ED_DEV_SSO_ENTRY_POINT =
+  "https://devsso.strategiced.com/idp/SSO.saml2";
+
+/** Optional local PEM (gitignored `certs/` is typical); matches CHANGELOG / internal setup. */
+const DEFAULT_IDP_CERT_FILE = join(
+  process.cwd(),
+  "certs",
+  "strategic-ed-dev-idp.pem"
+);
 
 export function isSsoEnabled(): boolean {
   return process.env.SSO_ENABLED?.trim() === "true";
@@ -18,22 +31,42 @@ export function isSsoForced(): boolean {
   return process.env.SSO_FORCE?.trim() === "true";
 }
 
+function normalizePemFromEnv(value: string): string {
+  const t = value.trim();
+  return t.includes("\\n") ? t.replace(/\\n/g, "\n") : t;
+}
+
+function resolveIdpSigningCert(): string {
+  const fromEnv = process.env.SAML_IDP_CERT?.trim();
+  if (fromEnv) {
+    return normalizePemFromEnv(fromEnv);
+  }
+  const pathFromEnv = process.env.SAML_IDP_CERT_PATH?.trim();
+  const pathToRead = pathFromEnv || DEFAULT_IDP_CERT_FILE;
+  if (existsSync(pathToRead)) {
+    return readFileSync(pathToRead, "utf8").trim();
+  }
+  throw new Error(
+    "SSO is not fully configured: IdP certificate is missing. " +
+      "Set SAML_IDP_CERT (e.g. from Vercel), SAML_IDP_CERT_PATH, or place PEM at " +
+      "`certs/strategic-ed-dev-idp.pem`. Please contact the administrator."
+  );
+}
+
 export function getSamlConfig(): SamlConfig {
-  const entryPoint = process.env.SAML_ENTRY_POINT?.trim();
-  const idpCert = process.env.SAML_IDP_CERT?.trim();
+  const entryPointFromEnv = process.env.SAML_ENTRY_POINT?.trim();
+  const entryPoint =
+    entryPointFromEnv ||
+    (isSsoEnabled() ? STRATEGIC_ED_DEV_SSO_ENTRY_POINT : "");
 
   if (!entryPoint) {
     throw new Error(
       "SSO is not fully configured: IdP entry point is missing. " +
-        "Please contact the administrator."
+        "Set SAML_ENTRY_POINT or enable SSO (defaults to Strategic Education dev IdP when SSO_ENABLED=true)."
     );
   }
-  if (!idpCert) {
-    throw new Error(
-      "SSO is not fully configured: IdP certificate is missing. " +
-        "Please contact the administrator."
-    );
-  }
+
+  const idpCert = resolveIdpSigningCert();
 
   return {
     entryPoint,

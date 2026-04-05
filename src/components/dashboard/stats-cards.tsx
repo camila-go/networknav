@@ -204,7 +204,7 @@ export function StatsCards({ matchCount, matchScore }: StatsCardsProps = {}) {
                   className="gap-2"
                 >
                   <Sparkles className="h-4 w-4" />
-                  Explore More
+                  Search attendees
                 </Button>
                 <button
                   onClick={dismissCelebration}

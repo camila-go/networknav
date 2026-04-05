@@ -73,19 +73,19 @@ describe("MatchCard", () => {
     expect(screen.getByText("TechCorp")).toBeInTheDocument();
   });
 
-  it("should render high-affinity badge", () => {
+  it("should render high-affinity banner", () => {
     render(<MatchCard match={createMatch()} onPass={mockOnPass} />);
-    expect(screen.getByText("High-Affinity")).toBeInTheDocument();
+    expect(screen.getByText("HIGH AFFINITY")).toBeInTheDocument();
   });
 
-  it("should render strategic badge for strategic match", () => {
+  it("should render strategic banner for strategic match", () => {
     render(
       <MatchCard
         match={createMatch({ type: "strategic" })}
         onPass={mockOnPass}
       />
     );
-    expect(screen.getByText("Strategic")).toBeInTheDocument();
+    expect(screen.getByText("STRATEGIC")).toBeInTheDocument();
   });
 
   it("should render match score", () => {
@@ -101,8 +101,8 @@ describe("MatchCard", () => {
 
   it("should render personalized conversation starters", () => {
     render(<MatchCard match={createMatch()} onPass={mockOnPass} viewerFirstName="Alex" />);
-    expect(screen.getByText("💬 Conversation starters")).toBeInTheDocument();
-    const section = screen.getByText("💬 Conversation starters").closest("div");
+    expect(screen.getByText(/conversation starter/i)).toBeInTheDocument();
+    const section = screen.getByText(/conversation starter/i).closest("div");
     expect(section?.textContent).toMatch(/Sarah|Technology|hiking|leadership|TechCorp|VP/i);
   });
 

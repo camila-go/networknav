@@ -2,9 +2,9 @@
 
 import { Suspense, useState, useCallback } from "react";
 import { MatchesGrid } from "@/components/dashboard/matches-grid";
+import { NetworkPulseSection } from "@/components/dashboard/network-pulse-poll";
 import { StatsCards } from "@/components/dashboard/stats-cards";
 import { BadgeProgressModal } from "@/components/gamification/badge-progress-modal";
-import { OnboardingModal } from "@/components/onboarding";
 import { SHOW_GAMIFICATION_UI } from "@/lib/feature-flags";
 
 export default function DashboardPage() {
@@ -16,8 +16,8 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      {/* Onboarding modal for new users */}
-      <OnboardingModal />
+      {/* Network Pulse polls — above match list */}
+      <NetworkPulseSection />
 
       {/* Welcome header */}
       <div className="flex items-start justify-between gap-3">
@@ -42,11 +42,18 @@ export default function DashboardPage() {
       {/* Matches grid */}
       <Suspense
         fallback={
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="h-80 shimmer rounded-2xl" />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 gap-6 md:hidden">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="h-80 shimmer rounded-2xl" />
+              ))}
+            </div>
+            <div className="hidden min-h-[min(920px,88vh)] w-full grid-cols-3 grid-rows-2 gap-6 md:grid">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="min-h-[200px] rounded-2xl shimmer" />
+              ))}
+            </div>
+          </>
         }
       >
         <MatchesGrid onMatchesLoaded={handleMatchesLoaded} />

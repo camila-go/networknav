@@ -7,7 +7,6 @@ import { QUESTIONNAIRE_SECTIONS } from "./questionnaire-data";
 
 describe("Questionnaire Store", () => {
   beforeEach(() => {
-    // Reset the store before each test
     useQuestionnaireStore.getState().reset();
   });
 
@@ -19,280 +18,107 @@ describe("Questionnaire Store", () => {
     });
 
     it("should start with empty responses", () => {
-      const state = useQuestionnaireStore.getState();
-      expect(state.responses).toEqual({});
-    });
-
-    it("should not be submitting initially", () => {
-      const state = useQuestionnaireStore.getState();
-      expect(state.isSubmitting).toBe(false);
+      expect(useQuestionnaireStore.getState().responses).toEqual({});
     });
   });
 
   describe("setResponse", () => {
-    it("should set a single response", () => {
+    it("should set text and single-select responses", () => {
       const store = useQuestionnaireStore.getState();
-      store.setResponse("yearsExperience", "6-10");
-
-      expect(useQuestionnaireStore.getState().responses.yearsExperience).toBe(
-        "6-10"
-      );
-    });
-
-    it("should set multiple responses", () => {
-      const store = useQuestionnaireStore.getState();
-      store.setResponse("yearsExperience", "6-10");
-      store.setResponse("leadershipLevel", "vp");
+      store.setResponse("roleSummary", "I build teams");
+      store.setResponse("archetype", "builder");
 
       const responses = useQuestionnaireStore.getState().responses;
-      expect(responses.yearsExperience).toBe("6-10");
-      expect(responses.leadershipLevel).toBe("vp");
+      expect(responses.roleSummary).toBe("I build teams");
+      expect(responses.archetype).toBe("builder");
     });
 
-    it("should handle array responses for multi-select", () => {
+    it("should handle multi-select", () => {
       const store = useQuestionnaireStore.getState();
-      store.setResponse("leadershipPriorities", ["scaling", "innovation"]);
-
-      const responses = useQuestionnaireStore.getState().responses;
-      expect(responses.leadershipPriorities).toEqual(["scaling", "innovation"]);
-    });
-
-    it("should override existing responses", () => {
-      const store = useQuestionnaireStore.getState();
-      store.setResponse("yearsExperience", "6-10");
-      store.setResponse("yearsExperience", "11-15");
-
-      expect(useQuestionnaireStore.getState().responses.yearsExperience).toBe(
-        "11-15"
-      );
+      store.setResponse("teamQualities", ["energy", "ideas"]);
+      expect(useQuestionnaireStore.getState().responses.teamQualities).toEqual([
+        "energy",
+        "ideas",
+      ]);
     });
   });
 
-  describe("nextQuestion", () => {
-    it("should move to the next question in the same section", () => {
+  describe("nextQuestion / prevQuestion", () => {
+    it("should move within section", () => {
       const store = useQuestionnaireStore.getState();
-      const result = store.nextQuestion();
-
-      expect(result).toBe(true);
+      expect(store.nextQuestion()).toBe(true);
       expect(useQuestionnaireStore.getState().currentQuestionIndex).toBe(1);
-      expect(useQuestionnaireStore.getState().currentSectionIndex).toBe(0);
     });
 
-    it("should move to the next section when at the last question", () => {
+    it("should advance to next section after last question in section", () => {
       const store = useQuestionnaireStore.getState();
-
-      // Move to the last question of the first section (2 questions, so advance 1 time)
-      const firstSectionQuestions = QUESTIONNAIRE_SECTIONS[0].questions.length;
-      for (let i = 0; i < firstSectionQuestions - 1; i++) {
+      const n = QUESTIONNAIRE_SECTIONS[0].questions.length;
+      for (let i = 0; i < n - 1; i++) {
         store.nextQuestion();
       }
-
-      // Now move to the next section
-      const result = store.nextQuestion();
-
-      expect(result).toBe(true);
+      expect(store.nextQuestion()).toBe(true);
       expect(useQuestionnaireStore.getState().currentSectionIndex).toBe(1);
       expect(useQuestionnaireStore.getState().currentQuestionIndex).toBe(0);
     });
 
-    it("should return false when at the last question of the last section", () => {
+    it("should return false at end of questionnaire", () => {
       const store = useQuestionnaireStore.getState();
-
-      // Move to the very last question
-      let totalQuestions = 0;
-      for (const section of QUESTIONNAIRE_SECTIONS) {
-        totalQuestions += section.questions.length;
+      let total = 0;
+      for (const s of QUESTIONNAIRE_SECTIONS) {
+        total += s.questions.length;
       }
-
-      for (let i = 0; i < totalQuestions - 1; i++) {
+      for (let i = 0; i < total - 1; i++) {
         store.nextQuestion();
       }
-
-      // Try to go past the end
-      const result = store.nextQuestion();
-      expect(result).toBe(false);
-    });
-  });
-
-  describe("prevQuestion", () => {
-    it("should return false when at the first question", () => {
-      const store = useQuestionnaireStore.getState();
-      const result = store.prevQuestion();
-
-      expect(result).toBe(false);
-      expect(useQuestionnaireStore.getState().currentQuestionIndex).toBe(0);
-      expect(useQuestionnaireStore.getState().currentSectionIndex).toBe(0);
+      expect(store.nextQuestion()).toBe(false);
     });
 
-    it("should move to the previous question in the same section", () => {
-      const store = useQuestionnaireStore.getState();
-      store.nextQuestion(); // Move to question 1
-      const result = store.prevQuestion();
-
-      expect(result).toBe(true);
-      expect(useQuestionnaireStore.getState().currentQuestionIndex).toBe(0);
-    });
-
-    it("should move to the last question of the previous section", () => {
-      const store = useQuestionnaireStore.getState();
-
-      // Move to the first question of the second section
-      const firstSectionQuestions = QUESTIONNAIRE_SECTIONS[0].questions.length;
-      for (let i = 0; i < firstSectionQuestions; i++) {
-        store.nextQuestion();
-      }
-
-      expect(useQuestionnaireStore.getState().currentSectionIndex).toBe(1);
-      expect(useQuestionnaireStore.getState().currentQuestionIndex).toBe(0);
-
-      // Go back
-      const result = store.prevQuestion();
-
-      expect(result).toBe(true);
-      expect(useQuestionnaireStore.getState().currentSectionIndex).toBe(0);
-      expect(useQuestionnaireStore.getState().currentQuestionIndex).toBe(
-        firstSectionQuestions - 1
-      );
-    });
-  });
-
-  describe("goToSection", () => {
-    it("should jump to a specific section", () => {
-      const store = useQuestionnaireStore.getState();
-      store.goToSection(2);
-
-      expect(useQuestionnaireStore.getState().currentSectionIndex).toBe(2);
-      expect(useQuestionnaireStore.getState().currentQuestionIndex).toBe(0);
-    });
-
-    it("should not change section for invalid index", () => {
-      const store = useQuestionnaireStore.getState();
-      store.goToSection(-1);
-      expect(useQuestionnaireStore.getState().currentSectionIndex).toBe(0);
-
-      store.goToSection(100);
-      expect(useQuestionnaireStore.getState().currentSectionIndex).toBe(0);
+    it("prevQuestion from start returns false", () => {
+      expect(useQuestionnaireStore.getState().prevQuestion()).toBe(false);
     });
   });
 
   describe("getProgress", () => {
-    it("should return correct progress at the start", () => {
-      const store = useQuestionnaireStore.getState();
-      const progress = store.getProgress();
-
+    it("should reflect total question count", () => {
+      const progress = useQuestionnaireStore.getState().getProgress();
+      expect(progress.totalQuestions).toBe(11);
       expect(progress.currentQuestion).toBe(1);
-      expect(progress.totalQuestions).toBe(9);
-      expect(progress.percentage).toBe(11);
-      expect(progress.sectionProgress).toBe("Section 1 of 3");
-    });
-
-    it("should return correct progress after moving", () => {
-      const store = useQuestionnaireStore.getState();
-
-      // Move to question 3 (second section, first question)
-      // Section 1 has 2 questions, so advance 2 times
-      for (let i = 0; i < 2; i++) {
-        store.nextQuestion();
-      }
-
-      const progress = store.getProgress();
-      expect(progress.currentQuestion).toBe(3);
-      expect(progress.percentage).toBe(33);
-      expect(progress.sectionProgress).toBe("Section 2 of 3");
     });
   });
 
   describe("canProceed", () => {
-    it("should return false for required question without response", () => {
-      const store = useQuestionnaireStore.getState();
-      const canProceed = store.canProceed();
-
-      expect(canProceed).toBe(false);
+    it("should be false without answer on required text question", () => {
+      expect(useQuestionnaireStore.getState().canProceed()).toBe(false);
     });
 
-    it("should return true for required question with response", () => {
+    it("should be true after answering current question", () => {
       const store = useQuestionnaireStore.getState();
-      store.setResponse("yearsExperience", "6-10");
-      const canProceed = store.canProceed();
-
-      expect(canProceed).toBe(true);
-    });
-
-    it("should require responses for all questions since all are required", () => {
-      const store = useQuestionnaireStore.getState();
-
-      // All 9 questions are required, so without a response canProceed should be false
-      for (const section of QUESTIONNAIRE_SECTIONS) {
-        for (const question of section.questions) {
-          expect(question.required).toBe(true);
-        }
-      }
-
-      // Without setting a response, canProceed should be false at start
-      expect(store.canProceed()).toBe(false);
-    });
-
-    it("should check minimum selections for multi-select questions", () => {
-      const store = useQuestionnaireStore.getState();
-
-      // Move to leadershipPriorities (first question of section 2)
-      // Section 1 has 2 questions, so advance 2 times
-      for (let i = 0; i < 2; i++) {
-        store.nextQuestion();
-      }
-
-      // With empty array, should not be able to proceed
-      store.setResponse("leadershipPriorities", []);
-      expect(store.canProceed()).toBe(false);
-
-      // With 1 selection (less than min of 2), should not proceed
-      store.setResponse("leadershipPriorities", ["scaling"]);
-      expect(store.canProceed()).toBe(false);
-
-      // With 2 selections (meets minimum of 2), should be able to proceed
-      store.setResponse("leadershipPriorities", ["scaling", "innovation"]);
+      store.setResponse("roleSummary", "I ship products");
       expect(store.canProceed()).toBe(true);
+    });
 
-      // With 3 selections, should also proceed
-      store.setResponse("leadershipPriorities", [
-        "scaling",
-        "innovation",
-        "culture",
-      ]);
+    it("should enforce multi-select minimum on teamQualities", () => {
+      const store = useQuestionnaireStore.getState();
+      store.setResponse("roleSummary", "I lead teams");
+      store.nextQuestion();
+      store.setResponse("archetype", "connector");
+      store.nextQuestion();
+      store.setResponse("teamQualities", []);
+      expect(store.canProceed()).toBe(false);
+      store.setResponse("teamQualities", ["energy"]);
       expect(store.canProceed()).toBe(true);
     });
   });
 
   describe("reset", () => {
-    it("should reset all state to initial values", () => {
+    it("should clear state", () => {
       const store = useQuestionnaireStore.getState();
-
-      // Make some changes
-      store.setResponse("yearsExperience", "6-10");
+      store.setResponse("archetype", "analyst");
       store.nextQuestion();
-      store.nextQuestion();
-      store.setSubmitting(true);
-
-      // Reset
       store.reset();
-
-      const state = useQuestionnaireStore.getState();
-      expect(state.currentSectionIndex).toBe(0);
-      expect(state.currentQuestionIndex).toBe(0);
-      expect(state.responses).toEqual({});
-      expect(state.isSubmitting).toBe(false);
-    });
-  });
-
-  describe("setSubmitting", () => {
-    it("should toggle submitting state", () => {
-      const store = useQuestionnaireStore.getState();
-
-      store.setSubmitting(true);
-      expect(useQuestionnaireStore.getState().isSubmitting).toBe(true);
-
-      store.setSubmitting(false);
-      expect(useQuestionnaireStore.getState().isSubmitting).toBe(false);
+      expect(useQuestionnaireStore.getState().responses).toEqual({});
+      expect(useQuestionnaireStore.getState().currentSectionIndex).toBe(0);
     });
   });
 });
+

@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { generateMatches, calculateMatchQualityMetrics } from "@/lib/matching";
-import { calculateMatchScore, determineMatchType, generateConversationStarters } from "@/lib/matching/market-basket-analysis";
+import {
+  calculateMatchScore,
+  determineMatchType,
+  generateConversationStarters,
+  hasUsableQuestionnaire,
+} from "@/lib/matching/market-basket-analysis";
+import { ensureMatchTypeMix, type MatchBuildRow } from "@/lib/matching/ensure-match-type-mix";
 import { users, questionnaireResponses, userMatches } from "@/lib/stores";
 import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
 import { isLiveDatabaseMode } from "@/lib/supabase/data-mode";
@@ -268,25 +274,36 @@ async function generateMatchesFromSupabase(currentUserId: string, currentUserEma
     console.log(`Filtered ${typedProfiles.length} profiles down to ${filteredProfiles.length}`);
 
     const now = new Date();
-    const matches: Match[] = filteredProfiles.map((profile) => {
-      const hasQuestionnaire = !!profile.questionnaire_data;
+    const viewerHasQuestionnaire = hasUsableQuestionnaire(currentUserQuestionnaire);
+
+    const buildRows: MatchBuildRow[] = filteredProfiles.map((profile) => {
+      const candidateHasQuestionnaire = hasUsableQuestionnaire(profile.questionnaire_data);
       const candidateResponses = (profile.questionnaire_data ?? {}) as Partial<QuestionnaireData>;
 
       let score: number;
       let type: 'high-affinity' | 'strategic';
       let commonalities: Match['commonalities'];
+      let affinityScore = 0;
+      let strategicScore = 0;
 
-      if (currentUserQuestionnaire && hasQuestionnaire) {
-        // Use real Market Basket Analysis algorithm
-        const matchScore = calculateMatchScore(currentUserQuestionnaire, candidateResponses);
+      if (viewerHasQuestionnaire && candidateHasQuestionnaire) {
+        // Use real Market Basket Analysis algorithm (viewer questionnaire is non-null when usable)
+        const matchScore = calculateMatchScore(
+          currentUserQuestionnaire as Partial<QuestionnaireData>,
+          candidateResponses
+        );
         type = determineMatchType(matchScore);
         score = Math.min(0.95, matchScore.totalScore);
         commonalities = matchScore.commonalities;
+        affinityScore = matchScore.affinityScore;
+        strategicScore = matchScore.strategicScore;
       } else {
         // Fallback when questionnaire data unavailable for one or both users
-        score = hasQuestionnaire ? 0.65 : 0.50;
+        score = candidateHasQuestionnaire ? 0.65 : 0.50;
         type = 'strategic';
         commonalities = [];
+        affinityScore = score;
+        strategicScore = 1 - score;
       }
 
       // Ensure at least one commonality for display
@@ -302,7 +319,7 @@ async function generateMatchesFromSupabase(currentUserId: string, currentUserEma
 
       const firstName = profile.name?.split(' ')[0];
 
-      return {
+      const match: Match = {
         id: `supabase-match-${profile.id}`,
         userId: currentUserId,
         matchedUserId: profile.id,
@@ -316,7 +333,7 @@ async function generateMatchesFromSupabase(currentUserId: string, currentUserEma
             company: profile.company,
             photoUrl: profile.photo_url,
           },
-          questionnaireCompleted: hasQuestionnaire,
+          questionnaireCompleted: candidateHasQuestionnaire,
         },
         type,
         commonalities,
@@ -331,7 +348,22 @@ async function generateMatchesFromSupabase(currentUserId: string, currentUserEma
         viewed: false,
         passed: false,
       };
+
+      return {
+        match,
+        affinityScore,
+        strategicScore,
+        meta: {
+          firstName,
+          position: profile.position,
+          title: profile.title,
+          company: profile.company,
+          seed: `${currentUserId}-${profile.id}`,
+        },
+      };
     });
+
+    const matches = ensureMatchTypeMix(buildRows, currentViewerFirstName);
 
     // Optional AI layer: merge with template starters so lines stay varied even when AI is generic
     try {

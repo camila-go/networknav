@@ -3,28 +3,25 @@ import { getSession } from "@/lib/auth";
 import { questionnaireResponses, users } from "@/lib/stores";
 import { cookies } from "next/headers";
 import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
+import { profileAnswerRowsFromQuestionnaire } from "@/lib/profile/questionnaire-answers-display";
 
 interface UserInterests {
-  rechargeActivities: string[];
-  fitnessActivities: string[];
-  volunteerCauses: string[];
-  contentPreferences: string[];
-  customInterests: string[];
-  idealWeekend: string | null;
-  leadershipPriorities: string[];
-  networkingGoals: string[];
+  archetype: string | null;
+  teamQualities: string[];
+  personalityTags: string[];
+  talkTopic: string | null;
+  headline: string | null;
+  personalInterest: string | null;
 }
 
 function emptyInterests(): UserInterests {
   return {
-    rechargeActivities: [],
-    fitnessActivities: [],
-    volunteerCauses: [],
-    contentPreferences: [],
-    customInterests: [],
-    idealWeekend: null,
-    leadershipPriorities: [],
-    networkingGoals: [],
+    archetype: null,
+    teamQualities: [],
+    personalityTags: [],
+    talkTopic: null,
+    headline: null,
+    personalInterest: null,
   };
 }
 
@@ -42,20 +39,18 @@ function interestsFromQuestionnaireData(
       .filter((x): x is string => typeof x === "string" && x.trim().length > 0)
       .map((x) => x.trim());
   };
-  const ideal =
-    typeof data.idealWeekend === "string" && data.idealWeekend.trim()
-      ? data.idealWeekend.trim()
-      : null;
+  const str = (key: string): string | null => {
+    const v = data[key];
+    return typeof v === "string" && v.trim() ? v.trim() : null;
+  };
 
   return {
-    rechargeActivities: strings("rechargeActivities"),
-    fitnessActivities: strings("fitnessActivities"),
-    volunteerCauses: strings("volunteerCauses"),
-    contentPreferences: strings("contentPreferences"),
-    customInterests: strings("customInterests"),
-    idealWeekend: ideal,
-    leadershipPriorities: strings("leadershipPriorities"),
-    networkingGoals: strings("networkingGoals"),
+    archetype: str("archetype"),
+    teamQualities: strings("teamQualities"),
+    personalityTags: strings("personalityTags"),
+    talkTopic: str("talkTopic"),
+    headline: str("headline"),
+    personalInterest: str("personalInterest"),
   };
 }
 
@@ -79,6 +74,7 @@ export async function GET(
     let interests: UserInterests = emptyInterests();
     let userName = "User";
     let questionnaireCompleted = false;
+    let questionnaireRaw: Record<string, unknown> | null = null;
 
     if (isSupabaseConfigured && supabaseAdmin) {
       const { data: byProfileId, error: e1 } = await supabaseAdmin
@@ -90,9 +86,9 @@ export async function GET(
       if (!e1 && byProfileId) {
         userName = (byProfileId.name as string)?.trim() || "User";
         questionnaireCompleted = !!byProfileId.questionnaire_completed;
-        interests = interestsFromQuestionnaireData(
-          (byProfileId.questionnaire_data as Record<string, unknown>) || null
-        );
+        questionnaireRaw =
+          (byProfileId.questionnaire_data as Record<string, unknown>) || null;
+        interests = interestsFromQuestionnaireData(questionnaireRaw);
       } else {
         const { data: byAuthId, error: e2 } = await supabaseAdmin
           .from("user_profiles")
@@ -103,22 +99,20 @@ export async function GET(
         if (!e2 && byAuthId) {
           userName = (byAuthId.name as string)?.trim() || "User";
           questionnaireCompleted = !!byAuthId.questionnaire_completed;
-          interests = interestsFromQuestionnaireData(
-            (byAuthId.questionnaire_data as Record<string, unknown>) || null
-          );
+          questionnaireRaw =
+            (byAuthId.questionnaire_data as Record<string, unknown>) || null;
+          interests = interestsFromQuestionnaireData(questionnaireRaw);
         }
       }
     }
 
     const hasAnyChip =
-      interests.rechargeActivities.length > 0 ||
-      interests.fitnessActivities.length > 0 ||
-      interests.volunteerCauses.length > 0 ||
-      interests.contentPreferences.length > 0 ||
-      interests.customInterests.length > 0 ||
-      interests.leadershipPriorities.length > 0 ||
-      interests.networkingGoals.length > 0 ||
-      interests.idealWeekend;
+      !!interests.archetype ||
+      interests.teamQualities.length > 0 ||
+      interests.personalityTags.length > 0 ||
+      !!interests.talkTopic ||
+      !!interests.headline ||
+      !!interests.personalInterest;
 
     if (!hasAnyChip) {
       const questionnaire = questionnaireResponses.get(targetUserId);
@@ -152,6 +146,7 @@ export async function GET(
         userName,
         interests,
         questionnaireCompleted,
+        profileAnswers: profileAnswerRowsFromQuestionnaire(questionnaireRaw),
       },
     });
   } catch (error) {

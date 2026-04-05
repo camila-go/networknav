@@ -1,21 +1,38 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+} from "react";
 import { useRouter } from "next/navigation";
 import { useQuestionnaireStore } from "@/lib/questionnaire-store";
-import { QUESTIONNAIRE_SECTIONS } from "@/lib/questionnaire-data";
+import {
+  QUESTIONNAIRE_SECTIONS,
+  SUMMIT_RESPONSE_HINT,
+  detectRefinedInterestVariant,
+  REFINED_INTEREST_AI,
+  REFINED_INTEREST_LEADERSHIP,
+  PERSONAL_INTEREST_PHOTO_QUESTION,
+} from "@/lib/questionnaire-data";
+import { PersonalInterestPhotoStep } from "./personal-interest-photo-step";
 import { getCannedReaction } from "@/lib/questionnaire-reactions";
 import { QuestionCard } from "./question-card";
 import { ChatMessage, TypingIndicator } from "./chat-message";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Loader2, SkipForward } from "lucide-react";
+import { ArrowRight, Loader2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import { cn } from "@/lib/utils";
 import type { Question, QuestionnaireData } from "@/types";
 
-// Flatten all questions across sections into a single ordered list
-function getAllQuestions(): { question: Question; sectionIndex: number; sectionTitle: string }[] {
-  const all: { question: Question; sectionIndex: number; sectionTitle: string }[] = [];
+type FlowRow = {
+  question: Question;
+  sectionIndex: number;
+  sectionTitle: string;
+};
+
+function buildBaseFlow(): FlowRow[] {
+  const all: FlowRow[] = [];
   QUESTIONNAIRE_SECTIONS.forEach((section, sectionIndex) => {
     section.questions.forEach((question) => {
       all.push({ question, sectionIndex, sectionTitle: section.title });
@@ -28,24 +45,37 @@ interface ChatEntry {
   id: string;
   role: "host" | "user";
   content: string;
-  /** If this entry contains a question input, which question index */
   questionIndex?: number;
 }
 
-const WELCOME_MESSAGE = "Hey! I'm Jynx, your networking concierge for the summit. I'm going to ask you a few quick questions so I can find you the best people to connect with. Ready? Let's go!";
+const TRANSITION_MORE = "Just a few more questions";
 
-const SECTION_TRANSITIONS: Record<number, string> = {
-  1: "Great start! Now let's talk about your goals and what you're looking for from this event.",
-  2: "Almost there! A couple more about your style and what energizes you.",
-};
+const COMPLETION_MESSAGE =
+  "That's it—you're all set! We'll use this to help you meet great people and surface shared interests during the event. Keep an eye out for your profile on the screens.";
 
-const COMPLETION_MESSAGE = "That's a wrap! I've got a great picture of who you are and what you're looking for. Give me a moment to find your best matches...";
+function buildWelcomeLines(profile: {
+  firstName: string;
+  title: string;
+  position: string;
+  company?: string;
+}): string {
+  const deptLine = [profile.title, profile.position].filter(Boolean).join(" — ");
+  const org = profile.company ? ` (${profile.company})` : "";
+  return `Hey ${profile.firstName}! I'm your Global Summit guide. I'll ask a few quick questions (about 3 minutes) to learn more about you and connect you to others with shared interests. Nothing too serious, promise.\n\nFirst, let's confirm your title and department: ${deptLine}${org}`;
+}
 
 export function ConversationalWizard() {
   const router = useRouter();
   const { toast } = useToast();
-  const allQuestions = getAllQuestions();
-  const totalQuestions = allQuestions.length;
+
+  const [flowSteps, setFlowSteps] = useState<FlowRow[]>(buildBaseFlow);
+  const flowStepsRef = useRef(flowSteps);
+  useEffect(() => {
+    flowStepsRef.current = flowSteps;
+  }, [flowSteps]);
+
+  const insertedRefinedRef = useRef(false);
+  const insertedPersonalInterestPhotoRef = useRef(false);
 
   const {
     responses,
@@ -61,16 +91,23 @@ export function ConversationalWizard() {
   const [inputLocked, setInputLocked] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
+  const [welcomeReady, setWelcomeReady] = useState(false);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
-  const chatContainerRef = useRef<HTMLDivElement>(null);
+  const previousContextRef = useRef<{ question: string; answer: string }[]>(
+    []
+  );
+  /** Prevents double advancement from the optional photo step (prefer this over inputLocked checks that can noop). */
+  const photoStepAdvanceStartedRef = useRef(false);
 
-  // Track previous Q&A context for AI reactions
-  const previousContextRef = useRef<{ question: string; answer: string }[]>([]);
+  useEffect(() => {
+    const q = flowStepsRef.current[activeQuestionIndex]?.question?.id;
+    if (q !== "personalInterestPhoto") {
+      photoStepAdvanceStartedRef.current = false;
+    }
+  }, [activeQuestionIndex]);
 
-  // Auto-scroll to bottom
   const scrollToBottom = useCallback(() => {
-    // Small delay to let DOM update
     setTimeout(() => {
       chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, 50);
@@ -80,60 +117,109 @@ export function ConversationalWizard() {
     scrollToBottom();
   }, [chatHistory, isTyping, scrollToBottom]);
 
-  // Initialize: show welcome message then first question
   useEffect(() => {
-    if (hasStarted) return;
+    let cancelled = false;
+    fetch("/api/profile")
+      .then((r) => r.json())
+      .then(() => {
+        if (!cancelled) setWelcomeReady(true);
+      })
+      .catch(() => {
+        if (!cancelled) setWelcomeReady(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (hasStarted || !welcomeReady) return;
     setHasStarted(true);
 
     const initSequence = async () => {
-      // Welcome message
-      setIsTyping(true);
-      await delay(600);
-      setIsTyping(false);
-
-      setChatHistory([
-        { id: "welcome", role: "host", content: WELCOME_MESSAGE },
-      ]);
-
-      // First question
-      await delay(400);
       setIsTyping(true);
       await delay(500);
       setIsTyping(false);
 
-      const firstQ = allQuestions[0];
-      const prompt = firstQ.question.conversationalPrompt || firstQ.question.text;
+      let welcome = buildWelcomeLines({
+        firstName: "there",
+        title: "your title",
+        position: "your department or role",
+      });
+
+      try {
+        const res = await fetch("/api/profile");
+        const d = await res.json();
+        if (d.success && d.data?.user?.profile?.name) {
+          const p = d.data.user.profile;
+          const first = String(p.name).trim().split(/\s+/)[0] || "there";
+          welcome = buildWelcomeLines({
+            firstName: first,
+            title: (p.title || p.position || "Your title").trim(),
+            position: (p.position || p.title || "Your department").trim(),
+            company: p.company?.trim(),
+          });
+        }
+      } catch {
+        /* keep default welcome */
+      }
+
+      setChatHistory([{ id: "welcome", role: "host", content: welcome }]);
+
+      await delay(350);
       setChatHistory((prev) => [
         ...prev,
-        { id: `q-${0}`, role: "host", content: prompt, questionIndex: 0 },
+        {
+          id: "hint",
+          role: "host",
+          content: SUMMIT_RESPONSE_HINT,
+        },
+      ]);
+
+      await delay(400);
+      setIsTyping(true);
+      await delay(450);
+      setIsTyping(false);
+
+      const firstQ = buildBaseFlow()[0];
+      const prompt =
+        firstQ.question.conversationalPrompt || firstQ.question.text;
+      setChatHistory((prev) => [
+        ...prev,
+        { id: "q-0", role: "host", content: prompt, questionIndex: 0 },
       ]);
     };
 
     initSequence();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [hasStarted, welcomeReady]);
 
-  const currentQuestionData = allQuestions[activeQuestionIndex];
+  const currentQuestionData = flowSteps[activeQuestionIndex];
   const currentQuestion = currentQuestionData?.question;
+  const totalQuestions = flowSteps.length;
 
-  // Format user's answer as readable text
-  function formatAnswer(question: Question, value: QuestionnaireData[keyof QuestionnaireData]): string {
+  function formatAnswer(
+    question: Question,
+    value: QuestionnaireData[keyof QuestionnaireData]
+  ): string {
     if (!value) return "";
+
+    if (question.type === "text") {
+      return String(value).trim();
+    }
 
     if (Array.isArray(value)) {
       const labels = value.map((v) => {
         const option = question.options?.find((o) => o.value === v);
         return option?.label || v;
       });
-
-      // Include custom interests if applicable
       if (question.customFieldId) {
-        const customValues = responses[question.customFieldId] as string[] | undefined;
+        const customValues = responses[question.customFieldId] as
+          | string[]
+          | undefined;
         if (customValues?.length) {
           labels.push(...customValues);
         }
       }
-
       return labels.join(", ");
     }
 
@@ -141,12 +227,17 @@ export function ConversationalWizard() {
     return option?.label || String(value);
   }
 
-  // Check if current question can proceed (mirrors store logic)
   function canCurrentQuestionProceed(): boolean {
     if (!currentQuestion) return false;
+    if (currentQuestion.id === "personalInterestPhoto") return false;
+
     if (!currentQuestion.required) return true;
 
     const response = responses[currentQuestion.id];
+
+    if (currentQuestion.type === "text") {
+      return typeof response === "string" && response.trim().length > 0;
+    }
 
     if (currentQuestion.type === "multi-select-custom") {
       const predefinedCount = Array.isArray(response) ? response.length : 0;
@@ -157,7 +248,10 @@ export function ConversationalWizard() {
       return totalCount >= (currentQuestion.minSelections || 1);
     }
 
-    if (currentQuestion.type === "multi-select" || currentQuestion.type === "rank") {
+    if (
+      currentQuestion.type === "multi-select" ||
+      currentQuestion.type === "rank"
+    ) {
       if (!Array.isArray(response)) return false;
       return response.length >= (currentQuestion.minSelections || 1);
     }
@@ -165,109 +259,6 @@ export function ConversationalWizard() {
     return response !== undefined && response !== "" && response !== null;
   }
 
-  // Handle answer submission
-  async function handleSubmitAnswer() {
-    if (inputLocked || !currentQuestion) return;
-
-    const value = responses[currentQuestion.id];
-    if (!canCurrentQuestionProceed()) return;
-
-    setInputLocked(true);
-
-    // Add user's answer to chat
-    const answerText = formatAnswer(currentQuestion, value);
-    setChatHistory((prev) => [
-      ...prev,
-      { id: `a-${activeQuestionIndex}`, role: "user", content: answerText },
-    ]);
-
-    // Track context for AI
-    previousContextRef.current.push({
-      question: currentQuestion.conversationalPrompt || currentQuestion.text,
-      answer: answerText,
-    });
-
-    const nextIndex = activeQuestionIndex + 1;
-    const isLast = nextIndex >= totalQuestions;
-
-    // Show typing indicator while fetching reaction
-    await delay(300);
-    setIsTyping(true);
-
-    // Fetch reaction (AI with canned fallback)
-    const reaction = await fetchReaction(
-      currentQuestion.id,
-      currentQuestion.conversationalPrompt || currentQuestion.text,
-      answerText
-    );
-
-    await delay(400);
-    setIsTyping(false);
-
-    if (isLast) {
-      // Final reaction + completion
-      setChatHistory((prev) => [
-        ...prev,
-        { id: "final-reaction", role: "host", content: reaction },
-      ]);
-
-      await delay(500);
-      setIsTyping(true);
-      await delay(600);
-      setIsTyping(false);
-
-      setChatHistory((prev) => [
-        ...prev,
-        { id: "completion", role: "host", content: COMPLETION_MESSAGE },
-      ]);
-
-      setIsComplete(true);
-      setInputLocked(false);
-      return;
-    }
-
-    // Check if we're transitioning to a new section
-    const currentSectionIdx = currentQuestionData.sectionIndex;
-    const nextSectionIdx = allQuestions[nextIndex].sectionIndex;
-    const isNewSection = nextSectionIdx !== currentSectionIdx;
-
-    // Add reaction
-    setChatHistory((prev) => [
-      ...prev,
-      { id: `r-${activeQuestionIndex}`, role: "host", content: reaction },
-    ]);
-
-    // Section transition message
-    if (isNewSection && SECTION_TRANSITIONS[nextSectionIdx]) {
-      await delay(400);
-      setIsTyping(true);
-      await delay(500);
-      setIsTyping(false);
-
-      setChatHistory((prev) => [
-        ...prev,
-        { id: `section-${nextSectionIdx}`, role: "host", content: SECTION_TRANSITIONS[nextSectionIdx] },
-      ]);
-    }
-
-    // Next question
-    await delay(300);
-    setIsTyping(true);
-    await delay(500);
-    setIsTyping(false);
-
-    const nextQ = allQuestions[nextIndex];
-    const nextPrompt = nextQ.question.conversationalPrompt || nextQ.question.text;
-    setChatHistory((prev) => [
-      ...prev,
-      { id: `q-${nextIndex}`, role: "host", content: nextPrompt, questionIndex: nextIndex },
-    ]);
-
-    setActiveQuestionIndex(nextIndex);
-    setInputLocked(false);
-  }
-
-  // Fetch reaction from API (tries AI, falls back to canned)
   async function fetchReaction(
     questionId: string,
     questionText: string,
@@ -292,13 +283,285 @@ export function ConversationalWizard() {
         }
       }
     } catch {
-      // Fall through to canned
+      /* canned */
     }
 
     return getCannedReaction(questionId, answer);
   }
 
-  // Handle final submission
+  async function advanceAfterPersonalInterestPhoto() {
+    const flow = flowStepsRef.current;
+    const currentIdx = activeQuestionIndex;
+    const row = flow[currentIdx];
+    if (row?.question.id !== "personalInterestPhoto") return;
+
+    const nextIndex = currentIdx + 1;
+    const isLast = nextIndex >= flow.length;
+
+    await delay(280);
+    setIsTyping(true);
+    await delay(350);
+    setIsTyping(false);
+
+    if (isLast) {
+      setChatHistory((prev) => [
+        ...prev,
+        { id: "completion", role: "host", content: COMPLETION_MESSAGE },
+      ]);
+      setIsComplete(true);
+      setInputLocked(false);
+      return;
+    }
+
+    setChatHistory((prev) => [
+      ...prev,
+      {
+        id: `r-photo-${currentIdx}`,
+        role: "host",
+        content:
+          "Thanks — that helps people spot shared interests during the event.",
+      },
+    ]);
+
+    const currentSectionIdx = row.sectionIndex;
+    const nextSectionIdx = flow[nextIndex].sectionIndex;
+    const isNewSection = nextSectionIdx !== currentSectionIdx;
+    if (
+      isNewSection &&
+      flow[nextIndex].question.id !== "refinedInterest"
+    ) {
+      await delay(300);
+      setIsTyping(true);
+      await delay(400);
+      setIsTyping(false);
+      setChatHistory((prev) => [
+        ...prev,
+        {
+          id: `section-${nextSectionIdx}`,
+          role: "host",
+          content: `Next up: ${flow[nextIndex].sectionTitle.toLowerCase()}.`,
+        },
+      ]);
+    }
+
+    await delay(280);
+    setIsTyping(true);
+    await delay(450);
+    setIsTyping(false);
+
+    const nextQ = flow[nextIndex];
+    const nextPrompt =
+      nextQ.question.conversationalPrompt || nextQ.question.text;
+    setChatHistory((prev) => [
+      ...prev,
+      {
+        id: `q-${nextIndex}`,
+        role: "host",
+        content: nextPrompt,
+        questionIndex: nextIndex,
+      },
+    ]);
+
+    setActiveQuestionIndex(nextIndex);
+    setInputLocked(false);
+  }
+
+  function handlePersonalInterestPhotoSkip() {
+    if (photoStepAdvanceStartedRef.current) return;
+    photoStepAdvanceStartedRef.current = true;
+    setInputLocked(true);
+    setResponse("personalInterestPhoto", "skipped");
+    setChatHistory((prev) => [
+      ...prev,
+      {
+        id: `a-${activeQuestionIndex}-photo`,
+        role: "user",
+        content: "Skipped photo",
+      },
+    ]);
+    void advanceAfterPersonalInterestPhoto();
+  }
+
+  function handlePersonalInterestPhotoUploaded() {
+    if (photoStepAdvanceStartedRef.current) return;
+    photoStepAdvanceStartedRef.current = true;
+    setInputLocked(true);
+    setResponse("personalInterestPhoto", "uploaded");
+    setChatHistory((prev) => [
+      ...prev,
+      {
+        id: `a-${activeQuestionIndex}-photo`,
+        role: "user",
+        content: "Added an activity photo",
+      },
+    ]);
+    void advanceAfterPersonalInterestPhoto();
+  }
+
+  async function handleSubmitAnswer() {
+    if (inputLocked || !currentQuestion) return;
+
+    const value = responses[currentQuestion.id];
+    if (!canCurrentQuestionProceed()) return;
+
+    setInputLocked(true);
+
+    let flow = flowStepsRef.current;
+
+    if (
+      currentQuestion.id === "personalInterest" &&
+      !insertedPersonalInterestPhotoRef.current
+    ) {
+      insertedPersonalInterestPhotoRef.current = true;
+      const row = flow[activeQuestionIndex];
+      flow = [
+        ...flow.slice(0, activeQuestionIndex + 1),
+        {
+          question: PERSONAL_INTEREST_PHOTO_QUESTION,
+          sectionIndex: row.sectionIndex,
+          sectionTitle: row.sectionTitle,
+        },
+        ...flow.slice(activeQuestionIndex + 1),
+      ];
+      flowStepsRef.current = flow;
+      setFlowSteps(flow);
+    }
+
+    if (
+      currentQuestion.id === "talkTopic" &&
+      !insertedRefinedRef.current
+    ) {
+      const variant = detectRefinedInterestVariant(
+        responses.talkTopic as string | undefined
+      );
+      if (variant) {
+        insertedRefinedRef.current = true;
+        const row = flow[activeQuestionIndex];
+        const refQ =
+          variant === "ai" ? REFINED_INTEREST_AI : REFINED_INTEREST_LEADERSHIP;
+        const insertRow: FlowRow = {
+          question: refQ,
+          sectionIndex: row.sectionIndex,
+          sectionTitle: row.sectionTitle,
+        };
+        flow = [
+          ...flow.slice(0, activeQuestionIndex + 1),
+          insertRow,
+          ...flow.slice(activeQuestionIndex + 1),
+        ];
+        flowStepsRef.current = flow;
+        setFlowSteps(flow);
+      }
+    }
+
+    const answerText = formatAnswer(currentQuestion, value);
+    setChatHistory((prev) => [
+      ...prev,
+      { id: `a-${activeQuestionIndex}`, role: "user", content: answerText },
+    ]);
+
+    previousContextRef.current.push({
+      question:
+        currentQuestion.conversationalPrompt || currentQuestion.text,
+      answer: answerText,
+    });
+
+    const nextIndex = activeQuestionIndex + 1;
+    const isLast = nextIndex >= flow.length;
+
+    await delay(280);
+    setIsTyping(true);
+
+    const reaction = await fetchReaction(
+      currentQuestion.id,
+      currentQuestion.conversationalPrompt || currentQuestion.text,
+      answerText
+    );
+
+    await delay(350);
+    setIsTyping(false);
+
+    if (isLast) {
+      setChatHistory((prev) => [
+        ...prev,
+        { id: "final-reaction", role: "host", content: reaction },
+      ]);
+
+      await delay(450);
+      setIsTyping(true);
+      await delay(500);
+      setIsTyping(false);
+
+      setChatHistory((prev) => [
+        ...prev,
+        { id: "completion", role: "host", content: COMPLETION_MESSAGE },
+      ]);
+
+      setIsComplete(true);
+      setInputLocked(false);
+      return;
+    }
+
+    setChatHistory((prev) => [
+      ...prev,
+      { id: `r-${activeQuestionIndex}`, role: "host", content: reaction },
+    ]);
+
+    if (currentQuestion.id === "joyTrigger") {
+      await delay(350);
+      setIsTyping(true);
+      await delay(400);
+      setIsTyping(false);
+      setChatHistory((prev) => [
+        ...prev,
+        { id: "transition-more", role: "host", content: TRANSITION_MORE },
+      ]);
+    }
+
+    const currentSectionIdx = currentQuestionData.sectionIndex;
+    const nextSectionIdx = flow[nextIndex].sectionIndex;
+    const isNewSection = nextSectionIdx !== currentSectionIdx;
+    if (
+      isNewSection &&
+      currentQuestion.id !== "joyTrigger" &&
+      flow[nextIndex].question.id !== "refinedInterest"
+    ) {
+      await delay(300);
+      setIsTyping(true);
+      await delay(400);
+      setIsTyping(false);
+      setChatHistory((prev) => [
+        ...prev,
+        {
+          id: `section-${nextSectionIdx}`,
+          role: "host",
+          content: `Next up: ${flow[nextIndex].sectionTitle.toLowerCase()}.`,
+        },
+      ]);
+    }
+
+    await delay(280);
+    setIsTyping(true);
+    await delay(450);
+    setIsTyping(false);
+
+    const nextQ = flow[nextIndex];
+    const nextPrompt =
+      nextQ.question.conversationalPrompt || nextQ.question.text;
+    setChatHistory((prev) => [
+      ...prev,
+      {
+        id: `q-${nextIndex}`,
+        role: "host",
+        content: nextPrompt,
+        questionIndex: nextIndex,
+      },
+    ]);
+
+    setActiveQuestionIndex(nextIndex);
+    setInputLocked(false);
+  }
+
   async function handleComplete() {
     setSubmitting(true);
 
@@ -340,130 +603,207 @@ export function ConversationalWizard() {
     }
   }
 
-  function handleSkip() {
+  function handleSkipOptional() {
     if (!currentQuestion || currentQuestion.required || inputLocked) return;
 
-    // Treat skip like an empty answer submission
     setChatHistory((prev) => [
       ...prev,
       { id: `a-${activeQuestionIndex}`, role: "user", content: "Skipped" },
     ]);
 
+    void handleSubmitAfterSkip();
+  }
+
+  async function handleSubmitAfterSkip() {
+    if (!currentQuestion) return;
+    setInputLocked(true);
+
+    let flow = flowStepsRef.current;
     const nextIndex = activeQuestionIndex + 1;
-    if (nextIndex >= totalQuestions) {
+    const isLast = nextIndex >= flow.length;
+
+    await delay(200);
+    setIsTyping(true);
+    await delay(300);
+    setIsTyping(false);
+
+    if (isLast) {
+      setChatHistory((prev) => [
+        ...prev,
+        {
+          id: "completion",
+          role: "host",
+          content: COMPLETION_MESSAGE,
+        },
+      ]);
       setIsComplete(true);
+      setInputLocked(false);
       return;
     }
 
-    setActiveQuestionIndex(nextIndex);
-    const nextQ = allQuestions[nextIndex];
-    const nextPrompt = nextQ.question.conversationalPrompt || nextQ.question.text;
+    if (currentQuestion.id === "joyTrigger") {
+      setChatHistory((prev) => [
+        ...prev,
+        { id: "transition-more", role: "host", content: TRANSITION_MORE },
+      ]);
+    }
+
+    const nextQ = flow[nextIndex];
+    const nextPrompt =
+      nextQ.question.conversationalPrompt || nextQ.question.text;
     setChatHistory((prev) => [
       ...prev,
-      { id: `q-${nextIndex}`, role: "host", content: nextPrompt, questionIndex: nextIndex },
+      {
+        id: `q-${nextIndex}`,
+        role: "host",
+        content: nextPrompt,
+        questionIndex: nextIndex,
+      },
     ]);
+
+    setActiveQuestionIndex(nextIndex);
+    setInputLocked(false);
   }
 
-  // Progress percentage
+  function handleCloseCard() {
+    if (
+      typeof window !== "undefined" &&
+      window.confirm("Leave onboarding? Your progress is saved in this browser until you submit.")
+    ) {
+      router.push("/dashboard");
+    }
+  }
+
   const progressPercent = isComplete
     ? 100
-    : Math.round(((activeQuestionIndex) / totalQuestions) * 100);
+    : Math.round((activeQuestionIndex / Math.max(totalQuestions, 1)) * 100);
 
   return (
-    <div className="min-h-screen flex flex-col max-w-2xl mx-auto">
-      {/* Thin progress bar */}
-      <header className="sticky top-0 z-10 bg-black/80 backdrop-blur-sm border-b border-white/10">
+    <div className="min-h-screen flex flex-col max-w-2xl mx-auto bg-zinc-950">
+      <header className="sticky top-0 z-10 bg-zinc-950/90 backdrop-blur-md border-b border-white/10">
         <div className="px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center">
-              <span className="text-[10px] font-bold text-black">J</span>
+            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center">
+              <span className="text-[10px] font-bold text-white">J</span>
             </div>
-            <span className="text-sm font-medium text-white/80">Jynx</span>
+            <span className="text-sm font-medium text-zinc-300">Jynx</span>
           </div>
-          <span className="text-xs text-white/50">
-            {isComplete ? "Done!" : `${activeQuestionIndex + 1} of ${totalQuestions}`}
+          <span className="text-xs text-zinc-500">
+            {isComplete
+              ? "Done!"
+              : `${activeQuestionIndex + 1} / ${totalQuestions}`}
           </span>
         </div>
         <div className="h-0.5 bg-white/5">
           <div
-            className="h-full bg-gradient-to-r from-cyan-500 to-teal-500 transition-all duration-500"
+            className="h-full bg-gradient-to-r from-violet-500 to-fuchsia-500 transition-all duration-500"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
       </header>
 
-      {/* Chat area */}
-      <div
-        ref={chatContainerRef}
-        className="flex-1 overflow-y-auto px-4 py-6 space-y-4"
-      >
+      <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
         {chatHistory.map((entry) => (
           <div key={entry.id}>
-            <ChatMessage
-              role={entry.role}
-              content={entry.content}
-            />
+            <ChatMessage role={entry.role} content={entry.content} />
 
-            {/* Render question input below the host question message */}
             {entry.role === "host" &&
               entry.questionIndex !== undefined &&
               entry.questionIndex === activeQuestionIndex &&
               !isComplete && (
-                <div className="mt-4 ml-11">
-                  <QuestionCard
-                    question={allQuestions[entry.questionIndex].question}
-                    value={responses[allQuestions[entry.questionIndex].question.id]}
-                    customValue={
-                      allQuestions[entry.questionIndex].question.customFieldId
-                        ? (responses[allQuestions[entry.questionIndex].question.customFieldId!] as string[] | undefined)
-                        : undefined
-                    }
-                    onChange={(value) =>
-                      setResponse(allQuestions[entry.questionIndex!].question.id, value)
-                    }
-                    onCustomChange={
-                      allQuestions[entry.questionIndex].question.customFieldId
-                        ? (customValues) =>
-                            setResponse(
-                              allQuestions[entry.questionIndex!].question.customFieldId!,
-                              customValues
-                            )
-                        : undefined
-                    }
-                  />
-
-                  {/* Submit / Skip buttons */}
-                  <div className="flex items-center gap-2 mt-4">
-                    <Button
-                      onClick={handleSubmitAnswer}
-                      disabled={!canCurrentQuestionProceed() || inputLocked}
-                      className="gap-2"
-                    >
-                      {inputLocked ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          Hold on...
-                        </>
-                      ) : (
-                        <>
-                          Continue
-                          <ArrowRight className="h-4 w-4" />
-                        </>
+                <div className="mt-4 ml-2 sm:ml-11 space-y-4">
+                  <p className="text-xs text-zinc-500 pl-1">
+                    Your answers help us personalize who we surface for you
+                  </p>
+                  {flowSteps[entry.questionIndex].question.id ===
+                  "personalInterestPhoto" ? (
+                    <PersonalInterestPhotoStep
+                      key="personal-interest-photo-step"
+                      personalInterestText={String(
+                        responses.personalInterest ?? ""
                       )}
-                    </Button>
+                      disabled={inputLocked}
+                      onSkip={handlePersonalInterestPhotoSkip}
+                      onUploaded={handlePersonalInterestPhotoUploaded}
+                    />
+                  ) : (
+                    <>
+                      <QuestionCard
+                        question={flowSteps[entry.questionIndex].question}
+                        value={
+                          responses[flowSteps[entry.questionIndex].question.id]
+                        }
+                        customValue={
+                          flowSteps[entry.questionIndex].question
+                            .customFieldId
+                            ? (responses[
+                                flowSteps[entry.questionIndex].question
+                                  .customFieldId!
+                              ] as string[] | undefined)
+                            : undefined
+                        }
+                        onChange={(v) =>
+                          setResponse(
+                            flowSteps[entry.questionIndex!].question.id,
+                            v
+                          )
+                        }
+                        onCustomChange={
+                          flowSteps[entry.questionIndex].question.customFieldId
+                            ? (customValues) =>
+                                setResponse(
+                                  flowSteps[entry.questionIndex!].question
+                                    .customFieldId!,
+                                  customValues
+                                )
+                            : undefined
+                        }
+                        presentation="summit"
+                        summitMeta={{
+                          current: activeQuestionIndex + 1,
+                          total: totalQuestions,
+                          onClose: handleCloseCard,
+                        }}
+                        summitFooter={
+                          !flowSteps[entry.questionIndex].question
+                            .required ? (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={handleSkipOptional}
+                              disabled={inputLocked}
+                              className="rounded-lg border-zinc-600 bg-zinc-900/80 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+                            >
+                              Skip
+                            </Button>
+                          ) : undefined
+                        }
+                      />
 
-                    {!currentQuestion?.required && (
-                      <Button
-                        variant="ghost"
-                        onClick={handleSkip}
-                        disabled={inputLocked}
-                        className="gap-2 text-white/50 hover:text-white/80"
-                      >
-                        Skip
-                        <SkipForward className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
+                      <div className="flex items-center gap-2 pt-1">
+                        <Button
+                          onClick={() => void handleSubmitAnswer()}
+                          disabled={
+                            !canCurrentQuestionProceed() || inputLocked
+                          }
+                          className="gap-2 rounded-xl bg-zinc-100 text-zinc-900 hover:bg-white"
+                        >
+                          {inputLocked ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Hold on...
+                            </>
+                          ) : (
+                            <>
+                              Continue
+                              <ArrowRight className="h-4 w-4" />
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
           </div>
@@ -471,13 +811,12 @@ export function ConversationalWizard() {
 
         {isTyping && <TypingIndicator />}
 
-        {/* Completion CTA */}
         {isComplete && (
           <div className="flex justify-center mt-6 animate-slide-up">
             <Button
-              onClick={handleComplete}
+              onClick={() => void handleComplete()}
               disabled={isSubmitting}
-              className="gap-2 px-8 py-3 text-base font-semibold"
+              className="gap-2 px-8 py-3 text-base font-semibold rounded-xl bg-gradient-to-r from-violet-500 to-fuchsia-600 text-white"
             >
               {isSubmitting ? (
                 <>

@@ -17,7 +17,6 @@ export const metadata = {
 };
 
 export default function LoginPage() {
-  const ssoEnabled = process.env.SSO_ENABLED?.trim() === "true";
   const ssoForce = process.env.SSO_FORCE?.trim() === "true";
 
   return (
@@ -30,18 +29,28 @@ export default function LoginPage() {
       </CardHeader>
       <CardContent>
         <Suspense fallback={<div className="h-64 shimmer rounded-lg" />}>
-          <LoginForm ssoEnabled={ssoEnabled} ssoForce={ssoForce} />
+          <LoginForm ssoForce={ssoForce} />
         </Suspense>
         {!ssoForce && (
-          <p className="mt-6 text-center text-sm text-white/50">
-            Don&apos;t have an account?{" "}
-            <Link
-              href="/register"
-              className="text-cyan-400 hover:text-cyan-300 hover:underline font-medium"
-            >
-              Create one
-            </Link>
-          </p>
+          <>
+            <p className="mt-6 text-center text-sm text-white/50">
+              Don&apos;t have an account?{" "}
+              <Link
+                href="/register"
+                className="text-cyan-400 hover:text-cyan-300 hover:underline font-medium"
+              >
+                Create one
+              </Link>
+            </p>
+            <p className="mt-3 text-center text-sm text-white/40">
+              <Link
+                href="/welcome"
+                className="text-white/50 hover:text-cyan-400/90 hover:underline"
+              >
+                Event info &amp; how it works
+              </Link>
+            </p>
+          </>
         )}
       </CardContent>
     </Card>

@@ -82,6 +82,8 @@ describe("RegisterForm", () => {
   it("should call API with correct data on valid submit", async () => {
     const user = userEvent.setup();
     vi.mocked(global.fetch).mockResolvedValueOnce({
+      ok: true,
+      status: 201,
       json: async () => ({ success: true, data: { user: {} } }),
     } as Response);
 
@@ -126,6 +128,8 @@ describe("RegisterForm", () => {
   it("should show error toast on failed registration", async () => {
     const user = userEvent.setup();
     vi.mocked(global.fetch).mockResolvedValueOnce({
+      ok: false,
+      status: 409,
       json: async () => ({ success: false, error: "Email already exists" }),
     } as Response);
 

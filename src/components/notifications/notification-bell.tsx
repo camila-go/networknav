@@ -77,10 +77,10 @@ export function NotificationBell() {
         <Button
           variant="ghost"
           size="icon"
-          className="relative text-white/70 hover:text-white hover:bg-white/10"
+          className="relative text-white/70 hover:text-white hover:bg-white/10 [&_svg]:h-4 [&_svg]:w-4 [&_svg]:stroke-2"
           aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ""}`}
         >
-          <Bell className="h-5 w-5" />
+          <Bell className="h-4 w-4" strokeWidth={2} aria-hidden />
           {unreadCount > 0 && (
             <span
               className={cn(
