@@ -226,7 +226,14 @@ function extractAttributes(
       "urn:oid:2.5.4.12" // title OID
     ) ?? "";
 
-  const company = get(
+  // Map IdP company/org codes to display names
+  const COMPANY_CODE_MAP: Record<string, string> = {
+    CU01: "Capella",
+    SU01: "Strayer",
+    SS01: "Shared Services",
+  };
+
+  const rawCompany = get(
     "company",
     "Company",
     "companyName",
@@ -237,6 +244,10 @@ function extractAttributes(
     "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/companyname",
     "urn:oid:2.5.4.10" // organizationName OID
   );
+
+  const company = rawCompany
+    ? COMPANY_CODE_MAP[rawCompany] ?? rawCompany
+    : undefined;
 
   return { email, name, title, company };
 }

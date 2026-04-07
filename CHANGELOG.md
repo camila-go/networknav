@@ -5,6 +5,7 @@ All notable changes to NetworkNav (Jynx) will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- Map IdP company/org codes (CU01, SU01, SS01) to display names (Capella, Strayer, Shared Services) in SSO provisioning (`src/app/api/auth/sso/callback/route.ts`)
 - SAML attribute debug logging in SSO callback to diagnose IdP attribute mapping issues (`src/app/api/auth/sso/callback/route.ts`)
 - `AttributeConsumingService` with `RequestedAttribute` elements in SP metadata XML so IdP knows which attributes to release: `mail`, `name`, `title`, `company` (`src/lib/saml/config.ts`)
 
