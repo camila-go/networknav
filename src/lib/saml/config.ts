@@ -135,6 +135,13 @@ export function generateSpMetadataXml(): string {
                    WantAssertionsSigned="true"
                    protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">${keyDescriptor}
     <NameIDFormat>urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress</NameIDFormat>
+    <AttributeConsumingService index="1" isDefault="true">
+      <ServiceName xml:lang="en">NetworkNav</ServiceName>
+      <RequestedAttribute FriendlyName="mail" Name="mail" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic" isRequired="true" />
+      <RequestedAttribute FriendlyName="name" Name="name" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic" isRequired="true" />
+      <RequestedAttribute FriendlyName="title" Name="title" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic" isRequired="false" />
+      <RequestedAttribute FriendlyName="company" Name="company" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic" isRequired="false" />
+    </AttributeConsumingService>
     <AssertionConsumerService index="1"
                               isDefault="true"
                               Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"

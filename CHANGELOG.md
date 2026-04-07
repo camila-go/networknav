@@ -4,6 +4,13 @@ All notable changes to NetworkNav (Jynx) will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- SAML attribute debug logging in SSO callback to diagnose IdP attribute mapping issues (`src/app/api/auth/sso/callback/route.ts`)
+- `AttributeConsumingService` with `RequestedAttribute` elements in SP metadata XML so IdP knows which attributes to release: `mail`, `name`, `title`, `company` (`src/lib/saml/config.ts`)
+
+### Fixed
+- Broaden SAML company attribute matching to include PingFederate-style names (`companyName`, `CompanyName`, `organizationName`) (`src/app/api/auth/sso/callback/route.ts`)
+
 ### Fixed
 - Fix likely cause of PingFederate 502 on SP-initiated SSO: disable `RequestedAuthnContext` (node-saml default `PasswordProtectedTransport` may not be supported by IdP) and set `AllowCreate=false` in NameIDPolicy (enterprise IdPs reject account creation from SP requests) (`src/lib/saml/config.ts`)
 - Fix SSO error messages leaking internal env var names to end users; trim `SAML_IDP_CERT` and `SAML_ENTRY_POINT` env vars to prevent Vercel whitespace issues (`src/lib/saml/config.ts`, `src/app/api/auth/sso/callback/route.ts`)

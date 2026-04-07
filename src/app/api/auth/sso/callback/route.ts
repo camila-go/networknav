@@ -75,6 +75,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Log all attributes for debugging attribute mapping with IdP team
+    console.log(
+      "[SAML] Profile keys:",
+      JSON.stringify(Object.keys(profile))
+    );
+    console.log("[SAML] Profile data:", JSON.stringify(profile, null, 2));
+
     // Extract user attributes from the assertion
     const attrs = extractAttributes(profile);
     if (!attrs.email) {
@@ -222,7 +229,10 @@ function extractAttributes(
   const company = get(
     "company",
     "Company",
+    "companyName",
+    "CompanyName",
     "organization",
+    "organizationName",
     "o",
     "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/companyname",
     "urn:oid:2.5.4.10" // organizationName OID
