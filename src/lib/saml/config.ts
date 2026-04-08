@@ -12,15 +12,19 @@ import { SAML, ValidateInResponseTo, type SamlConfig } from "@node-saml/node-sam
 const APP_URL =
   process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
-/** Strategic Education dev IdP (PingFederate HTTP-Redirect); same host prod uses for dev SSO. */
+/** Strategic Education prod IdP (PingFederate). */
+export const STRATEGIC_ED_SSO_ENTRY_POINT =
+  "https://sso.strategiced.com/idp/SSO.saml2";
+
+/** Strategic Education dev IdP (PingFederate). */
 export const STRATEGIC_ED_DEV_SSO_ENTRY_POINT =
   "https://devsso.strategiced.com/idp/SSO.saml2";
 
-/** Optional local PEM (gitignored `certs/` is typical); matches CHANGELOG / internal setup. */
+/** Optional local PEM (gitignored `certs/` is typical). */
 const DEFAULT_IDP_CERT_FILE = join(
   process.cwd(),
   "certs",
-  "strategic-ed-dev-idp.pem"
+  "strategic-ed-prod-idp.pem"
 );
 
 export function isSsoEnabled(): boolean {
@@ -57,7 +61,7 @@ export function getSamlConfig(): SamlConfig {
   const entryPointFromEnv = process.env.SAML_ENTRY_POINT?.trim();
   const entryPoint =
     entryPointFromEnv ||
-    (isSsoEnabled() ? STRATEGIC_ED_DEV_SSO_ENTRY_POINT : "");
+    (isSsoEnabled() ? STRATEGIC_ED_SSO_ENTRY_POINT : "");
 
   if (!entryPoint) {
     throw new Error(
