@@ -190,15 +190,6 @@ export const QUESTIONNAIRE_SECTIONS: QuestionSection[] = [
         textMultiline: false,
       },
       {
-        id: "headline",
-        text: 'Your headline for the Summit: (Example: "Here to learn, connect, and challenge assumptions")',
-        conversationalPrompt: "Your headline for the Summit:",
-        type: "text",
-        required: true,
-        textPlaceholder: "Here to learn, connect, and…",
-        textMultiline: true,
-      },
-      {
         id: "funFact",
         text: "Fun fact—something people wouldn't guess about you?",
         conversationalPrompt:

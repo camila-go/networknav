@@ -41,7 +41,6 @@ export async function POST(request: NextRequest) {
       "personalityTags",
       "joyTrigger",
       "threeWords",
-      "headline",
       "funFact",
     ];
 

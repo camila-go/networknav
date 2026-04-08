@@ -44,9 +44,9 @@ describe("QUESTIONNAIRE_SECTIONS", () => {
     expect(ids).toContain("personalityTags");
   });
 
-  it("section 3 includes headline and fun fact", () => {
+  it("section 3 includes threeWords and fun fact", () => {
     const ids = QUESTIONNAIRE_SECTIONS[2].questions.map((q) => q.id);
-    expect(ids).toContain("headline");
+    expect(ids).toContain("threeWords");
     expect(ids).toContain("funFact");
   });
 });
