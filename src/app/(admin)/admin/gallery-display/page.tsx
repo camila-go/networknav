@@ -3,7 +3,7 @@ import { AdminProjectorGallery } from "@/components/admin/admin-projector-galler
 export const metadata = {
   title: "Gallery projector | Admin",
   description:
-    "16:9 community gallery themes with extended statistics for displays",
+    "16:9 presentation slide of top gallery themes with live cohort stats for event displays",
 };
 
 export default function AdminGalleryDisplayPage() {
