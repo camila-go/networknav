@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase/client";
-import { isSafeGalleryImageUrl } from "@/lib/gallery/safe-image-url";
+import {
+  buildThemesForDenominator,
+  type PhotoRow,
+} from "@/lib/gallery/build-community-themes";
 import type { CommunityGalleryTheme } from "@/types/gallery";
 
 const PRIVATE_CACHE = { "Cache-Control": "private, no-store, max-age=0" };
@@ -86,11 +89,7 @@ export async function GET() {
 
     /** PostgREST often caps at ~1000 rows; paginate so 300+ users × several photos each stay complete. */
     const pageSize = 1000;
-    const photos: {
-      user_id: string;
-      url: string | null;
-      activity_tag: string | null;
-    }[] = [];
+    const photos: PhotoRow[] = [];
     for (let from = 0; ; from += pageSize) {
       const { data: batch, error: photoError } = await supabaseAdmin
         .from("user_photos")
@@ -112,54 +111,12 @@ export async function GET() {
 
     const profileIdSet = new Set((profiles ?? []).map((p) => p.id as string));
 
-    let totalLabeledPhotos = 0;
-    for (const row of photos) {
-      const uid = row.user_id as string | undefined;
-      const tag = (row.activity_tag as string)?.trim().toLowerCase();
-      const url = row.url as string | null;
-      if (!uid || !tag || !profileIdSet.has(uid)) continue;
-      if (!url || !isSafeGalleryImageUrl(url)) continue;
-      totalLabeledPhotos++;
-    }
-
-    /** tag (lowercase) -> user ids in cohort who uploaded at least one labeled photo */
-    const tagToUserIds = new Map<string, Set<string>>();
-    for (const row of photos) {
-      const uid = row.user_id as string | undefined;
-      const tag = (row.activity_tag as string)?.trim().toLowerCase();
-      if (!uid || !tag || !profileIdSet.has(uid)) continue;
-      if (!tagToUserIds.has(tag)) tagToUserIds.set(tag, new Set());
-      tagToUserIds.get(tag)!.add(uid);
-    }
-
-    const scored: CommunityGalleryTheme[] = [];
-    for (const [tag, userIds] of tagToUserIds) {
-      const count = userIds.size;
-      const percent = Math.round((count / denominator) * 1000) / 10;
-
-      const samplePhotos = photos
-        .filter((p) => {
-          const uid = p.user_id as string;
-          const rowTag = (p.activity_tag as string)?.trim().toLowerCase();
-          const url = p.url as string | null;
-          return (
-            rowTag === tag &&
-            !!url &&
-            isSafeGalleryImageUrl(url) &&
-            profileIdSet.has(uid)
-          );
-        })
-        .slice(0, 36)
-        .map((p) => ({
-          url: p.url as string,
-          userId: p.user_id as string,
-        }));
-
-      scored.push({ tag, count, percent, samplePhotos });
-    }
-
-    scored.sort((a, b) => b.count - a.count);
-    const themes = scored.slice(0, MAX_GALLERY_THEMES);
+    const { themes: built, totalLabeledPhotos } = buildThemesForDenominator(
+      photos,
+      profileIdSet,
+      denominator
+    );
+    const themes = built.slice(0, MAX_GALLERY_THEMES);
 
     return NextResponse.json(
       {

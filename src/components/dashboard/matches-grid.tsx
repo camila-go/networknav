@@ -230,8 +230,8 @@ export function MatchesGrid({ onMatchesLoaded }: MatchesGridProps = {}) {
         </div>
       )}
 
-      <Tabs defaultValue="all" className="w-full">
-        <TabsList className="mb-6 bg-white/5 border border-white/10 w-full grid grid-cols-3">
+      <Tabs defaultValue="all" className="min-w-0 w-full">
+        <TabsList className="mb-6 grid w-full grid-cols-3 border border-white/10 bg-white/5">
         <TabsTrigger value="all" className="data-[state=active]:bg-white/10 data-[state=active]:text-white text-white/60 text-xs sm:text-sm px-2 sm:px-4">
           <span className="hidden sm:inline">All Matches</span>
           <span className="sm:hidden">All</span>
@@ -247,7 +247,7 @@ export function MatchesGrid({ onMatchesLoaded }: MatchesGridProps = {}) {
         </TabsTrigger>
       </TabsList>
 
-      <TabsContent value="all">
+      <TabsContent value="all" className="min-w-0">
         <MatchGrid
           matches={allActiveMatchesInterleaved}
           onPass={handlePass}
@@ -255,7 +255,7 @@ export function MatchesGrid({ onMatchesLoaded }: MatchesGridProps = {}) {
         />
       </TabsContent>
 
-      <TabsContent value="high-affinity">
+      <TabsContent value="high-affinity" className="min-w-0">
         <MatchGrid
           matches={highAffinityMatches}
           onPass={handlePass}
@@ -263,7 +263,7 @@ export function MatchesGrid({ onMatchesLoaded }: MatchesGridProps = {}) {
         />
       </TabsContent>
 
-      <TabsContent value="strategic">
+      <TabsContent value="strategic" className="min-w-0">
         <MatchGrid
           matches={strategicMatches}
           onPass={handlePass}
@@ -518,7 +518,7 @@ function MatchGrid({
         <div
           ref={scrollRef}
           onScroll={handleScroll}
-          className="flex touch-manipulation items-stretch gap-4 overflow-x-auto overflow-y-hidden snap-x snap-mandatory pb-0 scrollbar-hide scroll-smooth"
+          className="flex min-w-0 touch-manipulation touch-pan-x items-stretch gap-4 overflow-x-auto overflow-y-hidden overscroll-x-contain snap-x snap-mandatory scroll-smooth pb-0 scrollbar-hide"
           style={{
             scrollPaddingLeft: "0px",
             WebkitOverflowScrolling: "touch",

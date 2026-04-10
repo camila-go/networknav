@@ -9,6 +9,7 @@ import { users } from "@/lib/stores";
 import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
 import { checkRateLimit } from "@/lib/security/rateLimit";
 import type { UserRole } from "@/types";
+import { applyAdminEmailEnvPromotion } from "@/lib/auth/admin-env";
 
 // Rate limit for login (prod: strict; dev: room to debug without locking yourself out)
 const LOGIN_RATE_LIMIT =
@@ -284,22 +285,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Bootstrap admin role from ADMIN_EMAILS env var
-    const adminEmails = (process.env.ADMIN_EMAILS || '')
-      .split(',')
-      .map(e => e.trim().toLowerCase())
-      .filter(Boolean);
-    if (adminEmails.includes(user.email.toLowerCase()) && (!user.role || user.role === 'user')) {
-      user.role = 'admin';
-      users.set(user.email.toLowerCase(), user);
-      // Persist role upgrade to Supabase
-      if (isSupabaseConfigured && supabaseAdmin) {
-        supabaseAdmin
-          .from('user_profiles')
-          .update({ role: 'admin' } as never)
-          .eq('id', user.id)
-          .then(() => console.log(`Auto-promoted ${user.email} to admin`));
-      }
-    }
+    applyAdminEmailEnvPromotion(user);
+    users.set(user.email.toLowerCase(), user);
 
     const userRole: UserRole = user.role || 'user';
 

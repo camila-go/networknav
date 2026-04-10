@@ -114,7 +114,7 @@ export function NetworkPulseSection() {
 
   return (
     <section
-      className="w-full overflow-hidden rounded-[32px] border border-[#62d0ea]/25 bg-[#0d0d0d] p-4 pb-5 pt-5 sm:p-5 lg:p-6"
+      className="min-w-0 w-full rounded-[32px] border border-[#62d0ea]/25 bg-[#0d0d0d] p-4 pb-5 pt-5 sm:p-5 lg:p-6"
       aria-labelledby="network-pulse-heading"
     >
       <div
@@ -180,12 +180,20 @@ export function NetworkPulseSection() {
         aria-labelledby="network-pulse-heading"
         hidden={!pulseOpen}
       >
-        <div className="mt-2 flex flex-col gap-1 pt-2 sm:gap-2 sm:pt-3 lg:mt-3 lg:gap-[9px] lg:pt-3">
-          <div className="relative w-full">
+        <div className="mt-2 flex min-w-0 flex-col gap-1 pt-2 sm:gap-2 sm:pt-3 lg:mt-3 lg:gap-[9px] lg:pt-3">
+          {/*
+            Poll carousel: flex-0-0-100% slides + touch-pan-y on vote buttons so
+            horizontal swipes aren't eaten by iOS/Safari (buttons default to capturing pans).
+          */}
+          <div className="relative min-w-0 w-full max-w-full">
             <div
               ref={scrollRef}
               onScroll={handleScroll}
-              className="flex w-full min-w-0 snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-7 scrollbar-hide sm:pb-8 lg:gap-5 lg:pb-[4.5rem]"
+              className="relative flex w-full max-w-full min-w-0 flex-nowrap snap-x snap-mandatory gap-4 overflow-x-scroll overscroll-x-contain scroll-smooth pb-7 scrollbar-hide sm:pb-8 lg:gap-5 lg:pb-[4.5rem] touch-pan-x"
+              style={{
+                WebkitOverflowScrolling: "touch",
+                overscrollBehaviorX: "contain",
+              }}
             >
               {NETWORK_PULSE_POLLS.map((poll) => (
                 <PulseQuestionCard
@@ -243,13 +251,18 @@ export function NetworkPulseSection() {
   );
 }
 
-function PulseMajorityPill({ majorityLabel }: { majorityLabel: string }) {
+function PulseMajorityBar({ majorityLabel }: { majorityLabel: string }) {
   return (
-    <div className="flex w-full max-w-full shrink-0 justify-start rounded-xl border border-[#62d0ea]/20 bg-black/50 px-3 py-2 sm:px-4 sm:py-2.5 lg:inline-flex lg:w-fit lg:max-w-none lg:py-2">
-      <p className="w-full max-w-[11.5rem] text-left text-[11px] font-semibold uppercase leading-snug tracking-[0.06em] text-white/70 sm:max-w-[14rem] sm:text-xs lg:w-[min(203px,100%)] lg:max-w-[203px]">
-        <span className="font-semibold text-[#62d0ea]">MAJORITY · </span>
-        <span className="font-bold text-white">{majorityLabel}</span>
-      </p>
+    <div className="flex w-full flex-wrap items-center justify-center gap-2 rounded-xl border border-[#62d0ea]/30 bg-[#070d10] px-4 py-3 sm:gap-3 sm:px-5 sm:py-3.5">
+      <span className="text-xs font-bold uppercase tracking-[0.12em] text-white sm:text-sm">
+        MAJORITY
+      </span>
+      <span className="hidden text-white/35 sm:inline" aria-hidden>
+        :
+      </span>
+      <span className="rounded-full bg-[#62d0ea]/22 px-3 py-1 text-center text-[11px] font-bold uppercase leading-snug tracking-wide text-[#62d0ea] ring-1 ring-inset ring-[#62d0ea]/35 sm:text-xs">
+        {majorityLabel}
+      </span>
     </div>
   );
 }
@@ -269,17 +282,16 @@ function PulseQuestionCard({
   const percentages = payload?.percentages ?? {};
   const userVote = payload?.userVote ?? null;
   const total = payload?.total ?? 0;
-  const majorityOptionId = payload?.majorityOptionId;
   const majorityLabel = payload?.majorityLabel ?? "";
   const showResults = total > 0;
 
   return (
     <article
       data-pulse-slide
-      className="box-border w-full min-w-full max-w-none shrink-0 snap-center"
+      className="box-border max-w-none shrink-0 grow-0 snap-center basis-full"
       aria-label={poll.question}
     >
-      <div className="rounded-xl border border-white/[0.06] bg-[#0d0d0d] px-3 py-4 shadow-inner shadow-black/20 md:px-5 md:py-7 lg:px-[34px] lg:py-8">
+      <div className="rounded-xl border border-[#62d0ea]/22 bg-[#0d0d0d] px-3 py-4 shadow-inner shadow-black/20 md:px-5 md:py-7 lg:px-[34px] lg:py-8">
         <div className="flex w-full flex-col gap-4 sm:gap-5 md:gap-[19px] lg:flex-row lg:items-center lg:justify-between lg:gap-8 xl:gap-10">
           <h3 className="shrink-0 text-center text-base font-bold leading-snug text-[#62d0ea] lg:max-w-[42%] lg:text-left xl:max-w-[40%]">
             {poll.question}
@@ -292,22 +304,66 @@ function PulseQuestionCard({
           >
             {poll.options.map((opt) => {
               const selected = userVote === opt.id;
+              const pct = showResults ? (percentages[opt.id] ?? 0) : null;
+              const count = counts[opt.id] ?? 0;
+              /** Every option shows “N% : Label” once there are votes; chosen row gets stronger teal. */
+              const voteLabel =
+                showResults && pct !== null
+                  ? `${pct}% : ${opt.label}`
+                  : opt.label;
+
+              const fillColor = selected ? "#3db8d4" : "rgba(61, 79, 87, 0.92)";
+              const remainderColor = selected ? "rgba(30, 52, 58, 0.95)" : "#0a0e10";
+
               return (
                 <button
                   key={opt.id}
                   type="button"
                   disabled={Boolean(userVote) || submitting}
                   onClick={() => onVote(opt.id)}
+                  title={
+                    showResults
+                      ? `${count} vote${count === 1 ? "" : "s"} · ${pct}%`
+                      : undefined
+                  }
                   className={cn(
-                    "flex min-h-[48px] w-full min-w-0 flex-1 items-center justify-center rounded-xl border px-4 py-2 text-base font-medium transition-colors sm:px-5 sm:text-[17px] lg:px-8 lg:text-lg xl:px-[50px] xl:text-xl",
-                    selected
-                      ? "border-[#62d0ea]/50 bg-[#29606f] text-white shadow-[0_0_0_1px_rgba(98,208,234,0.12)]"
-                      : userVote
-                        ? "border-white/10 bg-[#141e21] text-white/80"
-                        : "border-white/10 bg-[#141e21] text-white hover:border-[#62d0ea]/35 hover:bg-[#1a2830]"
+                    "relative isolate flex min-h-[48px] w-full min-w-0 flex-1 touch-pan-y items-center justify-center overflow-hidden rounded-xl px-3 py-2 text-base font-medium transition-[border-color,box-shadow,background-color] duration-200 sm:px-4 sm:text-[17px] lg:px-6 lg:text-lg xl:px-8",
+                    showResults && "xl:px-6",
+                    !showResults && "xl:px-[50px] xl:text-xl",
+                    showResults
+                      ? cn(
+                          "border text-white shadow-none",
+                          selected
+                            ? "border-2 border-[#62d0ea] shadow-[0_0_12px_rgba(98,208,234,0.18)]"
+                            : "border border-white/22"
+                        )
+                      : selected
+                        ? "border border-[#62d0ea]/50 bg-[#29606f] text-white shadow-[0_0_0_1px_rgba(98,208,234,0.12)]"
+                        : userVote
+                          ? "border border-white/10 bg-[#141e21] text-white/80"
+                          : "border border-white/10 bg-[#141e21] text-white hover:border-[#62d0ea]/35 hover:bg-[#1a2830]"
                   )}
+                  style={
+                    showResults && pct !== null
+                      ? {
+                          background: `linear-gradient(to right, ${fillColor} 0%, ${fillColor} ${pct}%, ${remainderColor} ${pct}%, ${remainderColor} 100%)`,
+                        }
+                      : undefined
+                  }
                 >
-                  {opt.label}
+                  <span
+                    className={cn(
+                      "relative z-[1] max-w-full text-center tabular-nums",
+                      showResults
+                        ? cn(
+                            "whitespace-nowrap text-sm leading-none tracking-tight text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.72)] sm:text-[15px] md:text-base lg:text-[17px]",
+                            selected ? "font-semibold" : "font-medium"
+                          )
+                        : "xl:text-xl"
+                    )}
+                  >
+                    {voteLabel}
+                  </span>
                 </button>
               );
             })}
@@ -315,73 +371,8 @@ function PulseQuestionCard({
         </div>
 
         {showResults ? (
-          <div className="mt-3 flex w-full min-w-0 flex-col gap-4 rounded-xl border border-white/[0.07] bg-[#141e21]/95 p-3 sm:mt-3 sm:gap-4 sm:p-4 lg:mt-4 lg:flex-row lg:items-center lg:justify-between lg:gap-6 lg:p-4 xl:gap-8">
-            <div className="shrink-0 lg:max-w-[min(220px,42%)]">
-              <PulseMajorityPill majorityLabel={majorityLabel} />
-            </div>
-
-            <div
-              className={cn(
-                "grid w-full min-w-0 flex-1 grid-cols-1 gap-3 sm:gap-3.5",
-                poll.options.length === 2
-                  ? "sm:grid-cols-2"
-                  : "md:grid-cols-3 md:gap-2.5 lg:gap-3"
-              )}
-            >
-              {poll.options.map((opt) => {
-                const pct = percentages[opt.id] ?? 0;
-                const count = counts[opt.id] ?? 0;
-                const isLeader =
-                  opt.id === majorityOptionId && total > 0;
-                const labelUpper = opt.label.toUpperCase();
-                const trackShell = isLeader
-                  ? "border-[#62d0ea]/35 bg-[#62d0ea]/10"
-                  : "border-white/10 bg-black/30";
-                return (
-                  <div
-                    key={opt.id}
-                    className={cn(
-                      "flex min-w-0 w-full items-center gap-2 rounded-lg border px-2 py-1.5 sm:min-w-0 sm:gap-2 sm:px-2.5 md:gap-2.5",
-                      trackShell
-                    )}
-                    title={`${count} vote${count === 1 ? "" : "s"}`}
-                  >
-                    <span
-                      className={cn(
-                        "w-[3.25rem] shrink-0 truncate text-[9px] font-medium uppercase leading-none tracking-wide sm:w-14 sm:text-[10px]",
-                        isLeader ? "text-[#62d0ea]" : "text-[#757575]"
-                      )}
-                    >
-                      {labelUpper}
-                    </span>
-                    <div
-                      className={cn(
-                        "h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-white/10 sm:h-2",
-                        pct === 0 && "opacity-60"
-                      )}
-                    >
-                      {pct > 0 ? (
-                        <div
-                          className={cn(
-                            "h-full rounded-full transition-all duration-500",
-                            isLeader ? "bg-[#62d0ea]" : "bg-white/35"
-                          )}
-                          style={{ width: `${pct}%` }}
-                        />
-                      ) : null}
-                    </div>
-                    <span
-                      className={cn(
-                        "w-8 shrink-0 text-right tabular-nums text-[9px] sm:w-9 sm:text-[10px]",
-                        isLeader ? "font-semibold text-white" : "text-[#757575]"
-                      )}
-                    >
-                      {pct}%
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
+          <div className="mt-4 w-full sm:mt-5">
+            <PulseMajorityBar majorityLabel={majorityLabel} />
           </div>
         ) : null}
       </div>

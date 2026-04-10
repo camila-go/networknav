@@ -184,6 +184,7 @@ export function MatchCard({
           isCarousel &&
             "touch-pan-y overflow-y-auto overscroll-y-contain"
         )}
+        style={isCarousel ? { WebkitOverflowScrolling: "touch" } : undefined}
       >
         {/* Why connect */}
         <div>

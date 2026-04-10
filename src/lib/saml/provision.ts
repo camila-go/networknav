@@ -8,6 +8,10 @@
 
 import type { UserRole } from "@/types";
 import { users, type StoredUser } from "@/lib/stores/users-store";
+import {
+  applyAdminEmailEnvPromotion,
+  shouldPromoteEmailToAdminViaEnv,
+} from "@/lib/auth/admin-env";
 import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
 import type { SamlUserAttributes } from "./types";
 
@@ -63,7 +67,7 @@ export async function provisionSamlUser(
 
   // 3. Existing user — sync attributes from IdP
   if (existing) {
-    const updated = {
+    const updated: StoredUser = {
       ...existing,
       name: attrs.name || existing.name,
       title: attrs.title || existing.title,
@@ -71,6 +75,7 @@ export async function provisionSamlUser(
       company: attrs.company ?? existing.company,
       updatedAt: new Date(),
     };
+    applyAdminEmailEnvPromotion(updated);
     users.set(email, updated);
 
     // Sync to Supabase (non-blocking)
@@ -82,6 +87,7 @@ export async function provisionSamlUser(
           title: updated.title,
           position: updated.position,
           company: updated.company,
+          role: updated.role,
           updated_at: updated.updatedAt.toISOString(),
         } as never)
         .eq("email", email)
@@ -104,11 +110,15 @@ export async function provisionSamlUser(
   // Store a sentinel prefix so we can identify SSO-provisioned users
   const passwordHash = `SAML_SSO:${randomPassword}`;
 
+  const initialRole: UserRole = shouldPromoteEmailToAdminViaEnv(email, undefined)
+    ? "admin"
+    : "user";
+
   const newUser: StoredUser = {
     id: userId,
     email,
     passwordHash,
-    role: "user",
+    role: initialRole,
     name: attrs.name,
     title: attrs.title,
     position: attrs.title, // same IdP field mapped to both
@@ -131,6 +141,7 @@ export async function provisionSamlUser(
           user_id: userId,
           email,
           password_hash: passwordHash,
+          role: newUser.role,
           name: newUser.name,
           position: newUser.position,
           title: newUser.title,

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSaml, isSsoEnabled } from "@/lib/saml/config";
+import { getSaml, isSsoEnabled, ssoDisabledJsonBody } from "@/lib/saml/config";
 
 /**
  * GET /api/auth/sso/login
@@ -9,10 +9,7 @@ import { getSaml, isSsoEnabled } from "@/lib/saml/config";
  */
 export async function GET() {
   if (!isSsoEnabled()) {
-    return NextResponse.json(
-      { success: false, error: "SSO is not enabled" },
-      { status: 404 }
-    );
+    return NextResponse.json(ssoDisabledJsonBody(), { status: 404 });
   }
 
   try {

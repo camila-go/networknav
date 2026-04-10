@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSaml, isSsoEnabled } from "@/lib/saml/config";
+import { getSaml, isSsoEnabled, ssoDisabledJsonBody } from "@/lib/saml/config";
 import { provisionSamlUser } from "@/lib/saml/provision";
 import { createAccessToken, createRefreshToken } from "@/lib/auth";
 import { checkRateLimit } from "@/lib/security/rateLimit";
@@ -18,10 +18,7 @@ const APP_URL =
  */
 export async function POST(request: NextRequest) {
   if (!isSsoEnabled()) {
-    return NextResponse.json(
-      { success: false, error: "SSO is not enabled" },
-      { status: 404 }
-    );
+    return NextResponse.json(ssoDisabledJsonBody(), { status: 404 });
   }
 
   // Rate limit by IP

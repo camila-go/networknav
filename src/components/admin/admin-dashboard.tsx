@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
-import { Users, Shield, AlertTriangle, Activity } from "lucide-react";
+import { Users, Shield, AlertTriangle, Activity, MonitorPlay } from "lucide-react";
 import Link from "next/link";
 
 interface AdminStats {
@@ -91,6 +91,29 @@ export function AdminDashboard() {
           );
         })}
       </div>
+
+      <Card className="mb-8 bg-white/5 border-white/10 p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="rounded-lg bg-cyan-500/15 p-3">
+              <MonitorPlay className="h-5 w-5 text-cyan-400" />
+            </div>
+            <div>
+              <p className="font-medium text-white">Gallery projector</p>
+              <p className="text-sm text-white/50">
+                16:9 wall of top community themes — active cohort or full network, for sessions
+                and displays.
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/admin/gallery-display"
+            className="shrink-0 rounded-lg border border-cyan-500/40 bg-cyan-500/10 px-4 py-2 text-sm font-medium text-cyan-200 hover:bg-cyan-500/20"
+          >
+            Open projector view
+          </Link>
+        </div>
+      </Card>
 
       {stats && stats.pendingModeration > 0 && (
         <Card className="bg-amber-500/5 border-amber-500/20 p-5">

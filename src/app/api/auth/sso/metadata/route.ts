@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
-import { generateSpMetadataXml, isSsoEnabled } from "@/lib/saml/config";
+import {
+  generateSpMetadataXml,
+  isSsoEnabled,
+  ssoDisabledJsonBody,
+} from "@/lib/saml/config";
 
 /**
  * GET /api/auth/sso/metadata
@@ -12,10 +16,7 @@ import { generateSpMetadataXml, isSsoEnabled } from "@/lib/saml/config";
  */
 export async function GET() {
   if (!isSsoEnabled()) {
-    return NextResponse.json(
-      { success: false, error: "SSO is not enabled" },
-      { status: 404 }
-    );
+    return NextResponse.json(ssoDisabledJsonBody(), { status: 404 });
   }
 
   try {

@@ -35,6 +35,23 @@ export function isSsoForced(): boolean {
   return process.env.SSO_FORCE?.trim() === "true";
 }
 
+/** JSON body when SSO routes are disabled — includes a local-dev hint on how to enable. */
+export function ssoDisabledJsonBody(): {
+  success: false;
+  error: string;
+  hint?: string;
+} {
+  const out: { success: false; error: string; hint?: string } = {
+    success: false,
+    error: "SSO is not enabled",
+  };
+  if (process.env.NODE_ENV === "development") {
+    out.hint =
+      "Add SSO_ENABLED=true to .env.local, configure the IdP signing cert (SAML_IDP_CERT, SAML_IDP_CERT_PATH, or certs/strategic-ed-prod-idp.pem — see .env.example), then restart npm run dev. Production/Vercel already sets these.";
+  }
+  return out;
+}
+
 function normalizePemFromEnv(value: string): string {
   const t = value.trim();
   return t.includes("\\n") ? t.replace(/\\n/g, "\n") : t;

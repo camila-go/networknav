@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, Shield, ArrowLeft } from "lucide-react";
+import { LayoutDashboard, Users, Shield, ArrowLeft, MonitorPlay } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { UserRole } from "@/types";
 
@@ -27,6 +27,12 @@ const NAV_ITEMS = [
     label: "Moderation",
     href: "/admin/moderation",
     icon: Shield,
+    minRole: "moderator" as const,
+  },
+  {
+    label: "Gallery projector",
+    href: "/admin/gallery-display",
+    icon: MonitorPlay,
     minRole: "moderator" as const,
   },
 ];
