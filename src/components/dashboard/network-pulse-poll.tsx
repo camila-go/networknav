@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   NETWORK_PULSE_POLLS,
@@ -135,33 +135,33 @@ export function NetworkPulseSection() {
             setPulseOpen((o) => !o);
           }
         }}
-        className="flex h-auto min-h-[63px] w-full cursor-pointer items-center gap-3 pr-6 text-left transition-colors hover:bg-white/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/25 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0d0d0d]"
+        className="flex h-auto min-h-[63px] w-full cursor-pointer flex-col items-stretch gap-3 pr-4 text-left transition-colors hover:bg-white/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/25 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0d0d0d] sm:flex-row sm:items-center sm:gap-3 sm:pr-6"
       >
-        <div className="flex min-w-0 flex-1 flex-col gap-1.5 md:gap-3">
-          <div className="flex min-h-[25px] items-center md:min-h-[29px]">
+        <div className="flex min-w-0 flex-1 flex-col gap-3">
+          <div className="flex min-h-[29px] items-center">
             <h2
               id="network-pulse-heading"
-              className="text-xl font-bold leading-none text-[#5dc4dc] md:text-2xl"
+              className="text-xl font-bold leading-normal text-[#5dc4dc] md:text-2xl md:leading-normal"
             >
-              Network Pulse
+              They say it&apos;s not what you&apos;re like but what you like
             </h2>
           </div>
-          <p className="text-base font-normal leading-normal text-white md:text-lg">
-            Help us get a gauge on how SEI is voting here by answering a few
-            questions
+          <p className="text-lg font-normal leading-normal text-white">
+            Let&apos;s see how SEI is voting here by answering a few questions
           </p>
         </div>
         <span
-          className="flex h-[38px] w-[42px] shrink-0 items-center justify-center text-[#62d0ea]"
+          className="flex shrink-0 items-center justify-center self-start rounded-[24px] bg-[#141e21] px-4 py-3 text-[#62d0ea] sm:self-auto"
           aria-hidden
         >
-          <ChevronDown
-            className={cn(
-              "h-6 w-6 shrink-0 transition-transform duration-200 ease-out",
-              pulseOpen && "rotate-180"
+          <span className="flex items-center gap-2.5 text-base font-normal whitespace-nowrap">
+            share my interests
+            {pulseOpen ? (
+              <ChevronDown className="h-4 w-4 shrink-0" strokeWidth={2} />
+            ) : (
+              <ChevronUp className="h-4 w-4 shrink-0" strokeWidth={2} />
             )}
-            strokeWidth={2}
-          />
+          </span>
         </span>
       </div>
 
