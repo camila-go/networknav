@@ -18,7 +18,6 @@ import {
   Shield,
   Bell,
   Eye,
-  EyeOff,
   Lock,
   Search,
   ChevronDown,
@@ -578,16 +577,6 @@ export default function ProfilePage() {
               </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-white">Messages</p>
-                  <p className="text-xs text-white/50">Get notified when you receive messages</p>
-                </div>
-                <Switch
-                  checked={notificationSettings.messages}
-                  onCheckedChange={(checked) => setNotificationSettings(s => ({ ...s, messages: checked }))}
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
                   <p className="text-sm font-medium text-white">Meeting Requests</p>
                   <p className="text-xs text-white/50">Get notified for meeting requests</p>
                 </div>
@@ -661,26 +650,6 @@ export default function ProfilePage() {
                 </div>
                 <ChevronDown className="h-4 w-4 text-white/50 -rotate-90" />
               </Link>
-              <div className="flex items-center justify-between p-3 rounded-full bg-white/5 hover:bg-white/10 transition-colors cursor-pointer">
-                <div className="flex items-center gap-3">
-                  <Shield className="h-4 w-4 text-white/50" />
-                  <div>
-                    <p className="text-sm font-medium text-white">Two-Factor Authentication</p>
-                    <p className="text-xs text-white/50">Add an extra layer of security</p>
-                  </div>
-                </div>
-                <Badge variant="outline" className="text-xs text-white/50 border-white/20">Coming Soon</Badge>
-              </div>
-              <div className="flex items-center justify-between p-3 rounded-full bg-white/5 hover:bg-white/10 transition-colors cursor-pointer">
-                <div className="flex items-center gap-3">
-                  <EyeOff className="h-4 w-4 text-white/50" />
-                  <div>
-                    <p className="text-sm font-medium text-white">Download My Data</p>
-                    <p className="text-xs text-white/50">Export all your data</p>
-                  </div>
-                </div>
-                <ChevronDown className="h-4 w-4 text-white/50 -rotate-90" />
-              </div>
               <div className="pt-4 border-t border-white/10">
                 <Button
                   variant="outline"
@@ -747,16 +716,6 @@ export default function ProfilePage() {
                 </div>
                 <ChevronDown className="h-4 w-4 text-white/50 -rotate-90" />
               </button>
-              <div className="flex items-center justify-between p-3 rounded-full bg-white/5 hover:bg-white/10 transition-colors cursor-pointer">
-                <div className="flex items-center gap-3">
-                  <MessageSquare className="h-4 w-4 text-white/50" />
-                  <div>
-                    <p className="text-sm font-medium text-white">Contact Support</p>
-                    <p className="text-xs text-white/50">Get help from our team</p>
-                  </div>
-                </div>
-                <Badge variant="outline" className="text-xs text-white/50 border-white/20">Coming Soon</Badge>
-              </div>
             </div>
           )}
         </div>

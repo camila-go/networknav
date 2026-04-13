@@ -6,6 +6,11 @@ All notable changes to NetworkNav (Jynx) will be documented in this file.
 
 ### Added
 - "Confirm Your Info" step at end of onboarding questionnaire: users can review and edit their name, title, and company before completing onboarding — catches SSO usernames (e.g., APOTTER16) and missing/incorrect company info (`src/components/questionnaire/confirm-profile-step.tsx`, `src/components/questionnaire/conversational-wizard.tsx`)
+- Mobile radial/orbit network graph: replaces card carousel with interactive D3 visualization — "You" at center, high-affinity on inner ring, strategic on outer ring(s), discoverable on halo; pinch-to-zoom, tap-to-select with glow highlights, animated entrance (`src/components/network/network-radial-graph.tsx`)
+- Compact mobile legend for network graph color coding
+
+### Removed
+- Remove Two-Factor Authentication, Download My Data, Contact Support, and Messages notification toggle from profile settings UI (`src/app/(dashboard)/profile/page.tsx`)
 
 ### Changed
 - Consolidate `position` and `title` fields: remove `position` from profile form and registration form since it duplicates `title`; position is now synced to title behind the scenes (`src/components/profile/profile-form.tsx`, `src/components/auth/register-form.tsx`, `src/lib/validations.ts`)

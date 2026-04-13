@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import { NetworkGraph } from "./network-graph";
+import { NetworkRadialGraph } from "./network-radial-graph";
 import { Button, primaryActionClasses } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -363,6 +364,22 @@ export function NetworkContainer() {
           </div>
         </div>
 
+        {/* Mobile compact legend */}
+        <div className="flex md:hidden items-center gap-3 mb-3 text-[11px] px-1">
+          <div className="flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-full bg-gradient-to-br from-teal-500 to-teal-400" />
+            <span className="text-white/50">High-Affinity</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-full bg-gradient-to-br from-amber-500 to-amber-400" />
+            <span className="text-white/50">Strategic</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-full bg-gradient-to-br from-cyan-500 to-cyan-400" />
+            <span className="text-white/50">You</span>
+          </div>
+        </div>
+
         {/* Discoverable contacts - "People You Could Meet" */}
         {discoverableContacts.length > 0 && (
           <div className="mb-4">
@@ -400,27 +417,20 @@ export function NetworkContainer() {
           </div>
         )}
 
-        {/* Mobile card view - shown on small screens */}
-        <NetworkMobileCards
-          nodes={filteredNodes}
-          onNodeSelect={handleMobileNodeSelect}
-          onMeet={(node) => {
-            if (node.email) {
-              window.open(
-                teamsMeetingUrl(node.email, `Meet: ${node.name}`),
-                "_blank",
-                "noopener,noreferrer"
-              );
-            } else {
-              toast({
-                title: "Meet on Teams",
-                description:
-                  "Email isn’t available for this member yet. Open their profile to connect.",
-              });
-            }
-          }}
-          getMutualConnections={getMutualConnections}
-        />
+        {/* Mobile radial graph - shown on small screens */}
+        <div className="md:hidden flex-1 rounded-xl border border-white/10 overflow-hidden relative">
+          <NetworkRadialGraph
+            data={enhancedNetworkData}
+            filter={filter}
+            onNodeClick={handleNodeClick}
+            onNodeDoubleClick={(node) => router.push(`/user/${node.id}`)}
+            selectedNodeId={selectedNode?.id}
+          />
+          {/* Mobile interaction hint */}
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 text-[10px] text-white/40 bg-black/60 backdrop-blur-sm rounded-full px-3 py-1.5 border border-white/10">
+            Tap to select &bull; Double-tap for profile &bull; Pinch to zoom
+          </div>
+        </div>
 
         {/* Graph visualization - hidden on mobile */}
         <div className="hidden md:flex flex-1 rounded-xl border border-white/10 overflow-hidden relative">
