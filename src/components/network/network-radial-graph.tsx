@@ -112,7 +112,11 @@ export function NetworkRadialGraph({
     }
 
     // Clone for simulation (D3 mutates them)
-    const nodes: SimNode[] = filteredNodes.map(n => ({ ...n }));
+    // Sort: neutral first (bottom SVG layer), then strategic, then high-affinity on top
+    const typeOrder: Record<string, number> = { neutral: 0, discoverable: 1, strategic: 2, "high-affinity": 3 };
+    const nodes: SimNode[] = filteredNodes
+      .map(n => ({ ...n }))
+      .sort((a, b) => (typeOrder[a.matchType] ?? 0) - (typeOrder[b.matchType] ?? 0));
     const nodeMap = new Map(nodes.map(n => [n.id, n]));
 
     // Build links
@@ -150,7 +154,11 @@ export function NetworkRadialGraph({
       .alphaMin(0.005)
       .velocityDecay(0.35)
       .force("radial", d3.forceRadial<SimNode>(d => targetRadius(d), cx, cy).strength(0.8))
-      .force("collision", d3.forceCollide<SimNode>().radius(d => nodeRadius(d) + 3).strength(0.9))
+      .force("collision", d3.forceCollide<SimNode>().radius(d => {
+        // Extra padding around center node to prevent overlap
+        if (d.matchType === "neutral") return nodeRadius(d) + 15;
+        return nodeRadius(d) + 3;
+      }).strength(0.9))
       .force("link", d3.forceLink<SimNode, SimLink>(links)
         .id(d => d.id)
         .distance(d => d.isDiscoverable ? haloR * 0.3 : targetRadius(d.target as SimNode))
@@ -392,6 +400,7 @@ export function NetworkRadialGraph({
     const linkSel = linkSelRef.current;
     const circleSel = circleSelRef.current;
     const nameLabels = nameLabelSelRef.current;
+    const initials = initialsSelRef.current;
     const zoom = zoomRef.current;
     const svgSel = svgSelRef.current;
     const dGroup = discoverGroupRef.current;
@@ -423,6 +432,9 @@ export function NetworkRadialGraph({
           if (d.matchType === "high-affinity") return "rgba(255,255,255,0.85)";
           return "rgba(255,255,255,0)";
         });
+      if (initials) {
+        initials.transition().duration(300).attr("opacity", 1);
+      }
 
       // Smooth zoom back to overview
       if (zoom && svgSel) {
@@ -453,6 +465,10 @@ export function NetworkRadialGraph({
         if (d.matchType === "neutral" && connectedIds.has(d.id)) return "url(#centerGlow)";
         return "none";
       });
+    if (initials) {
+      initials.transition().duration(300)
+        .attr("opacity", d => connectedIds.has(d.id) ? 1 : 0);
+    }
 
     linkSel.transition().duration(300)
       .attr("stroke", d => {
