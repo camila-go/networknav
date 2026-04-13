@@ -71,6 +71,8 @@ export function NetworkRadialGraph({
   const svgSelRef = useRef<d3.Selection<SVGSVGElement, unknown, null, undefined> | null>(null);
   const gRef = useRef<d3.Selection<SVGGElement, unknown, null, undefined> | null>(null);
   const discoverGroupRef = useRef<d3.Selection<SVGGElement, unknown, null, undefined> | null>(null);
+  const fitTransformRef = useRef<d3.ZoomTransform | null>(null);
+  const hadSelectionRef = useRef(false);
 
   useEffect(() => { selectedNodeIdRef.current = selectedNodeId ?? null; }, [selectedNodeId]);
 
@@ -164,6 +166,14 @@ export function NetworkRadialGraph({
         .distance(d => d.isDiscoverable ? haloR * 0.3 : targetRadius(d.target as SimNode))
         .strength(0.05) // Very weak — radial force dominates
       );
+
+    // Pre-settle: run simulation ticks synchronously so positions are stable before first paint
+    simulation.stop();
+    const tickCount = Math.ceil(Math.log(simulation.alphaMin()) / Math.log(1 - simulation.alphaDecay()));
+    simulation.tick(tickCount);
+
+    // Reset selection tracking for this simulation instance
+    hadSelectionRef.current = false;
 
     // ── Defs ──
     const defs = svg.append("defs");
@@ -287,7 +297,7 @@ export function NetworkRadialGraph({
       .attr("dy", "0.35em").attr("text-anchor", "middle")
       .attr("font-size", d => d.matchType === "neutral" ? "11px" : "8px")
       .attr("font-weight", "700")
-      .attr("fill", "#000")
+      .attr("fill", "#fff")
       .attr("pointer-events", "none")
       .text(d => getInitials(d.name));
 
@@ -321,28 +331,6 @@ export function NetworkRadialGraph({
         .attr("x2", d => (d.target as SimNode).x!)
         .attr("y2", d => (d.target as SimNode).y!);
       nodeSel.attr("transform", d => `translate(${d.x},${d.y})`);
-    });
-
-    // Auto-center: fit all nodes into view once simulation settles
-    simulation.on("end", () => {
-      if (!selectedNodeIdRef.current) {
-        const pad = 35;
-        const xs = nodes.map(n => n.x!).filter(v => isFinite(v));
-        const ys = nodes.map(n => n.y!).filter(v => isFinite(v));
-        if (xs.length === 0) return;
-        const minX = Math.min(...xs) - pad;
-        const maxX = Math.max(...xs) + pad;
-        const minY = Math.min(...ys) - pad;
-        const maxY = Math.max(...ys) + pad;
-        const bw = maxX - minX;
-        const bh = maxY - minY;
-        const scale = Math.min(width / bw, height / bh, 1.2) * 0.92;
-        const tx = (width - bw * scale) / 2 - minX * scale;
-        const ty = (height - bh * scale) / 2 - minY * scale;
-        const fitTransform = d3.zoomIdentity.translate(tx, ty).scale(scale);
-        svg.transition().duration(500).ease(d3.easeCubicOut)
-          .call(zoom.transform, fitTransform);
-      }
     });
 
     // ── Touch / click ──
@@ -397,6 +385,25 @@ export function NetworkRadialGraph({
     zoomRef.current = zoom;
     svgSelRef.current = svg;
     nodesDataRef.current = nodes;
+
+    // Apply fit transform immediately (positions are pre-settled, no animation needed)
+    const pad = 35;
+    const xs = nodes.map(n => n.x!).filter(v => isFinite(v));
+    const ys = nodes.map(n => n.y!).filter(v => isFinite(v));
+    if (xs.length > 0) {
+      const minX = Math.min(...xs) - pad;
+      const maxX = Math.max(...xs) + pad;
+      const minY = Math.min(...ys) - pad;
+      const maxY = Math.max(...ys) + pad;
+      const bw = maxX - minX;
+      const bh = maxY - minY;
+      const scale = Math.min(width / bw, height / bh, 1.2) * 0.92;
+      const tx = (width - bw * scale) / 2 - minX * scale;
+      const ty = (height - bh * scale) / 2 - minY * scale;
+      const fitTransform = d3.zoomIdentity.translate(tx, ty).scale(scale);
+      fitTransformRef.current = fitTransform;
+      svg.call(zoom.transform, fitTransform);
+    }
 
     // Re-apply highlight if a node was already selected
     if (selectedNodeIdRef.current) {
@@ -458,13 +465,16 @@ export function NetworkRadialGraph({
         initials.transition().duration(300).attr("opacity", 1);
       }
 
-      // Smooth zoom back to overview
-      if (zoom && svgSel) {
+      // Smooth zoom back to overview (only when explicitly deselecting, not on initial mount)
+      if (zoom && svgSel && hadSelectionRef.current) {
+        const restoreTransform = fitTransformRef.current ?? d3.zoomIdentity;
         svgSel.transition().duration(500).ease(d3.easeCubicInOut)
-          .call(zoom.transform, d3.zoomIdentity);
+          .call(zoom.transform, restoreTransform);
       }
       return;
     }
+
+    hadSelectionRef.current = true;
 
     // Find selected node position
     const selNode = nodes.find(n => n.id === selId);
