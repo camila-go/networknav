@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import Image from "next/image";
-import { LayoutGrid, Maximize2, Minimize2, MonitorPlay, RefreshCw, Users } from "lucide-react";
+import { Maximize2, Minimize2, MonitorPlay, RefreshCw, Users } from "lucide-react";
 import { galleryTagBackground } from "@/lib/gallery/tag-accent";
 import { isSafeGalleryImageUrl } from "@/lib/gallery/safe-image-url";
 import { cn } from "@/lib/utils";
@@ -24,25 +24,23 @@ type Payload = {
 
 const TILE_FOOTNOTE = "of network";
 
+/** Match Figma presentation frame: hero + 4-tile bento (+ optional 5th row). */
 const PROJECTOR_TILES = 6;
 
-/** Auto-refresh interval for event displays (ms). */
 const PROJECTOR_POLL_MS = 50_000;
 
-/** Tint overlays on photo tiles (keeps color rhythm from earlier solid blocks). */
-const PHOTO_ACCENTS = [
-  "from-[#2563eb]/55 via-[#1d4ed8]/35 to-transparent",
-  "from-[#0d9488]/50 via-[#0f766e]/30 to-transparent",
-  "from-[#ea580c]/45 via-[#c2410c]/25 to-transparent",
-  "from-[#7c3aed]/50 via-[#6d28d9]/30 to-transparent",
-  "from-[#db2777]/45 via-[#be185d]/25 to-transparent",
-] as const;
+/** Figma presentation — solid stat panels. */
+const SOLID_PURPLE = "bg-[#3940ab]";
+const SOLID_TEAL = "bg-[#4a9ba4]";
+const SOLID_ORANGE = "bg-[#ed7e35]";
 
-/** Placeholder / empty-slot wash. */
+/** Hero category cap (Figma “fishing” pill). */
+const HERO_TAG_PILL = "bg-[#4ba61b]";
+
 const SOLID_ACCENTS = [
-  "from-[#2563eb] via-[#1d4ed8] to-[#1e3a8a]",
-  "from-[#0d9488] via-[#0f766e] to-[#134e4a]",
-  "from-[#ea580c] via-[#c2410c] to-[#9a3412]",
+  "from-[#3940ab] via-[#2d3485] to-[#252e7a]",
+  "from-[#4a9ba4] via-[#3d858d] to-[#2f6b73]",
+  "from-[#ed7e35] via-[#d96a28] to-[#c45a1e]",
   "from-[#7c3aed] via-[#6d28d9] to-[#5b21b6]",
   "from-[#db2777] via-[#be185d] to-[#9d174d]",
 ] as const;
@@ -78,7 +76,6 @@ function collectCohortMosaicUrls(themes: ProjectorThemeRow[], max: number): stri
   return urls;
 }
 
-/** Fill a 2×2 hero collage when we only have 1–3 distinct fallback URLs. */
 function padCollageFour(urls: string[]): string[] {
   if (urls.length === 0) return [];
   const out: string[] = [];
@@ -98,7 +95,7 @@ function ProjectorEmptySlot({
   return (
     <div
       className={cn(
-        "relative flex min-h-[100px] items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br p-3 text-center sm:min-h-[120px]",
+        "relative flex min-h-[120px] items-center justify-center overflow-hidden rounded-[28px] border border-white/10 bg-gradient-to-br p-3 text-center lg:min-h-[160px]",
         grad,
         "opacity-[0.92]"
       )}
@@ -123,50 +120,34 @@ function ProjectorEmptySlot({
         </div>
       ) : null}
       <div className="pointer-events-none absolute inset-0 z-[1] bg-black/55" aria-hidden />
-      <p className="relative z-[2] text-[10px] font-semibold uppercase tracking-[0.12em] text-white/85 sm:text-xs">
+      <p className="relative z-[2] text-xs font-semibold uppercase tracking-[0.12em] text-white/85">
         Awaiting theme
       </p>
     </div>
   );
 }
 
-function ProjectorPhotoTile({
+/** Large left hero — Figma fishing card. */
+function ProjectorHeroFigma({
   theme,
-  denominator,
-  hero,
-  belowPctLabel,
   cohortThemes,
-  accentOverlay,
-  compact,
+  belowPctLabel,
 }: {
   theme: ProjectorThemeRow;
-  denominator: number;
-  hero?: boolean;
-  belowPctLabel?: string;
-  /** Full cohort list for fallback images when this theme has no safe URL. */
   cohortThemes: ProjectorThemeRow[];
-  accentOverlay?: string;
-  compact?: boolean;
+  belowPctLabel: string;
 }) {
   const primaryUrl =
     theme.samplePhotos.find((p) => isSafeGalleryImageUrl(p.url))?.url ?? null;
   const fallbackUrls = primaryUrl
     ? []
-    : pickFallbackPhotoUrls(cohortThemes, theme.tag, hero ? 4 : 2);
+    : pickFallbackPhotoUrls(cohortThemes, theme.tag, 4);
   const urlsForCollage = primaryUrl ? [primaryUrl] : fallbackUrls;
-  const useCollage = Boolean(hero && !primaryUrl && fallbackUrls.length >= 2);
-  const tagBg = galleryTagBackground(theme.tag);
+  const useCollage = Boolean(!primaryUrl && fallbackUrls.length >= 2);
   const pct = Math.round(theme.percent);
-  const sizesHero = "(max-width: 1024px) 100vw, 45vw";
-  const sizesTile = "(max-width: 1024px) 50vw, 22vw";
 
   return (
-    <div
-      className={cn(
-        "relative min-h-0 min-w-0 overflow-hidden rounded-2xl border border-white/15 shadow-xl",
-        hero ? "ring-1 ring-cyan-500/25" : "ring-0"
-      )}
-    >
+    <div className="relative h-full min-h-[280px] w-full min-w-0 overflow-hidden rounded-[28px] border border-white/10 shadow-2xl lg:min-h-0">
       {urlsForCollage.length > 0 ? (
         useCollage ? (
           <div className="absolute inset-0 z-0 grid grid-cols-2 grid-rows-2 gap-px bg-black">
@@ -178,8 +159,8 @@ function ProjectorPhotoTile({
                   fill
                   unoptimized
                   className="object-cover object-center"
-                  sizes={sizesHero}
-                  priority={hero}
+                  sizes="(max-width: 1024px) 100vw, 40vw"
+                  priority
                 />
               </div>
             ))}
@@ -192,186 +173,309 @@ function ProjectorPhotoTile({
               fill
               unoptimized
               className="object-cover object-center"
-              sizes={hero ? sizesHero : sizesTile}
-              priority={hero}
+              sizes="(max-width: 1024px) 100vw, 40vw"
+              priority
             />
           </div>
         )
       ) : (
         <div className="absolute inset-0 z-0 bg-gradient-to-br from-zinc-700 via-zinc-900 to-black" />
       )}
-      {accentOverlay ? (
-        <div
-          className={cn(
-            "pointer-events-none absolute inset-0 z-[1] bg-gradient-to-br opacity-35",
-            accentOverlay
-          )}
-          aria-hidden
-        />
-      ) : null}
       <div
-        className="pointer-events-none absolute inset-0 z-[2] bg-gradient-to-t from-black/95 via-black/35 to-transparent"
+        className="pointer-events-none absolute inset-0 z-[1] rounded-[28px]"
+        style={{
+          background:
+            "linear-gradient(21.5deg, rgba(0,0,0,0.88) 8%, rgba(0,0,0,0) 72%)",
+        }}
         aria-hidden
       />
       <span
-        className="pointer-events-none absolute right-2 top-2 z-10 rounded-lg px-2 py-0.5 text-[10px] font-semibold lowercase text-white shadow-md sm:right-3 sm:top-3 sm:text-xs"
-        style={{ backgroundColor: tagBg }}
+        className={cn(
+          "pointer-events-none absolute right-4 top-4 z-10 rounded-xl px-5 py-2.5 text-lg font-medium lowercase text-white shadow-lg sm:right-6 sm:top-6 sm:text-2xl lg:text-3xl",
+          HERO_TAG_PILL
+        )}
       >
         {theme.tag}
       </span>
-      <div className="pointer-events-none absolute bottom-0 left-0 z-10 p-3 sm:p-4 lg:p-5">
-        <p className="text-[10px] font-medium uppercase tracking-wide text-white/75 sm:text-[11px]">
-          #{theme.rank} · {theme.count}{" "}
-          {theme.count === 1 ? "person" : "people"} · {theme.labeledPhotoCount} photos
-        </p>
-        <p
-          className={cn(
-            "font-bold leading-none tracking-tight text-white drop-shadow-lg",
-            compact
-              ? "text-2xl sm:text-3xl lg:text-4xl"
-              : hero
-                ? "text-4xl sm:text-5xl lg:text-7xl"
-                : "text-3xl sm:text-4xl lg:text-5xl"
-          )}
-        >
+      <div className="pointer-events-none absolute bottom-0 left-0 z-10 flex w-full flex-col items-center gap-1 px-4 pb-8 pt-16 text-center sm:pb-10 lg:items-start lg:px-8 lg:pb-10 lg:text-left">
+        <p className="text-6xl font-bold tabular-nums leading-none tracking-tight text-white drop-shadow-lg sm:text-7xl lg:text-8xl xl:text-[7.5rem]">
           {pct}%
         </p>
-        <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-white/90 sm:text-xs">
-          {belowPctLabel ?? `of ${denominator.toLocaleString()} in cohort`}
+        <p className="text-2xl font-bold text-white/95 sm:text-3xl lg:text-4xl xl:text-5xl">
+          {belowPctLabel}
         </p>
       </div>
     </div>
   );
 }
 
-type TileRender =
-  | { kind: "hero-photo" }
-  | { kind: "photo"; accentOverlay?: (typeof PHOTO_ACCENTS)[number] };
+/** Centered stat card — purple / teal / orange columns from Figma. */
+function ProjectorSolidFigma({
+  theme,
+  className,
+  size = "tall",
+}: {
+  theme: ProjectorThemeRow;
+  className: string;
+  size?: "tall" | "short";
+}) {
+  const pct = Math.round(theme.percent);
+  return (
+    <div
+      className={cn(
+        "relative flex min-h-0 flex-col items-center justify-center gap-4 overflow-hidden rounded-[28px] border border-white/10 px-4 py-6 text-center shadow-lg sm:gap-5 sm:px-6 sm:py-8",
+        className
+      )}
+    >
+      <span
+        className="absolute right-3 top-3 z-10 rounded-lg px-2 py-1 text-[10px] font-semibold lowercase text-white/90 ring-1 ring-white/20 sm:text-xs"
+        style={{ backgroundColor: galleryTagBackground(theme.tag) }}
+      >
+        {theme.tag}
+      </span>
+      <p
+        className={cn(
+          "font-bold tabular-nums leading-none text-white",
+          size === "tall"
+            ? "text-6xl sm:text-7xl lg:text-8xl xl:text-[6.5rem]"
+            : "text-5xl sm:text-6xl lg:text-7xl"
+        )}
+      >
+        {pct}%
+      </p>
+      <p
+        className={cn(
+          "max-w-[95%] font-bold capitalize leading-tight text-white",
+          size === "tall" ? "text-xl sm:text-2xl lg:text-3xl xl:text-4xl" : "text-lg sm:text-xl lg:text-2xl"
+        )}
+      >
+        {theme.tag}
+      </p>
+    </div>
+  );
+}
 
-/** Bento: large hero + photo tiles with optional color wash (all slots prefer real gallery imagery). */
-const TILE_LAYOUT: TileRender[] = [
-  { kind: "hero-photo" },
-  { kind: "photo", accentOverlay: PHOTO_ACCENTS[0] },
-  { kind: "photo" },
-  { kind: "photo", accentOverlay: PHOTO_ACCENTS[1] },
-  { kind: "photo" },
-  { kind: "photo", accentOverlay: PHOTO_ACCENTS[2] },
-];
+/** Photo tile with centered stats — Figma kayaking card. */
+function ProjectorPhotoCenterFigma({
+  theme,
+  cohortThemes,
+}: {
+  theme: ProjectorThemeRow;
+  cohortThemes: ProjectorThemeRow[];
+}) {
+  const primaryUrl =
+    theme.samplePhotos.find((p) => isSafeGalleryImageUrl(p.url))?.url ?? null;
+  const fallbackUrls = primaryUrl
+    ? []
+    : pickFallbackPhotoUrls(cohortThemes, theme.tag, 1);
+  const url = primaryUrl ?? fallbackUrls[0];
+  const pct = Math.round(theme.percent);
 
-function BentoProjectorGrid({
+  return (
+    <div className="relative min-h-[140px] w-full min-w-0 overflow-hidden rounded-[28px] border border-white/10 shadow-lg lg:min-h-0">
+      {url ? (
+        <div className="absolute inset-0 z-0">
+          <Image
+            src={url}
+            alt=""
+            fill
+            unoptimized
+            className="object-cover object-center"
+            sizes="(max-width: 1024px) 100vw, 22vw"
+          />
+        </div>
+      ) : (
+        <div className="absolute inset-0 z-0 bg-gradient-to-br from-zinc-700 to-black" />
+      )}
+      <div className="pointer-events-none absolute inset-0 z-[1] bg-black/35" aria-hidden />
+      <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 px-3 text-center">
+        <p className="text-5xl font-bold tabular-nums text-white drop-shadow-md sm:text-6xl lg:text-7xl">
+          {pct}%
+        </p>
+        <p className="text-lg font-bold capitalize text-white drop-shadow sm:text-xl lg:text-2xl">
+          {theme.tag}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function FigmaInsightHeader({
+  methodologyLine,
+  cohort,
+  generatedAt,
+  presentMode,
+}: {
+  methodologyLine: string;
+  cohort: CohortBlock;
+  generatedAt: string;
+  presentMode: boolean;
+}) {
+  return (
+    <div className="shrink-0 rounded-[28px] border border-white/10 bg-black px-4 py-4 sm:px-6 sm:py-5 lg:px-8 lg:py-6">
+      <h2
+        className={cn(
+          "font-bold leading-tight text-[#5dc4dc]",
+          presentMode ? "text-2xl sm:text-3xl lg:text-4xl" : "text-xl sm:text-2xl lg:text-3xl xl:text-4xl"
+        )}
+      >
+        What the network is into
+      </h2>
+      <p
+        className={cn(
+          "mt-2 leading-snug text-white/90",
+          presentMode ? "text-sm sm:text-base" : "text-xs sm:text-sm lg:text-base"
+        )}
+      >
+        {methodologyLine}
+      </p>
+      <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-white/10 pt-3 text-[11px] text-white/55 sm:text-xs">
+        <span className="rounded-lg border border-white/15 bg-white/[0.06] px-2 py-1 font-medium text-white">
+          Full network
+        </span>
+        <span className="rounded-lg border border-white/10 px-2 py-1 tabular-nums">
+          <strong className="text-white">{cohort.denominator.toLocaleString()}</strong> in cohort
+        </span>
+        <span className="inline-flex items-center gap-1">
+          <Users className="h-3.5 w-3.5 text-cyan-400" />
+          <strong className="text-white/90">{cohort.usersWithLabeledPhoto.toLocaleString()}</strong>{" "}
+          w/ photo
+        </span>
+        <span className="ml-auto inline-flex items-center gap-1.5 tabular-nums text-emerald-400/90">
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+          Live · {new Date(generatedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Figma 89:2 — left hero, right: header + 3×2 grid (purple | teal / photo | orange).
+ * Row 3: optional two tiles for themes 5–6.
+ */
+function FigmaProjectorBody({
   themes,
   cohortThemes,
-  denominator,
-  viewKey,
   belowPctLabel,
+  methodologyLine,
+  cohort,
+  generatedAt,
+  presentMode,
 }: {
   themes: ProjectorThemeRow[];
-  /** All themes in cohort (for image fallbacks + empty-slot mosaic). */
   cohortThemes: ProjectorThemeRow[];
-  denominator: number;
-  viewKey: string;
-  /** Slide mode: short line under % (cohort size lives in the rail). */
-  belowPctLabel?: string;
+  belowPctLabel: string;
+  methodologyLine: string;
+  cohort: CohortBlock;
+  generatedAt: string;
+  presentMode: boolean;
 }) {
   const emptyMosaic = collectCohortMosaicUrls(cohortThemes, 4);
+  const t = themes;
+
+  if (t.length === 0) {
+    return (
+      <div className="flex h-full min-h-[240px] flex-1 items-center justify-center p-8 text-center text-white/50">
+        No themed photos in this cohort yet.
+      </div>
+    );
+  }
+
+  const hero = t[0];
+  const a = t[1];
+  const b = t[2];
+  const c = t[3];
+  const d = t[4];
+  const e = t[5];
 
   return (
     <div
       className={cn(
-        "grid h-full min-h-0 w-full flex-1 auto-rows-fr gap-2 p-2 sm:gap-3 sm:p-3 lg:p-4",
-        /* Mobile / tablet: stack; hero first; 2-col when space */
-        "grid-cols-1",
-        "sm:grid-cols-2",
-        /* Large: asymmetric bento — hero 6×3, colored strips, tall accent */
-        "lg:grid-cols-12 lg:grid-rows-3 lg:gap-3"
+        "flex h-full min-h-0 w-full flex-1 flex-col gap-3 p-3 sm:gap-4 sm:p-4 lg:flex-row lg:gap-4 lg:p-5"
       )}
     >
-      {TILE_LAYOUT.map((layout, i) => {
-        const theme = themes[i];
-        const cell = (() => {
-          if (!theme) {
-            return (
-              <ProjectorEmptySlot
-                key={`e-${i}`}
-                accentIndex={i}
-                mosaicUrls={emptyMosaic}
-              />
-            );
-          }
-          if (layout.kind === "hero-photo") {
-            return (
-              <ProjectorPhotoTile
-                key={theme.tag}
-                theme={theme}
-                denominator={denominator}
-                hero
-                belowPctLabel={belowPctLabel}
-                cohortThemes={cohortThemes}
-              />
-            );
-          }
-          return (
-            <ProjectorPhotoTile
-              key={theme.tag}
-              theme={theme}
-              denominator={denominator}
-              belowPctLabel={belowPctLabel}
-              cohortThemes={cohortThemes}
-              accentOverlay={layout.accentOverlay}
-              compact={i === 3}
-            />
-          );
-        })();
+      <div className="min-h-[320px] w-full shrink-0 lg:min-h-0 lg:w-[40%] lg:max-w-xl lg:flex-1">
+        <ProjectorHeroFigma
+          theme={hero}
+          cohortThemes={cohortThemes}
+          belowPctLabel={belowPctLabel}
+        />
+      </div>
 
-        return (
-          <div
-            key={`${viewKey}-slot-${i}`}
-            className={cn(
-              "min-h-0 min-w-0",
-              /* sm: hero spans full width */
-              i === 0 && "sm:col-span-2",
-              /* Large-screen placement */
-              i === 0 &&
-                "lg:col-span-6 lg:row-span-3 lg:row-start-1 lg:col-start-1 lg:min-h-[200px]",
-              i === 1 &&
-                "lg:col-span-4 lg:row-span-1 lg:row-start-1 lg:col-start-7 lg:min-h-[120px]",
-              i === 2 &&
-                "lg:col-span-2 lg:row-span-1 lg:row-start-2 lg:col-start-7 lg:min-h-[100px]",
-              i === 3 &&
-                "lg:col-span-2 lg:row-span-1 lg:row-start-2 lg:col-start-9 lg:min-h-[100px]",
-              i === 4 &&
-                "lg:col-span-4 lg:row-span-1 lg:row-start-3 lg:col-start-7 lg:min-h-[110px]",
-              i === 5 &&
-                "lg:col-span-2 lg:row-span-3 lg:row-start-1 lg:col-start-11 lg:min-h-[120px]"
-            )}
-          >
-            {cell}
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 lg:gap-4">
+        <FigmaInsightHeader
+          methodologyLine={methodologyLine}
+          cohort={cohort}
+          generatedAt={generatedAt}
+          presentMode={presentMode}
+        />
+
+        <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 lg:grid-cols-3 lg:grid-rows-2 lg:gap-3">
+          {a ? (
+            <div className="min-h-[200px] lg:row-span-2 lg:min-h-0">
+              <ProjectorSolidFigma theme={a} className={SOLID_PURPLE} size="tall" />
+            </div>
+          ) : (
+            <div className="min-h-[200px] lg:row-span-2">
+              <ProjectorEmptySlot accentIndex={1} mosaicUrls={emptyMosaic} />
+            </div>
+          )}
+
+          {b ? (
+            <div className="min-h-[160px] lg:col-start-2 lg:row-start-1 lg:min-h-0">
+              <ProjectorSolidFigma theme={b} className={SOLID_TEAL} size="short" />
+            </div>
+          ) : (
+            <div className="lg:col-start-2 lg:row-start-1">
+              <ProjectorEmptySlot accentIndex={2} mosaicUrls={emptyMosaic} />
+            </div>
+          )}
+
+          {c ? (
+            <div className="min-h-[180px] lg:col-start-2 lg:row-start-2 lg:min-h-0">
+              <ProjectorPhotoCenterFigma theme={c} cohortThemes={cohortThemes} />
+            </div>
+          ) : (
+            <div className="lg:col-start-2 lg:row-start-2">
+              <ProjectorEmptySlot accentIndex={3} mosaicUrls={emptyMosaic} />
+            </div>
+          )}
+
+          {d ? (
+            <div className="min-h-[220px] lg:col-start-3 lg:row-span-2 lg:row-start-1 lg:min-h-0">
+              <ProjectorSolidFigma theme={d} className={SOLID_ORANGE} size="tall" />
+            </div>
+          ) : (
+            <div className="min-h-[220px] lg:col-start-3 lg:row-span-2 lg:row-start-1">
+              <ProjectorEmptySlot accentIndex={4} mosaicUrls={emptyMosaic} />
+            </div>
+          )}
+        </div>
+
+        {e ? (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <ProjectorSolidFigma theme={e} className="bg-[#6b21a8]" size="short" />
           </div>
-        );
-      })}
+        ) : null}
+      </div>
     </div>
   );
 }
 
 function ProjectorSlideFrame({
-  cohort,
-  methodologyLine,
-  generatedAt,
   presentMode,
   children,
 }: {
-  cohort: CohortBlock;
-  methodologyLine: string;
-  generatedAt: string;
   presentMode: boolean;
   children: ReactNode;
 }) {
   return (
     <div
       className={cn(
-        "flex w-full max-w-full flex-col overflow-hidden rounded-xl border border-white/12 bg-[#070708] shadow-[0_0_0_1px_rgba(255,255,255,0.06)]",
-        "min-h-[480px] sm:min-h-[520px]",
-        "lg:aspect-video lg:min-h-0 lg:flex-row",
+        "flex w-full max-w-full flex-col overflow-hidden rounded-[28px] border border-white/10 bg-[#141e21] shadow-[0_0_0_1px_rgba(255,255,255,0.06)]",
+        "min-h-[520px] sm:min-h-[560px]",
+        "lg:aspect-video lg:min-h-0",
         presentMode
           ? "max-h-[min(calc(100dvh-7.5rem),min(92vw*9/16,92dvh))] flex-1 lg:max-h-[min(calc(100dvh-8rem),min(92vw*9/16,88dvh))]"
           : "mx-auto lg:max-w-[min(100%,min(100vw-2rem,calc(92dvh*16/9)))]"
@@ -379,82 +483,7 @@ function ProjectorSlideFrame({
       role="region"
       aria-label="Gallery themes presentation slide"
     >
-      <aside
-        className={cn(
-          "flex shrink-0 flex-col justify-between gap-4 border-white/10 bg-black p-4 sm:p-5",
-          "border-b lg:w-[32%] lg:min-w-[220px] lg:max-w-[320px] lg:border-b-0 lg:border-r lg:py-6"
-        )}
-      >
-        <div className="space-y-3">
-          <div className="flex items-start gap-3">
-            <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-cyan-500/35 bg-cyan-500/10">
-              <LayoutGrid className="h-5 w-5 text-cyan-400" aria-hidden />
-            </span>
-            <div className="min-w-0">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-cyan-400/90">
-                Live gallery themes
-              </p>
-              <h2
-                className={cn(
-                  "font-bold leading-tight tracking-tight text-white",
-                  presentMode ? "text-xl sm:text-2xl" : "text-lg sm:text-xl lg:text-2xl"
-                )}
-              >
-                What the network is into
-              </h2>
-            </div>
-          </div>
-          <p
-            className={cn(
-              "leading-snug text-white/65",
-              presentMode ? "text-xs sm:text-sm" : "text-[11px] sm:text-xs"
-            )}
-          >
-            {methodologyLine}
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <span className="rounded-lg border border-white/15 bg-white/[0.06] px-2.5 py-1 text-[11px] font-medium text-white">
-              Full network
-            </span>
-            <span className="rounded-lg border border-white/10 px-2.5 py-1 text-[11px] tabular-nums text-white/80">
-              <strong className="text-white">{cohort.denominator.toLocaleString()}</strong> in cohort
-            </span>
-          </div>
-          <ul className="space-y-1.5 text-[11px] text-white/55 sm:text-xs">
-            <li className="flex items-center gap-2">
-              <Users className="h-3.5 w-3.5 shrink-0 text-cyan-500/80" />
-              <span>
-                <strong className="text-white/90">{cohort.usersWithLabeledPhoto.toLocaleString()}</strong>{" "}
-                with a labeled photo
-              </span>
-            </li>
-            <li>
-              <strong className="text-white/90">{cohort.totalLabeledPhotos.toLocaleString()}</strong>{" "}
-              photo labels ·{" "}
-              <strong className="text-white/90">{cohort.themeCount}</strong> themes
-            </li>
-          </ul>
-        </div>
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-white/10 pt-3 text-[10px] text-white/45 sm:text-[11px]">
-          <span className="inline-flex items-center gap-1.5 font-medium text-emerald-400/90">
-            <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.5)]" aria-hidden />
-            Live
-          </span>
-          <span className="tabular-nums">
-            Updated {new Date(generatedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
-          </span>
-        </div>
-      </aside>
-
-      <div className="relative min-h-0 min-w-0 flex-1 bg-gradient-to-br from-[#0a4d4d]/55 via-[#0a1214] to-black">
-        <div
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(45,212,191,0.12),transparent_55%)]"
-          aria-hidden
-        />
-        <div className="relative flex h-full min-h-[280px] flex-1 flex-col lg:min-h-0">
-          {children}
-        </div>
-      </div>
+      <div className="relative min-h-0 min-w-0 flex-1">{children}</div>
     </div>
   );
 }
@@ -544,29 +573,20 @@ export function AdminProjectorGallery() {
   const generatedAt = data?.generatedAt ?? new Date().toISOString();
   const methodologyLine =
     data?.methodology ??
-    "Full network: share of all registered users who labeled a gallery photo with each activity.";
+    "Share of all registered users who labeled a gallery photo with each activity.";
 
   const slideBlock = cohort ? (
     <div className={cn("w-full max-w-full", presentMode ? "space-y-3" : "space-y-4")}>
-      <ProjectorSlideFrame
-        cohort={cohort}
-        methodologyLine={methodologyLine}
-        generatedAt={generatedAt}
-        presentMode={presentMode}
-      >
-        {cohort.themes.length === 0 ? (
-          <div className="flex h-full min-h-[240px] flex-1 items-center justify-center p-8 text-center text-white/50">
-            No themed photos in this cohort yet.
-          </div>
-        ) : (
-          <BentoProjectorGrid
-            themes={cohort.themes.slice(0, PROJECTOR_TILES)}
-            cohortThemes={cohort.themes}
-            denominator={cohort.denominator}
-            viewKey="full-network"
-            belowPctLabel={TILE_FOOTNOTE}
-          />
-        )}
+      <ProjectorSlideFrame presentMode={presentMode}>
+        <FigmaProjectorBody
+          themes={cohort.themes.slice(0, PROJECTOR_TILES)}
+          cohortThemes={cohort.themes}
+          belowPctLabel={TILE_FOOTNOTE}
+          methodologyLine={methodologyLine}
+          cohort={cohort}
+          generatedAt={generatedAt}
+          presentMode={presentMode}
+        />
       </ProjectorSlideFrame>
 
       {!presentMode && cohort.themes.length > PROJECTOR_TILES ? (
@@ -594,7 +614,8 @@ export function AdminProjectorGallery() {
               Gallery projector
             </h1>
             <p className="mt-1 max-w-2xl text-xs leading-relaxed text-white/55 sm:text-sm">
-              Full-network gallery themes for event displays. Use Present mode for a clean slide.
+              Event slide layout inspired by App exploration — large gallery hero and colorful
+              theme stats. Present mode fills the screen.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
