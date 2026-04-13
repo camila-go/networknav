@@ -323,6 +323,28 @@ export function NetworkRadialGraph({
       nodeSel.attr("transform", d => `translate(${d.x},${d.y})`);
     });
 
+    // Auto-center: fit all nodes into view once simulation settles
+    simulation.on("end", () => {
+      if (!selectedNodeIdRef.current) {
+        const pad = 35;
+        const xs = nodes.map(n => n.x!).filter(v => isFinite(v));
+        const ys = nodes.map(n => n.y!).filter(v => isFinite(v));
+        if (xs.length === 0) return;
+        const minX = Math.min(...xs) - pad;
+        const maxX = Math.max(...xs) + pad;
+        const minY = Math.min(...ys) - pad;
+        const maxY = Math.max(...ys) + pad;
+        const bw = maxX - minX;
+        const bh = maxY - minY;
+        const scale = Math.min(width / bw, height / bh, 1.2) * 0.92;
+        const tx = (width - bw * scale) / 2 - minX * scale;
+        const ty = (height - bh * scale) / 2 - minY * scale;
+        const fitTransform = d3.zoomIdentity.translate(tx, ty).scale(scale);
+        svg.transition().duration(500).ease(d3.easeCubicOut)
+          .call(zoom.transform, fitTransform);
+      }
+    });
+
     // ── Touch / click ──
     let tapTimer: ReturnType<typeof setTimeout> | null = null;
     let lastTapNodeId: string | null = null;
