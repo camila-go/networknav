@@ -422,6 +422,7 @@ export function NetworkContainer() {
           <NetworkRadialGraph
             data={networkData}
             filter={filter}
+            extendedNetwork={extendedNetwork}
             onNodeClick={(node) => {
               // Single tap — just highlight, no detail sheet
               setSelectedNode(node);

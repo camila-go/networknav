@@ -4,11 +4,20 @@ import { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
 import type { NetworkGraphData, NetworkNode } from "@/types";
 
+interface DiscoverableContact {
+  id: string;
+  name: string;
+  title: string;
+  company: string;
+  reason: string;
+}
+
 interface NetworkRadialGraphProps {
   data: NetworkGraphData | null;
   onNodeClick?: (node: NetworkNode) => void;
   onNodeDoubleClick?: (node: NetworkNode) => void;
   onDeselect?: () => void;
+  extendedNetwork?: Record<string, DiscoverableContact[]>;
   filter?: "all" | "high-affinity" | "strategic";
   selectedNodeId?: string;
 }
@@ -30,6 +39,7 @@ export function NetworkRadialGraph({
   onNodeClick,
   onNodeDoubleClick,
   onDeselect,
+  extendedNetwork = {},
   filter = "all",
   selectedNodeId: externalSelectedNodeId,
 }: NetworkRadialGraphProps) {
@@ -59,6 +69,8 @@ export function NetworkRadialGraph({
   const selectedNodeIdRef = useRef<string | null>(null);
   const zoomRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null);
   const svgSelRef = useRef<d3.Selection<SVGSVGElement, unknown, null, undefined> | null>(null);
+  const gRef = useRef<d3.Selection<SVGGElement, unknown, null, undefined> | null>(null);
+  const discoverGroupRef = useRef<d3.Selection<SVGGElement, unknown, null, undefined> | null>(null);
 
   useEffect(() => { selectedNodeIdRef.current = selectedNodeId ?? null; }, [selectedNodeId]);
 
@@ -195,6 +207,11 @@ export function NetworkRadialGraph({
 
     // ── Main group (zoom target) ──
     const g = svg.append("g");
+    gRef.current = g;
+
+    // Overlay group for discoverable contacts (rendered on selection)
+    const discoverGroup = g.append("g").attr("class", "discoverable-overlay");
+    discoverGroupRef.current = discoverGroup;
 
     // ── Orbit guide rings ──
     const orbits = g.append("g");
@@ -365,21 +382,27 @@ export function NetworkRadialGraph({
       initialsSelRef.current = null;
       zoomRef.current = null;
       svgSelRef.current = null;
+      gRef.current = null;
+      discoverGroupRef.current = null;
     };
   }, [data, dimensions, filter]);
 
-  // ── Highlight + zoom-to-center helper ──
+  // ── Highlight + zoom-to-center + discoverable contacts helper ──
   function applyHighlight(selId: string | null) {
     const linkSel = linkSelRef.current;
     const circleSel = circleSelRef.current;
     const nameLabels = nameLabelSelRef.current;
     const zoom = zoomRef.current;
     const svgSel = svgSelRef.current;
+    const dGroup = discoverGroupRef.current;
     if (!linkSel || !circleSel || !nameLabels) return;
 
     const links = linksDataRef.current;
     const nodes = nodesDataRef.current;
     const { width, height } = dimensions;
+
+    // Always clear previous discoverable overlay
+    if (dGroup) dGroup.selectAll("*").remove();
 
     if (!selId) {
       // Reset — restore per-type opacity + zoom out to overview
@@ -452,6 +475,89 @@ export function NetworkRadialGraph({
         if (connectedIds.has(d.id)) return "rgba(255,255,255,0.95)";
         return "rgba(255,255,255,0)";
       });
+
+    // ── Render discoverable contacts around selected node ──
+    const contacts = (extendedNetwork[selId] || []).slice(0, 3);
+    if (dGroup && contacts.length > 0) {
+      const discR = 55; // distance from selected node
+      const startAngle = -Math.PI / 2; // start from top
+      const spread = Math.PI * 0.8; // arc spread (not full circle)
+
+      contacts.forEach((contact, i) => {
+        const angle = contacts.length === 1
+          ? startAngle
+          : startAngle - spread / 2 + (spread * i) / (contacts.length - 1);
+        const cx = selNode.x! + discR * Math.cos(angle);
+        const cy = selNode.y! + discR * Math.sin(angle);
+
+        // Dashed line from selected node to discoverable
+        dGroup.append("line")
+          .attr("x1", selNode.x!).attr("y1", selNode.y!)
+          .attr("x2", selNode.x!).attr("y2", selNode.y!)
+          .attr("stroke", "#a78bfa")
+          .attr("stroke-width", 1.5)
+          .attr("stroke-dasharray", "4,3")
+          .attr("opacity", 0.7)
+          .transition().duration(400).delay(200 + i * 80)
+          .attr("x2", cx).attr("y2", cy);
+
+        // Node group
+        const ng = dGroup.append("g")
+          .attr("transform", `translate(${selNode.x},${selNode.y})`)
+          .attr("opacity", 0)
+          .attr("cursor", "pointer");
+
+        // Purple circle
+        ng.append("circle")
+          .attr("r", 8)
+          .attr("fill", "url(#radialDISC)")
+          .attr("stroke", "rgba(167,139,250,0.5)")
+          .attr("stroke-width", 1.5);
+
+        // Initials
+        ng.append("text")
+          .attr("dy", "0.35em").attr("text-anchor", "middle")
+          .attr("font-size", "6px").attr("font-weight", "700")
+          .attr("fill", "#fff").attr("pointer-events", "none")
+          .text(getInitials(contact.name));
+
+        // Name label
+        ng.append("text")
+          .attr("dy", 18).attr("text-anchor", "middle")
+          .attr("font-size", "7px").attr("font-weight", "500")
+          .attr("fill", "rgba(167,139,250,0.9)")
+          .attr("pointer-events", "none")
+          .style("text-shadow", "0 1px 3px rgba(0,0,0,0.9)")
+          .text(firstName(contact.name));
+
+        // "via" label
+        ng.append("text")
+          .attr("dy", 27).attr("text-anchor", "middle")
+          .attr("font-size", "5px").attr("font-weight", "400")
+          .attr("fill", "rgba(167,139,250,0.5)")
+          .attr("pointer-events", "none")
+          .text(`via ${firstName(selNode.name)}`);
+
+        // Animate in
+        ng.transition().duration(350).delay(250 + i * 80)
+          .attr("transform", `translate(${cx},${cy})`)
+          .attr("opacity", 1);
+
+        // Click to navigate to profile
+        ng.on("click", (event) => {
+          event.stopPropagation();
+          onNodeDoubleClickRef.current?.({
+            id: contact.id,
+            name: contact.name,
+            title: contact.title,
+            company: contact.company,
+            matchType: "discoverable",
+            commonalityCount: 0,
+            commonalities: [contact.reason],
+          });
+        });
+      });
+    }
 
     // Smooth zoom + center on selected node
     if (zoom && svgSel) {
