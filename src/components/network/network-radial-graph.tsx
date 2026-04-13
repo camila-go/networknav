@@ -8,6 +8,7 @@ interface NetworkRadialGraphProps {
   data: NetworkGraphData | null;
   onNodeClick?: (node: NetworkNode) => void;
   onNodeDoubleClick?: (node: NetworkNode) => void;
+  onDeselect?: () => void;
   filter?: "all" | "high-affinity" | "strategic";
   selectedNodeId?: string;
 }
@@ -28,6 +29,7 @@ export function NetworkRadialGraph({
   data,
   onNodeClick,
   onNodeDoubleClick,
+  onDeselect,
   filter = "all",
   selectedNodeId: externalSelectedNodeId,
 }: NetworkRadialGraphProps) {
@@ -41,8 +43,10 @@ export function NetworkRadialGraph({
   // Stable callback refs
   const onNodeClickRef = useRef(onNodeClick);
   const onNodeDoubleClickRef = useRef(onNodeDoubleClick);
+  const onDeselectRef = useRef(onDeselect);
   useEffect(() => { onNodeClickRef.current = onNodeClick; }, [onNodeClick]);
   useEffect(() => { onNodeDoubleClickRef.current = onNodeDoubleClick; }, [onNodeDoubleClick]);
+  useEffect(() => { onDeselectRef.current = onDeselect; }, [onDeselect]);
 
   // Selection refs for highlight updates without simulation rebuild
   const linkSelRef = useRef<LinkSel | null>(null);
@@ -224,8 +228,8 @@ export function NetworkRadialGraph({
     // Build per-node strength map for opacity variation
     const nodeStrength = new Map<string, number>();
     links.forEach(l => {
-      const sId = typeof l.source === "string" ? l.source : l.source.id;
-      const tId = typeof l.target === "string" ? l.target : l.target.id;
+      const sId = typeof l.source === "object" ? (l.source as SimNode).id : String(l.source);
+      const tId = typeof l.target === "object" ? (l.target as SimNode).id : String(l.target);
       nodeStrength.set(sId, Math.max(nodeStrength.get(sId) ?? 0, l.strength));
       nodeStrength.set(tId, Math.max(nodeStrength.get(tId) ?? 0, l.strength));
     });
@@ -298,6 +302,7 @@ export function NetworkRadialGraph({
     nodeSel.on("click", function (event, d) {
       event.stopPropagation();
       if (lastTapNodeId === d.id && tapTimer) {
+        // Double tap — open detail / profile
         clearTimeout(tapTimer);
         tapTimer = null;
         lastTapNodeId = null;
@@ -305,20 +310,31 @@ export function NetworkRadialGraph({
           onNodeDoubleClickRef.current?.(d);
         }
       } else {
+        // Single tap — toggle selection (no detail sheet)
         if (tapTimer) clearTimeout(tapTimer);
         lastTapNodeId = d.id;
         tapTimer = setTimeout(() => {
           tapTimer = null;
           lastTapNodeId = null;
           if (d.matchType === "neutral") return;
-          const newId = selectedNodeIdRef.current === d.id ? null : d.id;
-          setInternalSelectedNodeId(newId);
-          onNodeClickRef.current?.(d);
+          if (selectedNodeIdRef.current === d.id) {
+            // Deselect
+            setInternalSelectedNodeId(null);
+            onDeselectRef.current?.();
+          } else {
+            // Select new node
+            setInternalSelectedNodeId(d.id);
+            onNodeClickRef.current?.(d);
+          }
         }, 250);
       }
     });
 
-    svg.on("click", () => setInternalSelectedNodeId(null));
+    // Background tap — deselect
+    svg.on("click", () => {
+      setInternalSelectedNodeId(null);
+      onDeselectRef.current?.();
+    });
 
     // ── Zoom (pinch + pan) ──
     const zoom = d3.zoom<SVGSVGElement, unknown>()

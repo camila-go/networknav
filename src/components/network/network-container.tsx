@@ -380,9 +380,9 @@ export function NetworkContainer() {
           </div>
         </div>
 
-        {/* Discoverable contacts - "People You Could Meet" */}
+        {/* Discoverable contacts - "People You Could Meet" (hidden on mobile — shown in graph) */}
         {discoverableContacts.length > 0 && (
-          <div className="mb-4">
+          <div className="hidden md:block mb-4">
             <div className="flex items-center gap-2 mb-2 px-1">
               <div className="w-5 h-5 rounded-full bg-gradient-to-r from-violet-500 to-purple-500 flex items-center justify-center">
                 <Users className="h-3 w-3 text-white" />
@@ -422,13 +422,24 @@ export function NetworkContainer() {
           <NetworkRadialGraph
             data={enhancedNetworkData}
             filter={filter}
-            onNodeClick={handleNodeClick}
-            onNodeDoubleClick={(node) => router.push(`/user/${node.id}`)}
+            onNodeClick={(node) => {
+              // Single tap — just highlight, no detail sheet
+              setSelectedNode(node);
+            }}
+            onNodeDoubleClick={(node) => {
+              // Double tap — open detail sheet
+              setSelectedNode(node);
+              setShowMobileDetail(true);
+            }}
+            onDeselect={() => {
+              setSelectedNode(null);
+              setShowMobileDetail(false);
+            }}
             selectedNodeId={selectedNode?.id}
           />
           {/* Mobile interaction hint */}
           <div className="absolute bottom-3 left-1/2 -translate-x-1/2 text-[10px] text-white/40 bg-black/60 backdrop-blur-sm rounded-full px-3 py-1.5 border border-white/10">
-            Tap to select &bull; Double-tap for profile &bull; Pinch to zoom
+            Tap to highlight &bull; Double-tap for details &bull; Pinch to zoom
           </div>
         </div>
 
