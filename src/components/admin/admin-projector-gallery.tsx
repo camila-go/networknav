@@ -8,8 +8,6 @@ import { isSafeGalleryImageUrl } from "@/lib/gallery/safe-image-url";
 import { cn } from "@/lib/utils";
 import type { ProjectorThemeRow } from "@/types/gallery";
 
-type ViewMode = "active" | "network";
-
 type CohortBlock = {
   denominator: number;
   totalLabeledPhotos: number;
@@ -20,11 +18,11 @@ type CohortBlock = {
 
 type Payload = {
   generatedAt: string;
-  methodologyActive: string;
-  methodologyNetwork: string;
-  activeAttendees: CohortBlock;
-  fullNetwork: CohortBlock;
+  methodology: string;
+  cohort: CohortBlock;
 };
+
+const TILE_FOOTNOTE = "of network";
 
 const PROJECTOR_TILES = 6;
 
@@ -112,7 +110,14 @@ function ProjectorEmptySlot({
         >
           {urls.map((url, idx) => (
             <div key={`${url}-${idx}`} className="relative min-h-0">
-              <Image src={url} alt="" fill className="object-cover object-center" sizes="120px" />
+              <Image
+                src={url}
+                alt=""
+                fill
+                unoptimized
+                className="object-cover object-center"
+                sizes="120px"
+              />
             </div>
           ))}
         </div>
@@ -171,6 +176,7 @@ function ProjectorPhotoTile({
                   src={url}
                   alt=""
                   fill
+                  unoptimized
                   className="object-cover object-center"
                   sizes={sizesHero}
                   priority={hero}
@@ -184,6 +190,7 @@ function ProjectorPhotoTile({
               src={urlsForCollage[0]}
               alt=""
               fill
+              unoptimized
               className="object-cover object-center"
               sizes={hero ? sizesHero : sizesTile}
               priority={hero}
@@ -196,7 +203,7 @@ function ProjectorPhotoTile({
       {accentOverlay ? (
         <div
           className={cn(
-            "pointer-events-none absolute inset-0 z-[1] bg-gradient-to-br mix-blend-hard-light",
+            "pointer-events-none absolute inset-0 z-[1] bg-gradient-to-br opacity-35",
             accentOverlay
           )}
           aria-hidden
@@ -346,33 +353,19 @@ function BentoProjectorGrid({
   );
 }
 
-function methodologyBlurb(view: ViewMode): string {
-  return view === "active"
-    ? "Share of active attendees who labeled a gallery photo with each activity."
-    : "Share of all registered profiles who labeled a gallery photo with each activity.";
-}
-
-function tileFootnoteForView(view: ViewMode): string {
-  return view === "active" ? "of attendees" : "of network";
-}
-
 function ProjectorSlideFrame({
-  view,
   cohort,
   methodologyLine,
   generatedAt,
   presentMode,
   children,
 }: {
-  view: ViewMode;
   cohort: CohortBlock;
   methodologyLine: string;
   generatedAt: string;
   presentMode: boolean;
   children: ReactNode;
 }) {
-  const cohortTitle = view === "active" ? "Active attendees" : "Full network";
-
   return (
     <div
       className={cn(
@@ -421,7 +414,7 @@ function ProjectorSlideFrame({
           </p>
           <div className="flex flex-wrap gap-2">
             <span className="rounded-lg border border-white/15 bg-white/[0.06] px-2.5 py-1 text-[11px] font-medium text-white">
-              {cohortTitle}
+              Full network
             </span>
             <span className="rounded-lg border border-white/10 px-2.5 py-1 text-[11px] tabular-nums text-white/80">
               <strong className="text-white">{cohort.denominator.toLocaleString()}</strong> in cohort
@@ -471,7 +464,6 @@ export function AdminProjectorGallery() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [view, setView] = useState<ViewMode>("active");
   const [presentMode, setPresentMode] = useState(false);
   const hasLoadedOnceRef = useRef(false);
 
@@ -547,20 +539,16 @@ export function AdminProjectorGallery() {
     return () => document.removeEventListener("visibilitychange", onVis);
   }, [load]);
 
-  const cohort = data
-    ? view === "active"
-      ? data.activeAttendees
-      : data.fullNetwork
-    : null;
+  const cohort = data?.cohort ?? null;
 
   const generatedAt = data?.generatedAt ?? new Date().toISOString();
-  const methodologyLine = methodologyBlurb(view);
-  const tileBelowPct = tileFootnoteForView(view);
+  const methodologyLine =
+    data?.methodology ??
+    "Full network: share of all registered users who labeled a gallery photo with each activity.";
 
   const slideBlock = cohort ? (
     <div className={cn("w-full max-w-full", presentMode ? "space-y-3" : "space-y-4")}>
       <ProjectorSlideFrame
-        view={view}
         cohort={cohort}
         methodologyLine={methodologyLine}
         generatedAt={generatedAt}
@@ -575,8 +563,8 @@ export function AdminProjectorGallery() {
             themes={cohort.themes.slice(0, PROJECTOR_TILES)}
             cohortThemes={cohort.themes}
             denominator={cohort.denominator}
-            viewKey={view}
-            belowPctLabel={tileBelowPct}
+            viewKey="full-network"
+            belowPctLabel={TILE_FOOTNOTE}
           />
         )}
       </ProjectorSlideFrame>
@@ -606,37 +594,10 @@ export function AdminProjectorGallery() {
               Gallery projector
             </h1>
             <p className="mt-1 max-w-2xl text-xs leading-relaxed text-white/55 sm:text-sm">
-              Popularity themes in a bento layout: photos and color blocks. Toggle cohort below;
-              use Present mode for slides.
+              Full-network gallery themes for event displays. Use Present mode for a clean slide.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <div className="inline-flex rounded-lg border border-white/15 bg-white/5 p-0.5 text-xs sm:text-sm">
-              <button
-                type="button"
-                onClick={() => setView("active")}
-                className={cn(
-                  "rounded-md px-2.5 py-1.5 sm:px-3",
-                  view === "active"
-                    ? "bg-cyan-500/20 text-white"
-                    : "text-white/50 hover:text-white"
-                )}
-              >
-                Active
-              </button>
-              <button
-                type="button"
-                onClick={() => setView("network")}
-                className={cn(
-                  "rounded-md px-2.5 py-1.5 sm:px-3",
-                  view === "network"
-                    ? "bg-cyan-500/20 text-white"
-                    : "text-white/50 hover:text-white"
-                )}
-              >
-                Full network
-              </button>
-            </div>
             <button
               type="button"
               onClick={() => void load()}
@@ -665,38 +626,14 @@ export function AdminProjectorGallery() {
       ) : (
         <div className="flex shrink-0 flex-wrap items-center justify-between gap-2">
           <h2 className="text-base font-semibold text-white/90 sm:text-lg">Gallery projector</h2>
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="inline-flex rounded-lg border border-white/15 bg-white/5 p-0.5 text-[11px] sm:text-xs">
-              <button
-                type="button"
-                onClick={() => setView("active")}
-                className={cn(
-                  "rounded-md px-2 py-1 sm:px-2.5",
-                  view === "active" ? "bg-cyan-500/25 text-white" : "text-white/50"
-                )}
-              >
-                Active
-              </button>
-              <button
-                type="button"
-                onClick={() => setView("network")}
-                className={cn(
-                  "rounded-md px-2 py-1 sm:px-2.5",
-                  view === "network" ? "bg-cyan-500/25 text-white" : "text-white/50"
-                )}
-              >
-                Network
-              </button>
-            </div>
-            <button
-              type="button"
-              onClick={() => setPresentMode(false)}
-              className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/10 px-2.5 py-1.5 text-xs hover:bg-white/15 sm:px-3 sm:text-sm"
-            >
-              <Minimize2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              Exit <span className="hidden text-white/50 sm:inline">(Esc)</span>
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => setPresentMode(false)}
+            className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/10 px-2.5 py-1.5 text-xs hover:bg-white/15 sm:px-3 sm:text-sm"
+          >
+            <Minimize2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            Exit <span className="hidden text-white/50 sm:inline">(Esc)</span>
+          </button>
         </div>
       )}
 

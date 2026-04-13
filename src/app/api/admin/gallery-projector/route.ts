@@ -11,12 +11,37 @@ import type { ProjectorThemeRow } from "@/types/gallery";
 
 const PRIVATE_CACHE = { "Cache-Control": "private, no-store, max-age=0" };
 
-const METHODOLOGY_ACTIVE =
-  "Active cohort: profiles with is_active. Percent = share of active attendees who labeled a gallery photo with this activity.";
-const METHODOLOGY_NETWORK =
+const METHODOLOGY =
   "Full network: all registered profiles in user_profiles. Percent = share of all registered users who labeled a gallery photo with this activity.";
 
 const MAX_THEMES_RETURN = 200;
+
+type RawPhotoRow = {
+  user_id: string;
+  url: string | null;
+  activity_tag: string | null;
+  storage_key?: string | null;
+};
+
+/** Re-resolve public storage URLs from `storage_key` so images stay valid if URLs in DB are stale. */
+function normalizePhotoUrls(rows: RawPhotoRow[]): PhotoRow[] {
+  return rows.map((row) => {
+    const sk = row.storage_key?.trim();
+    if (sk && supabaseAdmin) {
+      const { data } = supabaseAdmin.storage.from("profile-photos").getPublicUrl(sk);
+      return {
+        user_id: row.user_id,
+        url: data.publicUrl,
+        activity_tag: row.activity_tag,
+      };
+    }
+    return {
+      user_id: row.user_id,
+      url: row.url,
+      activity_tag: row.activity_tag,
+    };
+  });
+}
 
 /** Paginate user_photos with non-null activity_tag. */
 async function fetchAllLabeledPhotos(): Promise<PhotoRow[]> {
@@ -25,15 +50,13 @@ async function fetchAllLabeledPhotos(): Promise<PhotoRow[]> {
   for (let from = 0; ; from += pageSize) {
     const { data: batch, error } = await supabaseAdmin!
       .from("user_photos")
-      .select("user_id, url, activity_tag")
+      .select("user_id, url, activity_tag, storage_key")
       .not("activity_tag", "is", null)
       .range(from, from + pageSize - 1);
 
     if (error) throw error;
     if (!batch?.length) break;
-    photos.push(
-      ...(batch as { user_id: string; url: string | null; activity_tag: string | null }[])
-    );
+    photos.push(...normalizePhotoUrls(batch as RawPhotoRow[]));
     if (batch.length < pageSize) break;
   }
   return photos;
@@ -63,16 +86,8 @@ export async function GET() {
         success: true,
         data: {
           generatedAt: new Date().toISOString(),
-          methodologyActive: METHODOLOGY_ACTIVE,
-          methodologyNetwork: METHODOLOGY_NETWORK,
-          activeAttendees: {
-            denominator: 0,
-            totalLabeledPhotos: 0,
-            usersWithLabeledPhoto: 0,
-            themeCount: 0,
-            themes: [] as ProjectorThemeRow[],
-          },
-          fullNetwork: {
+          methodology: METHODOLOGY,
+          cohort: {
             denominator: 0,
             totalLabeledPhotos: 0,
             usersWithLabeledPhoto: 0,
@@ -88,35 +103,17 @@ export async function GET() {
   try {
     const photos = await fetchAllLabeledPhotos();
 
-    const { data: activeProfiles, error: activeErr } = await supabaseAdmin
-      .from("user_profiles")
-      .select("id")
-      .eq("is_active", true);
-
-    if (activeErr) throw activeErr;
-
     const { data: allProfiles, error: allErr } = await supabaseAdmin
       .from("user_profiles")
       .select("id");
 
     if (allErr) throw allErr;
 
-    const activeSet = new Set((activeProfiles ?? []).map((p) => p.id as string));
     const allSet = new Set((allProfiles ?? []).map((p) => p.id as string));
-
-    const activeDenom = activeSet.size;
     const networkDenom = allSet.size;
 
-    const activeBuilt = buildThemesForDenominator(photos, activeSet, activeDenom);
     const networkBuilt = buildThemesForDenominator(photos, allSet, networkDenom);
-
-    const activePhotoByTag = labeledPhotoCountsByTag(photos, activeSet);
     const networkPhotoByTag = labeledPhotoCountsByTag(photos, allSet);
-
-    const activeThemes = attachRanksAndPhotoCounts(
-      activeBuilt.themes.slice(0, MAX_THEMES_RETURN),
-      activePhotoByTag
-    );
     const networkThemes = attachRanksAndPhotoCounts(
       networkBuilt.themes.slice(0, MAX_THEMES_RETURN),
       networkPhotoByTag
@@ -126,16 +123,8 @@ export async function GET() {
       success: true,
       data: {
         generatedAt: new Date().toISOString(),
-        methodologyActive: METHODOLOGY_ACTIVE,
-        methodologyNetwork: METHODOLOGY_NETWORK,
-        activeAttendees: {
-          denominator: activeDenom,
-          totalLabeledPhotos: activeBuilt.totalLabeledPhotos,
-          usersWithLabeledPhoto: distinctUsersWithLabeledPhoto(photos, activeSet),
-          themeCount: activeBuilt.themes.length,
-          themes: activeThemes,
-        },
-        fullNetwork: {
+        methodology: METHODOLOGY,
+        cohort: {
           denominator: networkDenom,
           totalLabeledPhotos: networkBuilt.totalLabeledPhotos,
           usersWithLabeledPhoto: distinctUsersWithLabeledPhoto(photos, allSet),
