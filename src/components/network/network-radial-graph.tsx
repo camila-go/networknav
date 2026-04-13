@@ -50,6 +50,7 @@ export function NetworkRadialGraph({
   const nameLabelSelRef = useRef<TextSel | null>(null);
   const initialsSelRef = useRef<TextSel | null>(null);
   const linksDataRef = useRef<SimLink[]>([]);
+  const nodeStrengthRef = useRef<Map<string, number>>(new Map());
   const selectedNodeIdRef = useRef<string | null>(null);
 
   useEffect(() => { selectedNodeIdRef.current = selectedNodeId ?? null; }, [selectedNodeId]);
@@ -109,7 +110,7 @@ export function NetworkRadialGraph({
       }));
 
     // ── Radii per type ──
-    const innerR = maxR * 0.32;
+    const innerR = maxR * 0.42;
     const outerR = maxR * 0.72;
     const haloR = maxR * 0.93;
 
@@ -130,7 +131,7 @@ export function NetworkRadialGraph({
       .alphaMin(0.005)
       .velocityDecay(0.35)
       .force("radial", d3.forceRadial<SimNode>(d => targetRadius(d), cx, cy).strength(0.8))
-      .force("collision", d3.forceCollide<SimNode>().radius(d => nodeRadius(d) + 2).strength(0.9))
+      .force("collision", d3.forceCollide<SimNode>().radius(d => nodeRadius(d) + 3).strength(0.9))
       .force("link", d3.forceLink<SimNode, SimLink>(links)
         .id(d => d.id)
         .distance(d => d.isDiscoverable ? haloR * 0.3 : targetRadius(d.target as SimNode))
@@ -220,6 +221,15 @@ export function NetworkRadialGraph({
       .attr("fill", "transparent")
       .attr("stroke", "none");
 
+    // Build per-node strength map for opacity variation
+    const nodeStrength = new Map<string, number>();
+    links.forEach(l => {
+      const sId = typeof l.source === "string" ? l.source : l.source.id;
+      const tId = typeof l.target === "string" ? l.target : l.target.id;
+      nodeStrength.set(sId, Math.max(nodeStrength.get(sId) ?? 0, l.strength));
+      nodeStrength.set(tId, Math.max(nodeStrength.get(tId) ?? 0, l.strength));
+    });
+
     // Visible circles
     const circles = nodeSel.append("circle")
       .attr("r", d => nodeRadius(d))
@@ -229,31 +239,39 @@ export function NetworkRadialGraph({
         if (d.matchType === "neutral") return 2;
         return d.photoUrl ? 2 : 1;
       })
+      .attr("opacity", d => {
+        if (d.matchType === "strategic") {
+          // Vary opacity by match strength: 0.55–0.95
+          const s = nodeStrength.get(d.id) ?? 0.5;
+          return 0.55 + s * 0.4;
+        }
+        return 1;
+      })
       .style("filter", d => d.matchType === "neutral" ? "url(#centerGlow)" : "none");
 
     // Initials — only for center + high-affinity (strategic too small)
     const initials = nodeSel.filter(d => !d.photoUrl && (d.matchType === "neutral" || d.matchType === "high-affinity"))
       .append("text")
       .attr("dy", "0.35em").attr("text-anchor", "middle")
-      .attr("font-size", d => d.matchType === "neutral" ? "11px" : "7px")
+      .attr("font-size", d => d.matchType === "neutral" ? "11px" : "8px")
       .attr("font-weight", "700")
       .attr("fill", "#000")
       .attr("pointer-events", "none")
       .text(d => getInitials(d.name));
 
-    // Labels — center "You" + high-affinity first names only
+    // Labels — high-affinity first names only (center has no label, strategic hidden)
     const nameLabels = nodeSel.append("text")
       .attr("dy", d => nodeRadius(d) + 11)
       .attr("text-anchor", "middle")
-      .attr("font-size", d => d.matchType === "neutral" ? "10px" : "8px")
-      .attr("font-weight", d => d.matchType === "neutral" ? "600" : "500")
+      .attr("font-size", "8px")
+      .attr("font-weight", "500")
       .attr("fill", d => {
-        if (d.matchType === "neutral") return "rgba(255,255,255,0.9)";
-        if (d.matchType === "high-affinity") return "rgba(255,255,255,0.7)";
-        return "rgba(255,255,255,0)"; // Hidden for strategic/discoverable
+        if (d.matchType === "high-affinity") return "rgba(255,255,255,0.85)";
+        return "rgba(255,255,255,0)"; // Hidden for center/strategic/discoverable
       })
+      .style("text-shadow", "0 1px 3px rgba(0,0,0,0.9), 0 0 6px rgba(0,0,0,0.7)")
       .attr("pointer-events", "none")
-      .text(d => d.matchType === "neutral" ? "You" : d.name.split(" ")[0]);
+      .text(d => firstName(d.name));
 
     // Store refs
     linkSelRef.current = linkSel;
@@ -261,6 +279,7 @@ export function NetworkRadialGraph({
     nameLabelSelRef.current = nameLabels;
     initialsSelRef.current = initials;
     linksDataRef.current = links;
+    nodeStrengthRef.current = nodeStrength;
 
     // ── Tick ──
     simulation.on("tick", () => {
@@ -333,17 +352,22 @@ export function NetworkRadialGraph({
     const links = linksDataRef.current;
 
     if (!selId) {
-      // Reset
+      // Reset — restore per-type opacity
       circleSel.transition().duration(200)
-        .attr("opacity", 1)
+        .attr("opacity", d => {
+          if (d.matchType === "strategic") {
+            const s = nodeStrengthRef.current.get(d.id) ?? 0.5;
+            return 0.55 + s * 0.4;
+          }
+          return 1;
+        })
         .style("filter", d => d.matchType === "neutral" ? "url(#centerGlow)" : "none");
       linkSel.transition().duration(200)
         .attr("stroke", d => d.isDiscoverable ? "rgba(167,139,250,0.15)" : "rgba(255,255,255,0.06)")
         .attr("stroke-width", d => d.isDiscoverable ? 0.8 : Math.max(0.3, d.strength * 1.5));
       nameLabels.transition().duration(200)
         .attr("fill", d => {
-          if (d.matchType === "neutral") return "rgba(255,255,255,0.9)";
-          if (d.matchType === "high-affinity") return "rgba(255,255,255,0.7)";
+          if (d.matchType === "high-affinity") return "rgba(255,255,255,0.85)";
           return "rgba(255,255,255,0)";
         });
       return;
@@ -379,10 +403,10 @@ export function NetworkRadialGraph({
         return Math.max(0.3, d.strength * 1.5);
       });
 
-    // Show names for connected nodes, hide others
+    // Show names for connected nodes, hide others (center stays unlabeled)
     nameLabels.transition().duration(250)
       .attr("fill", d => {
-        if (d.matchType === "neutral") return "rgba(255,255,255,0.9)";
+        if (d.matchType === "neutral") return "rgba(255,255,255,0)";
         if (connectedIds.has(d.id)) return "rgba(255,255,255,0.95)";
         return "rgba(255,255,255,0)";
       });
@@ -413,7 +437,7 @@ export function NetworkRadialGraph({
 
 function nodeRadius(node: NetworkNode): number {
   if (node.matchType === "neutral") return 22;
-  if (node.matchType === "high-affinity") return 10;
+  if (node.matchType === "high-affinity") return 12;
   if (node.matchType === "discoverable") return 5;
   // Strategic — small dots
   return 7;
@@ -446,6 +470,11 @@ function patternId(id: string): string {
   return `rimg-${id.replace(/[^a-zA-Z0-9]/g, "_")}`;
 }
 
+function firstName(name: string): string {
+  // Handle "First Last", "First.Last", "First_Last"
+  return name.split(/[\s._]+/)[0];
+}
+
 function getInitials(name: string): string {
-  return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
+  return name.split(/[\s._]+/).map(n => n[0]).join("").toUpperCase().slice(0, 2);
 }
