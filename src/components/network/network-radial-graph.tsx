@@ -227,10 +227,6 @@ export function NetworkRadialGraph({
     const g = svg.append("g");
     gRef.current = g;
 
-    // Overlay group for discoverable contacts (rendered on selection)
-    const discoverGroup = g.append("g").attr("class", "discoverable-overlay");
-    discoverGroupRef.current = discoverGroup;
-
     // ── Orbit guide rings ──
     const orbits = g.append("g");
     [
@@ -253,6 +249,10 @@ export function NetworkRadialGraph({
 
     // ── Node groups ──
     const nodeGroup = g.append("g");
+
+    // Overlay group for discoverable contacts — appended after nodes so it renders on top
+    const discoverGroup = g.append("g").attr("class", "discoverable-overlay");
+    discoverGroupRef.current = discoverGroup;
     const nodeSel = nodeGroup.selectAll<SVGGElement, SimNode>("g")
       .data(nodes).join("g")
       .attr("cursor", "pointer");
@@ -301,16 +301,13 @@ export function NetworkRadialGraph({
       .attr("pointer-events", "none")
       .text(d => getInitials(d.name));
 
-    // Labels — high-affinity first names only (center has no label, strategic hidden)
+    // Labels — hidden by default, shown only on selection
     const nameLabels = nodeSel.append("text")
       .attr("dy", d => nodeRadius(d) + 11)
       .attr("text-anchor", "middle")
       .attr("font-size", "8px")
       .attr("font-weight", "500")
-      .attr("fill", d => {
-        if (d.matchType === "high-affinity") return "rgba(255,255,255,0.85)";
-        return "rgba(255,255,255,0)"; // Hidden for center/strategic/discoverable
-      })
+      .attr("fill", "rgba(255,255,255,0)")
       .style("text-shadow", "0 1px 3px rgba(0,0,0,0.9), 0 0 6px rgba(0,0,0,0.7)")
       .attr("pointer-events", "none")
       .text(d => firstName(d.name));
@@ -461,10 +458,7 @@ export function NetworkRadialGraph({
         .attr("stroke", d => d.isDiscoverable ? "rgba(167,139,250,0.15)" : "rgba(255,255,255,0.06)")
         .attr("stroke-width", d => d.isDiscoverable ? 0.8 : Math.max(0.3, d.strength * 1.5));
       nameLabels.transition().duration(300)
-        .attr("fill", d => {
-          if (d.matchType === "high-affinity") return "rgba(255,255,255,0.85)";
-          return "rgba(255,255,255,0)";
-        });
+        .attr("fill", "rgba(255,255,255,0)");
       if (initials) {
         initials.transition().duration(300).attr("opacity", 1);
       }
@@ -520,11 +514,10 @@ export function NetworkRadialGraph({
         return 0;
       });
 
-    // Show names for connected nodes only
+    // Show name only for the selected node
     nameLabels.transition().duration(300)
       .attr("fill", d => {
-        if (d.matchType === "neutral") return "rgba(255,255,255,0)";
-        if (connectedIds.has(d.id)) return "rgba(255,255,255,0.95)";
+        if (d.id === selId && d.matchType !== "neutral") return "rgba(255,255,255,0.95)";
         return "rgba(255,255,255,0)";
       });
 
