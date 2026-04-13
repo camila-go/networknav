@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
-import type { NetworkGraphData, NetworkNode, NetworkEdge } from "@/types";
+import type { NetworkGraphData, NetworkNode } from "@/types";
 
 interface NetworkRadialGraphProps {
   data: NetworkGraphData | null;
@@ -12,17 +12,17 @@ interface NetworkRadialGraphProps {
   selectedNodeId?: string;
 }
 
-interface PositionedNode extends NetworkNode {
-  x: number;
-  y: number;
-}
-
-interface PositionedLink {
-  source: PositionedNode;
-  target: PositionedNode;
+// Extend for D3 simulation
+interface SimNode extends NetworkNode, d3.SimulationNodeDatum {}
+interface SimLink extends d3.SimulationLinkDatum<SimNode> {
   strength: number;
   isDiscoverable?: boolean;
 }
+
+// D3 selection type aliases
+type LinkSel = d3.Selection<SVGLineElement, SimLink, SVGGElement, unknown>;
+type CircleSel = d3.Selection<SVGCircleElement, SimNode, SVGGElement, unknown>;
+type TextSel = d3.Selection<SVGTextElement, SimNode, SVGGElement, unknown>;
 
 export function NetworkRadialGraph({
   data,
@@ -44,308 +44,241 @@ export function NetworkRadialGraph({
   useEffect(() => { onNodeClickRef.current = onNodeClick; }, [onNodeClick]);
   useEffect(() => { onNodeDoubleClickRef.current = onNodeDoubleClick; }, [onNodeDoubleClick]);
 
-  // Resize observer
+  // Selection refs for highlight updates without simulation rebuild
+  const linkSelRef = useRef<LinkSel | null>(null);
+  const circleSelRef = useRef<CircleSel | null>(null);
+  const nameLabelSelRef = useRef<TextSel | null>(null);
+  const initialsSelRef = useRef<TextSel | null>(null);
+  const linksDataRef = useRef<SimLink[]>([]);
+  const selectedNodeIdRef = useRef<string | null>(null);
+
+  useEffect(() => { selectedNodeIdRef.current = selectedNodeId ?? null; }, [selectedNodeId]);
+
+  // Resize
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
-    let resizeTimer: ReturnType<typeof setTimeout>;
+    let timer: ReturnType<typeof setTimeout>;
     const measure = () => {
-      const rect = container.getBoundingClientRect();
-      if (rect.width > 0 && rect.height > 0) {
-        setDimensions({
-          width: Math.max(300, rect.width),
-          height: Math.max(300, rect.height),
-        });
+      const r = container.getBoundingClientRect();
+      if (r.width > 0 && r.height > 0) {
+        setDimensions({ width: Math.max(300, r.width), height: Math.max(300, r.height) });
       }
     };
     measure();
-    const onResize = () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(measure, 100); };
+    const onResize = () => { clearTimeout(timer); timer = setTimeout(measure, 100); };
     window.addEventListener("resize", onResize);
-    return () => { window.removeEventListener("resize", onResize); clearTimeout(resizeTimer); };
+    return () => { window.removeEventListener("resize", onResize); clearTimeout(timer); };
   }, []);
 
-  // Filter data
-  const filteredData = useCallback((): { nodes: PositionedNode[]; links: PositionedLink[] } | null => {
-    if (!data) return null;
-
-    let nodes = data.nodes;
-    if (filter !== "all") {
-      nodes = nodes.filter(n => n.matchType === "neutral" || n.matchType === filter || n.matchType === "discoverable");
-    }
-
-    // Build edge lookup
-    const nodeIds = new Set(nodes.map(n => n.id));
-    const links = data.edges
-      .filter(e => nodeIds.has(e.source) && nodeIds.has(e.target))
-      .map(e => ({
-        source: nodes.find(n => n.id === e.source)!,
-        target: nodes.find(n => n.id === e.target)!,
-        strength: e.strength,
-        isDiscoverable: nodes.find(n => n.id === e.target)?.matchType === "discoverable" ||
-                        nodes.find(n => n.id === e.source)?.matchType === "discoverable",
-      }))
-      .filter(l => l.source && l.target);
-
-    // Layout calculation
-    const { width, height } = dimensions;
-    const cx = width / 2;
-    const cy = height / 2;
-    const maxR = Math.min(width, height) / 2 - 30;
-
-    const centerNode = nodes.find(n => n.matchType === "neutral");
-    const highAffinity = nodes.filter(n => n.matchType === "high-affinity");
-    const strategic = nodes.filter(n => n.matchType === "strategic");
-    const discoverable = nodes.filter(n => n.matchType === "discoverable");
-
-    const positioned: PositionedNode[] = [];
-
-    // Center
-    if (centerNode) {
-      positioned.push({ ...centerNode, x: cx, y: cy });
-    }
-
-    // Deterministic jitter from node id
-    const jitter = (id: string, scale: number) => {
-      let hash = 0;
-      for (let i = 0; i < id.length; i++) hash = ((hash << 5) - hash + id.charCodeAt(i)) | 0;
-      return ((hash % 100) / 100) * scale;
-    };
-
-    // Inner ring — high-affinity
-    const innerR = maxR * 0.35;
-    highAffinity.forEach((node, i) => {
-      const angle = (2 * Math.PI * i) / Math.max(highAffinity.length, 1) - Math.PI / 2;
-      positioned.push({
-        ...node,
-        x: cx + innerR * Math.cos(angle) + jitter(node.id, 6),
-        y: cy + innerR * Math.sin(angle) + jitter(node.id + "y", 6),
-      });
-    });
-
-    // Outer ring(s) — strategic
-    if (strategic.length <= 24) {
-      const outerR = maxR * 0.72;
-      strategic.forEach((node, i) => {
-        const angle = (2 * Math.PI * i) / Math.max(strategic.length, 1) - Math.PI / 2;
-        positioned.push({
-          ...node,
-          x: cx + outerR * Math.cos(angle) + jitter(node.id, 5),
-          y: cy + outerR * Math.sin(angle) + jitter(node.id + "y", 5),
-        });
-      });
-    } else {
-      // Split into two staggered rings
-      const half = Math.ceil(strategic.length / 2);
-      const r1 = maxR * 0.6;
-      const r2 = maxR * 0.82;
-      strategic.forEach((node, i) => {
-        const ring = i < half ? r1 : r2;
-        const count = i < half ? half : strategic.length - half;
-        const idx = i < half ? i : i - half;
-        const offset = i < half ? 0 : Math.PI / count; // stagger
-        const angle = (2 * Math.PI * idx) / count - Math.PI / 2 + offset;
-        positioned.push({
-          ...node,
-          x: cx + ring * Math.cos(angle) + jitter(node.id, 4),
-          y: cy + ring * Math.sin(angle) + jitter(node.id + "y", 4),
-        });
-      });
-    }
-
-    // Halo — discoverable
-    const haloR = maxR * 0.95;
-    discoverable.forEach((node, i) => {
-      const angle = (2 * Math.PI * i) / Math.max(discoverable.length, 1) - Math.PI / 2;
-      positioned.push({
-        ...node,
-        x: cx + haloR * Math.cos(angle) + jitter(node.id, 3),
-        y: cy + haloR * Math.sin(angle) + jitter(node.id + "y", 3),
-      });
-    });
-
-    // Re-map links to positioned nodes
-    const posMap = new Map(positioned.map(n => [n.id, n]));
-    const posLinks: PositionedLink[] = links
-      .map(l => ({
-        ...l,
-        source: posMap.get(l.source.id)!,
-        target: posMap.get(l.target.id)!,
-      }))
-      .filter(l => l.source && l.target);
-
-    return { nodes: positioned, links: posLinks };
-  }, [data, filter, dimensions]);
-
-  // D3 render
+  // ─── Main D3 render ───
   useEffect(() => {
-    const svg = d3.select(svgRef.current);
-    if (!svg.node()) return;
+    const svgEl = svgRef.current;
+    if (!svgEl || !data) return;
+    const svg = d3.select(svgEl);
     svg.selectAll("*").remove();
 
-    const layoutData = filteredData();
-    if (!layoutData) return;
-
-    const { nodes, links } = layoutData;
     const { width, height } = dimensions;
     const cx = width / 2;
     const cy = height / 2;
-    const maxR = Math.min(width, height) / 2 - 30;
+    const maxR = Math.min(width, height) / 2 - 24;
 
-    const g = svg.append("g");
+    // ── Filter nodes ──
+    let filteredNodes = data.nodes;
+    if (filter !== "all") {
+      filteredNodes = filteredNodes.filter(
+        n => n.matchType === "neutral" || n.matchType === filter || n.matchType === "discoverable"
+      );
+    }
 
-    // ─── Defs ───
+    // Clone for simulation (D3 mutates them)
+    const nodes: SimNode[] = filteredNodes.map(n => ({ ...n }));
+    const nodeMap = new Map(nodes.map(n => [n.id, n]));
+
+    // Build links
+    const nodeIds = new Set(nodes.map(n => n.id));
+    const links: SimLink[] = data.edges
+      .filter(e => nodeIds.has(e.source) && nodeIds.has(e.target))
+      .map(e => ({
+        source: e.source,
+        target: e.target,
+        strength: e.strength,
+        isDiscoverable:
+          nodeMap.get(e.target)?.matchType === "discoverable" ||
+          nodeMap.get(e.source)?.matchType === "discoverable",
+      }));
+
+    // ── Radii per type ──
+    const innerR = maxR * 0.32;
+    const outerR = maxR * 0.72;
+    const haloR = maxR * 0.93;
+
+    function targetRadius(d: SimNode): number {
+      if (d.matchType === "neutral") return 0;
+      if (d.matchType === "high-affinity") return innerR;
+      if (d.matchType === "discoverable") return haloR;
+      return outerR;
+    }
+
+    // Pin center node
+    const centerNode = nodes.find(n => n.matchType === "neutral");
+    if (centerNode) { centerNode.fx = cx; centerNode.fy = cy; }
+
+    // ── Force simulation ──
+    const simulation = d3.forceSimulation<SimNode>(nodes)
+      .alphaDecay(0.04)
+      .alphaMin(0.005)
+      .velocityDecay(0.35)
+      .force("radial", d3.forceRadial<SimNode>(d => targetRadius(d), cx, cy).strength(0.8))
+      .force("collision", d3.forceCollide<SimNode>().radius(d => nodeRadius(d) + 2).strength(0.9))
+      .force("link", d3.forceLink<SimNode, SimLink>(links)
+        .id(d => d.id)
+        .distance(d => d.isDiscoverable ? haloR * 0.3 : targetRadius(d.target as SimNode))
+        .strength(0.05) // Very weak — radial force dominates
+      );
+
+    // ── Defs ──
     const defs = svg.append("defs");
 
     // Gradients
     const grads: [string, string, string][] = [
-      ["radialHighAffinity", "#0d9488", "#14b8a6"],
-      ["radialStrategic", "#f59e0b", "#fbbf24"],
-      ["radialNeutral", "#0891b2", "#06b6d4"],
-      ["radialDiscoverable", "#8b5cf6", "#a78bfa"],
+      ["radialHA", "#0d9488", "#14b8a6"],
+      ["radialST", "#f59e0b", "#fbbf24"],
+      ["radialYOU", "#0891b2", "#06b6d4"],
+      ["radialDISC", "#8b5cf6", "#a78bfa"],
     ];
     grads.forEach(([id, c1, c2]) => {
-      const grad = defs.append("linearGradient").attr("id", id)
+      const g = defs.append("linearGradient").attr("id", id)
         .attr("x1", "0%").attr("y1", "0%").attr("x2", "100%").attr("y2", "100%");
-      grad.append("stop").attr("offset", "0%").attr("stop-color", c1);
-      grad.append("stop").attr("offset", "100%").attr("stop-color", c2);
+      g.append("stop").attr("offset", "0%").attr("stop-color", c1);
+      g.append("stop").attr("offset", "100%").attr("stop-color", c2);
     });
 
-    // Glow filter for center node
+    // Center glow
     const glow = defs.append("filter").attr("id", "centerGlow")
-      .attr("x", "-50%").attr("y", "-50%").attr("width", "200%").attr("height", "200%");
-    glow.append("feGaussianBlur").attr("stdDeviation", "6").attr("result", "blur");
-    glow.append("feFlood").attr("flood-color", "#06b6d4").attr("flood-opacity", "0.4").attr("result", "color");
+      .attr("x", "-60%").attr("y", "-60%").attr("width", "220%").attr("height", "220%");
+    glow.append("feGaussianBlur").attr("stdDeviation", "8").attr("result", "blur");
+    glow.append("feFlood").attr("flood-color", "#06b6d4").attr("flood-opacity", "0.35").attr("result", "color");
     glow.append("feComposite").attr("in", "color").attr("in2", "blur").attr("operator", "in").attr("result", "glow");
-    const glowMerge = glow.append("feMerge");
-    glowMerge.append("feMergeNode").attr("in", "glow");
-    glowMerge.append("feMergeNode").attr("in", "SourceGraphic");
+    const gm = glow.append("feMerge");
+    gm.append("feMergeNode").attr("in", "glow");
+    gm.append("feMergeNode").attr("in", "SourceGraphic");
 
     // Selection glow
-    const selGlow = defs.append("filter").attr("id", "selectedGlow")
-      .attr("x", "-50%").attr("y", "-50%").attr("width", "200%").attr("height", "200%");
-    selGlow.append("feGaussianBlur").attr("stdDeviation", "4").attr("result", "blur");
-    selGlow.append("feFlood").attr("flood-color", "#22d3ee").attr("flood-opacity", "0.6").attr("result", "color");
-    selGlow.append("feComposite").attr("in", "color").attr("in2", "blur").attr("operator", "in").attr("result", "glow");
-    const selMerge = selGlow.append("feMerge");
-    selMerge.append("feMergeNode").attr("in", "glow");
-    selMerge.append("feMergeNode").attr("in", "SourceGraphic");
+    const sg = defs.append("filter").attr("id", "selGlow")
+      .attr("x", "-80%").attr("y", "-80%").attr("width", "260%").attr("height", "260%");
+    sg.append("feGaussianBlur").attr("stdDeviation", "5").attr("result", "blur");
+    sg.append("feFlood").attr("flood-color", "#22d3ee").attr("flood-opacity", "0.7").attr("result", "color");
+    sg.append("feComposite").attr("in", "color").attr("in2", "blur").attr("operator", "in").attr("result", "glow");
+    const sm = sg.append("feMerge");
+    sm.append("feMergeNode").attr("in", "glow");
+    sm.append("feMergeNode").attr("in", "SourceGraphic");
 
     // Photo patterns
     nodes.filter(n => n.photoUrl).forEach(n => {
-      const r = getNodeRadius(n);
-      const patternId = `radial-img-${n.id.replace(/[^a-zA-Z0-9]/g, "_")}`;
-      const pattern = defs.append("pattern").attr("id", patternId)
+      const r = nodeRadius(n);
+      const pid = patternId(n.id);
+      const pat = defs.append("pattern").attr("id", pid)
         .attr("patternUnits", "objectBoundingBox").attr("width", 1).attr("height", 1);
-      pattern.append("image").attr("href", n.photoUrl!)
+      pat.append("image").attr("href", n.photoUrl!)
         .attr("width", r * 2).attr("height", r * 2)
-        .attr("x", 0).attr("y", 0)
         .attr("preserveAspectRatio", "xMidYMid slice");
     });
 
-    // ─── Orbit rings ───
-    const orbitGroup = g.append("g").attr("class", "orbits");
-    const highAffinityNodes = nodes.filter(n => n.matchType === "high-affinity");
-    const strategicNodes = nodes.filter(n => n.matchType === "strategic");
+    // ── Main group (zoom target) ──
+    const g = svg.append("g");
 
-    // Determine ring radii (must match layout logic above)
-    const ringRadii: { r: number; color: string; dash: string }[] = [];
-    if (highAffinityNodes.length > 0) {
-      ringRadii.push({ r: maxR * 0.35, color: "rgba(20,184,166,0.12)", dash: "none" });
-    }
-    if (strategicNodes.length > 0) {
-      if (strategicNodes.length <= 24) {
-        ringRadii.push({ r: maxR * 0.72, color: "rgba(245,158,11,0.10)", dash: "none" });
-      } else {
-        ringRadii.push({ r: maxR * 0.6, color: "rgba(245,158,11,0.08)", dash: "none" });
-        ringRadii.push({ r: maxR * 0.82, color: "rgba(245,158,11,0.08)", dash: "none" });
-      }
-    }
-
-    ringRadii.forEach(({ r, color, dash }) => {
-      orbitGroup.append("circle")
+    // ── Orbit guide rings ──
+    const orbits = g.append("g");
+    [
+      { r: innerR, color: "rgba(20,184,166,0.15)" },
+      { r: outerR, color: "rgba(245,158,11,0.10)" },
+    ].forEach(({ r, color }) => {
+      orbits.append("circle")
         .attr("cx", cx).attr("cy", cy).attr("r", r)
         .attr("fill", "none").attr("stroke", color)
-        .attr("stroke-width", 1).attr("stroke-dasharray", dash || "4,6");
+        .attr("stroke-width", 1).attr("stroke-dasharray", "3,5");
     });
 
-    // ─── Edges ───
-    const linkGroup = g.append("g").attr("class", "links");
-    const linkSel = linkGroup.selectAll<SVGLineElement, PositionedLink>("line")
+    // ── Links ──
+    const linkGroup = g.append("g");
+    const linkSel = linkGroup.selectAll<SVGLineElement, SimLink>("line")
       .data(links).join("line")
-      .attr("x1", d => d.source.x).attr("y1", d => d.source.y)
-      .attr("x2", d => d.target.x).attr("y2", d => d.target.y)
-      .attr("stroke", d => d.isDiscoverable ? "#a78bfa" : "rgba(255,255,255,0.12)")
-      .attr("stroke-width", d => d.isDiscoverable ? 1.5 : Math.max(0.5, d.strength * 2.5))
-      .attr("stroke-dasharray", d => d.isDiscoverable ? "4,4" : "none")
-      .attr("opacity", 0);
+      .attr("stroke", d => d.isDiscoverable ? "rgba(167,139,250,0.15)" : "rgba(255,255,255,0.06)")
+      .attr("stroke-width", d => d.isDiscoverable ? 0.8 : Math.max(0.3, d.strength * 1.5))
+      .attr("stroke-dasharray", d => d.isDiscoverable ? "3,3" : "none");
 
-    // ─── Nodes ───
-    const nodeGroup = g.append("g").attr("class", "nodes");
-    const nodeSel = nodeGroup.selectAll<SVGGElement, PositionedNode>("g")
+    // ── Node groups ──
+    const nodeGroup = g.append("g");
+    const nodeSel = nodeGroup.selectAll<SVGGElement, SimNode>("g")
       .data(nodes).join("g")
-      .attr("transform", d => d.matchType === "neutral" ? `translate(${d.x},${d.y})` : `translate(${cx},${cy})`)
-      .attr("cursor", "pointer")
-      .attr("opacity", d => d.matchType === "neutral" ? 1 : 0);
+      .attr("cursor", "pointer");
 
-    // Circles
+    // Invisible larger hit area for touch
+    nodeSel.append("circle")
+      .attr("r", d => Math.max(20, nodeRadius(d) + 8))
+      .attr("fill", "transparent")
+      .attr("stroke", "none");
+
+    // Visible circles
     const circles = nodeSel.append("circle")
-      .attr("r", d => getNodeRadius(d))
-      .attr("fill", d => getNodeFill(d))
-      .attr("stroke", d => d.photoUrl ? getStrokeColor(d.matchType) : "rgba(255,255,255,0.25)")
-      .attr("stroke-width", d => d.photoUrl ? 2.5 : 1.5)
-      .style("filter", d => d.matchType === "neutral" ? "url(#centerGlow)" : "drop-shadow(0 2px 4px rgba(0,0,0,0.4))");
+      .attr("r", d => nodeRadius(d))
+      .attr("fill", d => nodeFill(d))
+      .attr("stroke", d => d.photoUrl ? strokeColor(d.matchType) : "rgba(255,255,255,0.2)")
+      .attr("stroke-width", d => {
+        if (d.matchType === "neutral") return 2;
+        return d.photoUrl ? 2 : 1;
+      })
+      .style("filter", d => d.matchType === "neutral" ? "url(#centerGlow)" : "none");
 
-    // Initials (for nodes without photos)
-    nodeSel.filter(d => !d.photoUrl).append("text")
+    // Initials — only for center + high-affinity (strategic too small)
+    const initials = nodeSel.filter(d => !d.photoUrl && (d.matchType === "neutral" || d.matchType === "high-affinity"))
+      .append("text")
       .attr("dy", "0.35em").attr("text-anchor", "middle")
-      .attr("font-size", d => Math.max(9, getNodeRadius(d) * 0.55) + "px")
-      .attr("font-weight", "bold")
-      .attr("fill", d => d.matchType === "neutral" ? "#000" : "#000")
+      .attr("font-size", d => d.matchType === "neutral" ? "11px" : "7px")
+      .attr("font-weight", "700")
+      .attr("fill", "#000")
       .attr("pointer-events", "none")
       .text(d => getInitials(d.name));
 
-    // Name labels — first name only on mobile
+    // Labels — center "You" + high-affinity first names only
     const nameLabels = nodeSel.append("text")
-      .attr("dy", d => getNodeRadius(d) + 13)
+      .attr("dy", d => nodeRadius(d) + 11)
       .attr("text-anchor", "middle")
-      .attr("font-size", "9px")
-      .attr("font-weight", "500")
-      .attr("fill", "rgba(255,255,255,0.8)")
-      .attr("pointer-events", "none")
-      .text(d => {
-        if (d.matchType === "neutral") return "You";
-        return d.name.split(" ")[0];
-      });
-
-    // ─── Entrance animation ───
-    // Nodes fly outward from center with stagger
-    nodeSel.filter(d => d.matchType !== "neutral")
-      .transition()
-      .duration(700)
-      .delay((d, i) => {
-        // High-affinity first, then strategic, then discoverable
-        const typeOrder = d.matchType === "high-affinity" ? 0 : d.matchType === "strategic" ? 1 : 2;
-        return typeOrder * 150 + i * 15;
+      .attr("font-size", d => d.matchType === "neutral" ? "10px" : "8px")
+      .attr("font-weight", d => d.matchType === "neutral" ? "600" : "500")
+      .attr("fill", d => {
+        if (d.matchType === "neutral") return "rgba(255,255,255,0.9)";
+        if (d.matchType === "high-affinity") return "rgba(255,255,255,0.7)";
+        return "rgba(255,255,255,0)"; // Hidden for strategic/discoverable
       })
-      .ease(d3.easeCubicOut)
-      .attr("transform", d => `translate(${d.x},${d.y})`)
-      .attr("opacity", 1);
+      .attr("pointer-events", "none")
+      .text(d => d.matchType === "neutral" ? "You" : d.name.split(" ")[0]);
 
-    // Edges fade in after nodes
-    linkSel.transition()
-      .duration(400)
-      .delay(500)
-      .attr("opacity", d => d.isDiscoverable ? 0.5 : 0.6);
+    // Store refs
+    linkSelRef.current = linkSel;
+    circleSelRef.current = circles;
+    nameLabelSelRef.current = nameLabels;
+    initialsSelRef.current = initials;
+    linksDataRef.current = links;
 
-    // ─── Touch / click handling ───
+    // ── Tick ──
+    simulation.on("tick", () => {
+      linkSel
+        .attr("x1", d => (d.source as SimNode).x!)
+        .attr("y1", d => (d.source as SimNode).y!)
+        .attr("x2", d => (d.target as SimNode).x!)
+        .attr("y2", d => (d.target as SimNode).y!);
+      nodeSel.attr("transform", d => `translate(${d.x},${d.y})`);
+    });
+
+    // ── Touch / click ──
     let tapTimer: ReturnType<typeof setTimeout> | null = null;
     let lastTapNodeId: string | null = null;
 
     nodeSel.on("click", function (event, d) {
       event.stopPropagation();
-
       if (lastTapNodeId === d.id && tapTimer) {
-        // Double tap
         clearTimeout(tapTimer);
         tapTimer = null;
         lastTapNodeId = null;
@@ -358,7 +291,6 @@ export function NetworkRadialGraph({
         tapTimer = setTimeout(() => {
           tapTimer = null;
           lastTapNodeId = null;
-          // Single tap — select
           if (d.matchType === "neutral") return;
           const newId = selectedNodeIdRef.current === d.id ? null : d.id;
           setInternalSelectedNodeId(newId);
@@ -367,48 +299,32 @@ export function NetworkRadialGraph({
       }
     });
 
-    // Background tap to deselect
-    svg.on("click", () => {
-      setInternalSelectedNodeId(null);
-    });
+    svg.on("click", () => setInternalSelectedNodeId(null));
 
-    // ─── Zoom ───
+    // ── Zoom (pinch + pan) ──
     const zoom = d3.zoom<SVGSVGElement, unknown>()
-      .scaleExtent([0.5, 3])
-      .on("zoom", (event) => {
-        g.attr("transform", event.transform);
-      });
+      .scaleExtent([0.5, 4])
+      .on("zoom", (event) => g.attr("transform", event.transform));
     svg.call(zoom);
-    svg.on("dblclick.zoom", null); // disable double-click zoom
+    svg.on("dblclick.zoom", null);
 
-    // Store refs for highlight updates
-    linkSelRef.current = linkSel;
-    circleSelRef.current = circles;
-    nameLabelSelRef.current = nameLabels;
-    nodesDataRef.current = nodes;
-    linksDataRef.current = links;
+    // Re-apply highlight if a node was already selected
+    if (selectedNodeIdRef.current) {
+      applyHighlight(selectedNodeIdRef.current);
+    }
 
     return () => {
+      simulation.stop();
       if (tapTimer) clearTimeout(tapTimer);
       linkSelRef.current = null;
       circleSelRef.current = null;
       nameLabelSelRef.current = null;
+      initialsSelRef.current = null;
     };
-  }, [filteredData, dimensions]);
+  }, [data, dimensions, filter]);
 
-  // ─── Refs for highlight ───
-  const linkSelRef = useRef<d3.Selection<SVGLineElement, PositionedLink, SVGGElement, unknown> | null>(null);
-  const circleSelRef = useRef<d3.Selection<SVGCircleElement, PositionedNode, SVGGElement, unknown> | null>(null);
-  const nameLabelSelRef = useRef<d3.Selection<SVGTextElement, PositionedNode, SVGGElement, unknown> | null>(null);
-  const nodesDataRef = useRef<PositionedNode[]>([]);
-  const linksDataRef = useRef<PositionedLink[]>([]);
-  const selectedNodeIdRef = useRef<string | null>(null);
-
-  // Sync ref
-  useEffect(() => { selectedNodeIdRef.current = selectedNodeId ?? null; }, [selectedNodeId]);
-
-  // Highlight effect
-  useEffect(() => {
+  // ── Highlight helper ──
+  function applyHighlight(selId: string | null) {
     const linkSel = linkSelRef.current;
     const circleSel = circleSelRef.current;
     const nameLabels = nameLabelSelRef.current;
@@ -416,60 +332,65 @@ export function NetworkRadialGraph({
 
     const links = linksDataRef.current;
 
-    if (!selectedNodeId) {
-      // Reset all
-      circleSel
-        .transition().duration(200)
+    if (!selId) {
+      // Reset
+      circleSel.transition().duration(200)
         .attr("opacity", 1)
-        .style("filter", (d) => d.matchType === "neutral" ? "url(#centerGlow)" : "drop-shadow(0 2px 4px rgba(0,0,0,0.4))");
-      linkSel
-        .transition().duration(200)
-        .attr("stroke", d => d.isDiscoverable ? "#a78bfa" : "rgba(255,255,255,0.12)")
-        .attr("stroke-width", d => d.isDiscoverable ? 1.5 : Math.max(0.5, d.strength * 2.5))
-        .attr("opacity", d => d.isDiscoverable ? 0.5 : 0.6);
-      nameLabels
-        .transition().duration(200)
-        .attr("fill", "rgba(255,255,255,0.8)");
+        .style("filter", d => d.matchType === "neutral" ? "url(#centerGlow)" : "none");
+      linkSel.transition().duration(200)
+        .attr("stroke", d => d.isDiscoverable ? "rgba(167,139,250,0.15)" : "rgba(255,255,255,0.06)")
+        .attr("stroke-width", d => d.isDiscoverable ? 0.8 : Math.max(0.3, d.strength * 1.5));
+      nameLabels.transition().duration(200)
+        .attr("fill", d => {
+          if (d.matchType === "neutral") return "rgba(255,255,255,0.9)";
+          if (d.matchType === "high-affinity") return "rgba(255,255,255,0.7)";
+          return "rgba(255,255,255,0)";
+        });
       return;
     }
 
-    // Find connected node ids
-    const connectedIds = new Set<string>();
-    connectedIds.add(selectedNodeId);
+    const connectedIds = new Set<string>([selId]);
     links.forEach(l => {
-      if (l.source.id === selectedNodeId) connectedIds.add(l.target.id);
-      if (l.target.id === selectedNodeId) connectedIds.add(l.source.id);
+      const sId = typeof l.source === "string" ? l.source : (l.source as SimNode).id;
+      const tId = typeof l.target === "string" ? l.target : (l.target as SimNode).id;
+      if (sId === selId) connectedIds.add(tId);
+      if (tId === selId) connectedIds.add(sId);
     });
 
-    // Dim non-connected
-    circleSel
-      .transition().duration(250)
-      .attr("opacity", d => connectedIds.has(d.id) ? 1 : 0.15)
+    circleSel.transition().duration(250)
+      .attr("opacity", d => connectedIds.has(d.id) ? 1 : 0.12)
       .style("filter", d => {
-        if (d.id === selectedNodeId) return "url(#selectedGlow)";
+        if (d.id === selId) return "url(#selGlow)";
         if (d.matchType === "neutral") return "url(#centerGlow)";
-        return connectedIds.has(d.id) ? "drop-shadow(0 2px 4px rgba(0,0,0,0.4))" : "none";
+        return "none";
       });
 
-    linkSel
-      .transition().duration(250)
-      .attr("opacity", d =>
-        (d.source.id === selectedNodeId || d.target.id === selectedNodeId) ? 1 : 0.05
-      )
+    linkSel.transition().duration(250)
       .attr("stroke", d => {
-        if (d.source.id === selectedNodeId || d.target.id === selectedNodeId) {
-          return d.isDiscoverable ? "#c4b5fd" : "#22d3ee";
-        }
-        return d.isDiscoverable ? "#a78bfa" : "rgba(255,255,255,0.12)";
+        const sId = typeof d.source === "string" ? d.source : (d.source as SimNode).id;
+        const tId = typeof d.target === "string" ? d.target : (d.target as SimNode).id;
+        if (sId === selId || tId === selId) return d.isDiscoverable ? "#c4b5fd" : "#22d3ee";
+        return "rgba(255,255,255,0.02)";
       })
-      .attr("stroke-width", d =>
-        (d.source.id === selectedNodeId || d.target.id === selectedNodeId)
-          ? Math.max(2, d.strength * 4) : Math.max(0.5, d.strength * 2.5)
-      );
+      .attr("stroke-width", d => {
+        const sId = typeof d.source === "string" ? d.source : (d.source as SimNode).id;
+        const tId = typeof d.target === "string" ? d.target : (d.target as SimNode).id;
+        if (sId === selId || tId === selId) return Math.max(1.5, d.strength * 3);
+        return Math.max(0.3, d.strength * 1.5);
+      });
 
-    nameLabels
-      .transition().duration(250)
-      .attr("fill", d => connectedIds.has(d.id) ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.15)");
+    // Show names for connected nodes, hide others
+    nameLabels.transition().duration(250)
+      .attr("fill", d => {
+        if (d.matchType === "neutral") return "rgba(255,255,255,0.9)";
+        if (connectedIds.has(d.id)) return "rgba(255,255,255,0.95)";
+        return "rgba(255,255,255,0)";
+      });
+  }
+
+  // Highlight effect on selection change
+  useEffect(() => {
+    applyHighlight(selectedNodeId ?? null);
   }, [selectedNodeId]);
 
   return (
@@ -490,37 +411,39 @@ export function NetworkRadialGraph({
 
 // ─── Helpers ───
 
-function getNodeRadius(node: PositionedNode | NetworkNode): number {
-  if (node.matchType === "neutral") return 26;
-  if (node.matchType === "discoverable") return 12;
-  // Slightly larger for mobile tap targets
-  return Math.min(22, 16 + (node.commonalityCount || 0) * 2);
+function nodeRadius(node: NetworkNode): number {
+  if (node.matchType === "neutral") return 22;
+  if (node.matchType === "high-affinity") return 10;
+  if (node.matchType === "discoverable") return 5;
+  // Strategic — small dots
+  return 7;
 }
 
-function getNodeColor(matchType: string): string {
+function nodeColor(matchType: string): string {
   switch (matchType) {
-    case "high-affinity": return "url(#radialHighAffinity)";
-    case "strategic": return "url(#radialStrategic)";
-    case "discoverable": return "url(#radialDiscoverable)";
-    default: return "url(#radialNeutral)";
+    case "high-affinity": return "url(#radialHA)";
+    case "strategic": return "url(#radialST)";
+    case "discoverable": return "url(#radialDISC)";
+    default: return "url(#radialYOU)";
   }
 }
 
-function getNodeFill(node: PositionedNode): string {
-  if (node.photoUrl) {
-    const patternId = `radial-img-${node.id.replace(/[^a-zA-Z0-9]/g, "_")}`;
-    return `url(#${patternId})`;
-  }
-  return getNodeColor(node.matchType);
+function nodeFill(node: NetworkNode): string {
+  if (node.photoUrl) return `url(#${patternId(node.id)})`;
+  return nodeColor(node.matchType);
 }
 
-function getStrokeColor(matchType: string): string {
+function strokeColor(matchType: string): string {
   switch (matchType) {
     case "high-affinity": return "#14b8a6";
     case "strategic": return "#fbbf24";
     case "discoverable": return "#a78bfa";
     default: return "#06b6d4";
   }
+}
+
+function patternId(id: string): string {
+  return `rimg-${id.replace(/[^a-zA-Z0-9]/g, "_")}`;
 }
 
 function getInitials(name: string): string {
