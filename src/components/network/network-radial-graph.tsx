@@ -54,8 +54,11 @@ export function NetworkRadialGraph({
   const nameLabelSelRef = useRef<TextSel | null>(null);
   const initialsSelRef = useRef<TextSel | null>(null);
   const linksDataRef = useRef<SimLink[]>([]);
+  const nodesDataRef = useRef<SimNode[]>([]);
   const nodeStrengthRef = useRef<Map<string, number>>(new Map());
   const selectedNodeIdRef = useRef<string | null>(null);
+  const zoomRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null);
+  const svgSelRef = useRef<d3.Selection<SVGSVGElement, unknown, null, undefined> | null>(null);
 
   useEffect(() => { selectedNodeIdRef.current = selectedNodeId ?? null; }, [selectedNodeId]);
 
@@ -343,6 +346,11 @@ export function NetworkRadialGraph({
     svg.call(zoom);
     svg.on("dblclick.zoom", null);
 
+    // Store refs for zoom-to-center on selection
+    zoomRef.current = zoom;
+    svgSelRef.current = svg;
+    nodesDataRef.current = nodes;
+
     // Re-apply highlight if a node was already selected
     if (selectedNodeIdRef.current) {
       applyHighlight(selectedNodeIdRef.current);
@@ -355,21 +363,27 @@ export function NetworkRadialGraph({
       circleSelRef.current = null;
       nameLabelSelRef.current = null;
       initialsSelRef.current = null;
+      zoomRef.current = null;
+      svgSelRef.current = null;
     };
   }, [data, dimensions, filter]);
 
-  // ── Highlight helper ──
+  // ── Highlight + zoom-to-center helper ──
   function applyHighlight(selId: string | null) {
     const linkSel = linkSelRef.current;
     const circleSel = circleSelRef.current;
     const nameLabels = nameLabelSelRef.current;
+    const zoom = zoomRef.current;
+    const svgSel = svgSelRef.current;
     if (!linkSel || !circleSel || !nameLabels) return;
 
     const links = linksDataRef.current;
+    const nodes = nodesDataRef.current;
+    const { width, height } = dimensions;
 
     if (!selId) {
-      // Reset — restore per-type opacity
-      circleSel.transition().duration(200)
+      // Reset — restore per-type opacity + zoom out to overview
+      circleSel.transition().duration(300)
         .attr("opacity", d => {
           if (d.matchType === "strategic") {
             const s = nodeStrengthRef.current.get(d.id) ?? 0.5;
@@ -378,17 +392,28 @@ export function NetworkRadialGraph({
           return 1;
         })
         .style("filter", d => d.matchType === "neutral" ? "url(#centerGlow)" : "none");
-      linkSel.transition().duration(200)
+      linkSel.transition().duration(300)
         .attr("stroke", d => d.isDiscoverable ? "rgba(167,139,250,0.15)" : "rgba(255,255,255,0.06)")
         .attr("stroke-width", d => d.isDiscoverable ? 0.8 : Math.max(0.3, d.strength * 1.5));
-      nameLabels.transition().duration(200)
+      nameLabels.transition().duration(300)
         .attr("fill", d => {
           if (d.matchType === "high-affinity") return "rgba(255,255,255,0.85)";
           return "rgba(255,255,255,0)";
         });
+
+      // Smooth zoom back to overview
+      if (zoom && svgSel) {
+        svgSel.transition().duration(500).ease(d3.easeCubicInOut)
+          .call(zoom.transform, d3.zoomIdentity);
+      }
       return;
     }
 
+    // Find selected node position
+    const selNode = nodes.find(n => n.id === selId);
+    if (!selNode || selNode.x == null || selNode.y == null) return;
+
+    // Connected nodes
     const connectedIds = new Set<string>([selId]);
     links.forEach(l => {
       const sId = typeof l.source === "string" ? l.source : (l.source as SimNode).id;
@@ -397,35 +422,46 @@ export function NetworkRadialGraph({
       if (tId === selId) connectedIds.add(sId);
     });
 
-    circleSel.transition().duration(250)
-      .attr("opacity", d => connectedIds.has(d.id) ? 1 : 0.12)
+    // Spotlight — connected nodes visible, everything else nearly invisible
+    circleSel.transition().duration(300)
+      .attr("opacity", d => connectedIds.has(d.id) ? 1 : 0.04)
       .style("filter", d => {
         if (d.id === selId) return "url(#selGlow)";
-        if (d.matchType === "neutral") return "url(#centerGlow)";
+        if (d.matchType === "neutral" && connectedIds.has(d.id)) return "url(#centerGlow)";
         return "none";
       });
 
-    linkSel.transition().duration(250)
+    linkSel.transition().duration(300)
       .attr("stroke", d => {
         const sId = typeof d.source === "string" ? d.source : (d.source as SimNode).id;
         const tId = typeof d.target === "string" ? d.target : (d.target as SimNode).id;
         if (sId === selId || tId === selId) return d.isDiscoverable ? "#c4b5fd" : "#22d3ee";
-        return "rgba(255,255,255,0.02)";
+        return "rgba(255,255,255,0)";
       })
       .attr("stroke-width", d => {
         const sId = typeof d.source === "string" ? d.source : (d.source as SimNode).id;
         const tId = typeof d.target === "string" ? d.target : (d.target as SimNode).id;
-        if (sId === selId || tId === selId) return Math.max(1.5, d.strength * 3);
-        return Math.max(0.3, d.strength * 1.5);
+        if (sId === selId || tId === selId) return Math.max(2, d.strength * 4);
+        return 0;
       });
 
-    // Show names for connected nodes, hide others (center stays unlabeled)
-    nameLabels.transition().duration(250)
+    // Show names for connected nodes only
+    nameLabels.transition().duration(300)
       .attr("fill", d => {
         if (d.matchType === "neutral") return "rgba(255,255,255,0)";
         if (connectedIds.has(d.id)) return "rgba(255,255,255,0.95)";
         return "rgba(255,255,255,0)";
       });
+
+    // Smooth zoom + center on selected node
+    if (zoom && svgSel) {
+      const scale = 1.8;
+      const tx = width / 2 - selNode.x! * scale;
+      const ty = height / 2 - selNode.y! * scale;
+      const transform = d3.zoomIdentity.translate(tx, ty).scale(scale);
+      svgSel.transition().duration(500).ease(d3.easeCubicInOut)
+        .call(zoom.transform, transform);
+    }
   }
 
   // Highlight effect on selection change

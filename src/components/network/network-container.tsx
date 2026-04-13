@@ -420,7 +420,7 @@ export function NetworkContainer() {
         {/* Mobile radial graph - shown on small screens */}
         <div className="md:hidden flex-1 rounded-xl border border-white/10 overflow-hidden relative">
           <NetworkRadialGraph
-            data={enhancedNetworkData}
+            data={networkData}
             filter={filter}
             onNodeClick={(node) => {
               // Single tap — just highlight, no detail sheet
@@ -437,8 +437,8 @@ export function NetworkContainer() {
             }}
             selectedNodeId={selectedNode?.id}
           />
-          {/* Mobile interaction hint */}
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 text-[10px] text-white/40 bg-black/60 backdrop-blur-sm rounded-full px-3 py-1.5 border border-white/10">
+          {/* Mobile interaction hint — always visible, never blocks taps */}
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 pointer-events-none text-[10px] text-white/50 bg-black/70 backdrop-blur-sm rounded-full px-3 py-1.5 border border-white/10">
             Tap to highlight &bull; Double-tap for details &bull; Pinch to zoom
           </div>
         </div>
