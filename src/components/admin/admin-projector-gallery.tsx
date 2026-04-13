@@ -31,7 +31,16 @@ const PROJECTOR_TILES = 6;
 /** Auto-refresh interval for event displays (ms). */
 const PROJECTOR_POLL_MS = 50_000;
 
-/** Accent panels (reference: blue / teal / orange blocks beside photos). */
+/** Tint overlays on photo tiles (keeps color rhythm from earlier solid blocks). */
+const PHOTO_ACCENTS = [
+  "from-[#2563eb]/55 via-[#1d4ed8]/35 to-transparent",
+  "from-[#0d9488]/50 via-[#0f766e]/30 to-transparent",
+  "from-[#ea580c]/45 via-[#c2410c]/25 to-transparent",
+  "from-[#7c3aed]/50 via-[#6d28d9]/30 to-transparent",
+  "from-[#db2777]/45 via-[#be185d]/25 to-transparent",
+] as const;
+
+/** Placeholder / empty-slot wash. */
 const SOLID_ACCENTS = [
   "from-[#2563eb] via-[#1d4ed8] to-[#1e3a8a]",
   "from-[#0d9488] via-[#0f766e] to-[#134e4a]",
@@ -40,67 +49,77 @@ const SOLID_ACCENTS = [
   "from-[#db2777] via-[#be185d] to-[#9d174d]",
 ] as const;
 
-function ProjectorEmptySlot({ accentIndex }: { accentIndex: number }) {
-  const grad = SOLID_ACCENTS[accentIndex % SOLID_ACCENTS.length];
-  return (
-    <div
-      className={cn(
-        "flex min-h-[100px] items-center justify-center rounded-2xl border border-white/10 bg-gradient-to-br p-3 text-center sm:min-h-[120px]",
-        grad,
-        "opacity-40"
-      )}
-    >
-      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/70 sm:text-xs">
-        Awaiting theme
-      </p>
-    </div>
-  );
+function pickFallbackPhotoUrls(
+  themes: ProjectorThemeRow[],
+  excludeTag: string,
+  max: number
+): string[] {
+  const urls: string[] = [];
+  for (const t of themes) {
+    if (t.tag === excludeTag) continue;
+    for (const p of t.samplePhotos) {
+      if (isSafeGalleryImageUrl(p.url)) {
+        urls.push(p.url);
+        if (urls.length >= max) return urls;
+      }
+    }
+  }
+  return urls;
 }
 
-function ProjectorSolidTile({
-  theme,
-  denominator,
-  accentClass,
-  compact,
-  belowPctLabel,
-}: {
-  theme: ProjectorThemeRow;
-  denominator: number;
-  accentClass: string;
-  compact?: boolean;
-  /** When set (slide mode), shown instead of "of N in cohort". */
-  belowPctLabel?: string;
-}) {
-  const tagBg = galleryTagBackground(theme.tag);
-  const pct = Math.round(theme.percent);
+function collectCohortMosaicUrls(themes: ProjectorThemeRow[], max: number): string[] {
+  const urls: string[] = [];
+  for (const t of themes) {
+    for (const p of t.samplePhotos) {
+      if (isSafeGalleryImageUrl(p.url) && !urls.includes(p.url)) {
+        urls.push(p.url);
+        if (urls.length >= max) return urls;
+      }
+    }
+  }
+  return urls;
+}
 
+/** Fill a 2×2 hero collage when we only have 1–3 distinct fallback URLs. */
+function padCollageFour(urls: string[]): string[] {
+  if (urls.length === 0) return [];
+  const out: string[] = [];
+  for (let i = 0; i < 4; i++) out.push(urls[i % urls.length]);
+  return out;
+}
+
+function ProjectorEmptySlot({
+  accentIndex,
+  mosaicUrls = [],
+}: {
+  accentIndex: number;
+  mosaicUrls?: string[];
+}) {
+  const grad = SOLID_ACCENTS[accentIndex % SOLID_ACCENTS.length];
+  const urls = padCollageFour(mosaicUrls.slice(0, 4));
   return (
     <div
       className={cn(
-        "relative flex min-h-0 flex-col justify-end overflow-hidden rounded-2xl border border-white/15 bg-gradient-to-br p-3 shadow-lg sm:p-4",
-        accentClass
+        "relative flex min-h-[100px] items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br p-3 text-center sm:min-h-[120px]",
+        grad,
+        "opacity-[0.92]"
       )}
     >
-      <span
-        className="absolute right-2 top-2 z-10 rounded-full px-2.5 py-0.5 text-[10px] font-semibold lowercase text-white shadow-md sm:text-xs"
-        style={{ backgroundColor: tagBg }}
-      >
-        {theme.tag}
-      </span>
-      <p className="text-[9px] font-medium uppercase tracking-wide text-white/75">
-        #{theme.rank} · {theme.count} {theme.count === 1 ? "person" : "people"} ·{" "}
-        {theme.labeledPhotoCount} photos
-      </p>
-      <p
-        className={cn(
-          "font-bold tabular-nums leading-none tracking-tight text-white drop-shadow-md",
-          compact ? "text-2xl sm:text-3xl" : "text-3xl sm:text-4xl lg:text-5xl"
-        )}
-      >
-        {pct}%
-      </p>
-      <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-white/90 sm:text-xs">
-        {belowPctLabel ?? `of ${denominator.toLocaleString()} in cohort`}
+      {urls.length > 0 ? (
+        <div
+          className="pointer-events-none absolute inset-0 z-0 grid grid-cols-2 grid-rows-2 gap-px bg-black/50"
+          aria-hidden
+        >
+          {urls.map((url, idx) => (
+            <div key={`${url}-${idx}`} className="relative min-h-0">
+              <Image src={url} alt="" fill className="object-cover object-center" sizes="120px" />
+            </div>
+          ))}
+        </div>
+      ) : null}
+      <div className="pointer-events-none absolute inset-0 z-[1] bg-black/55" aria-hidden />
+      <p className="relative z-[2] text-[10px] font-semibold uppercase tracking-[0.12em] text-white/85 sm:text-xs">
+        Awaiting theme
       </p>
     </div>
   );
@@ -111,16 +130,30 @@ function ProjectorPhotoTile({
   denominator,
   hero,
   belowPctLabel,
+  cohortThemes,
+  accentOverlay,
+  compact,
 }: {
   theme: ProjectorThemeRow;
   denominator: number;
   hero?: boolean;
   belowPctLabel?: string;
+  /** Full cohort list for fallback images when this theme has no safe URL. */
+  cohortThemes: ProjectorThemeRow[];
+  accentOverlay?: string;
+  compact?: boolean;
 }) {
-  const img =
-    theme.samplePhotos.find((p) => isSafeGalleryImageUrl(p.url)) ?? theme.samplePhotos[0];
+  const primaryUrl =
+    theme.samplePhotos.find((p) => isSafeGalleryImageUrl(p.url))?.url ?? null;
+  const fallbackUrls = primaryUrl
+    ? []
+    : pickFallbackPhotoUrls(cohortThemes, theme.tag, hero ? 4 : 2);
+  const urlsForCollage = primaryUrl ? [primaryUrl] : fallbackUrls;
+  const useCollage = Boolean(hero && !primaryUrl && fallbackUrls.length >= 2);
   const tagBg = galleryTagBackground(theme.tag);
   const pct = Math.round(theme.percent);
+  const sizesHero = "(max-width: 1024px) 100vw, 45vw";
+  const sizesTile = "(max-width: 1024px) 50vw, 22vw";
 
   return (
     <div
@@ -129,22 +162,48 @@ function ProjectorPhotoTile({
         hero ? "ring-1 ring-cyan-500/25" : "ring-0"
       )}
     >
-      {img ? (
-        <div className="absolute inset-0">
-          <Image
-            src={img.url}
-            alt=""
-            fill
-            className="object-cover object-center"
-            sizes={hero ? "(max-width: 1024px) 100vw, 45vw" : "(max-width: 1024px) 50vw, 22vw"}
-            priority={hero}
-          />
-        </div>
+      {urlsForCollage.length > 0 ? (
+        useCollage ? (
+          <div className="absolute inset-0 z-0 grid grid-cols-2 grid-rows-2 gap-px bg-black">
+            {padCollageFour(urlsForCollage).map((url, idx) => (
+              <div key={`${url}-${idx}`} className="relative min-h-0">
+                <Image
+                  src={url}
+                  alt=""
+                  fill
+                  className="object-cover object-center"
+                  sizes={sizesHero}
+                  priority={hero}
+                />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="absolute inset-0 z-0">
+            <Image
+              src={urlsForCollage[0]}
+              alt=""
+              fill
+              className="object-cover object-center"
+              sizes={hero ? sizesHero : sizesTile}
+              priority={hero}
+            />
+          </div>
+        )
       ) : (
-        <div className="absolute inset-0 bg-gradient-to-br from-zinc-700 via-zinc-900 to-black" />
+        <div className="absolute inset-0 z-0 bg-gradient-to-br from-zinc-700 via-zinc-900 to-black" />
       )}
+      {accentOverlay ? (
+        <div
+          className={cn(
+            "pointer-events-none absolute inset-0 z-[1] bg-gradient-to-br mix-blend-hard-light",
+            accentOverlay
+          )}
+          aria-hidden
+        />
+      ) : null}
       <div
-        className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/95 via-black/35 to-transparent"
+        className="pointer-events-none absolute inset-0 z-[2] bg-gradient-to-t from-black/95 via-black/35 to-transparent"
         aria-hidden
       />
       <span
@@ -161,7 +220,11 @@ function ProjectorPhotoTile({
         <p
           className={cn(
             "font-bold leading-none tracking-tight text-white drop-shadow-lg",
-            hero ? "text-4xl sm:text-5xl lg:text-7xl" : "text-3xl sm:text-4xl lg:text-5xl"
+            compact
+              ? "text-2xl sm:text-3xl lg:text-4xl"
+              : hero
+                ? "text-4xl sm:text-5xl lg:text-7xl"
+                : "text-3xl sm:text-4xl lg:text-5xl"
           )}
         >
           {pct}%
@@ -176,31 +239,35 @@ function ProjectorPhotoTile({
 
 type TileRender =
   | { kind: "hero-photo" }
-  | { kind: "solid"; accent: (typeof SOLID_ACCENTS)[number] }
-  | { kind: "photo" };
+  | { kind: "photo"; accentOverlay?: (typeof PHOTO_ACCENTS)[number] };
 
-/** Bento: hero + colored stat panels + photos — matches reference asymmetry. */
+/** Bento: large hero + photo tiles with optional color wash (all slots prefer real gallery imagery). */
 const TILE_LAYOUT: TileRender[] = [
   { kind: "hero-photo" },
-  { kind: "solid", accent: SOLID_ACCENTS[0] },
+  { kind: "photo", accentOverlay: PHOTO_ACCENTS[0] },
   { kind: "photo" },
-  { kind: "solid", accent: SOLID_ACCENTS[1] },
+  { kind: "photo", accentOverlay: PHOTO_ACCENTS[1] },
   { kind: "photo" },
-  { kind: "solid", accent: SOLID_ACCENTS[2] },
+  { kind: "photo", accentOverlay: PHOTO_ACCENTS[2] },
 ];
 
 function BentoProjectorGrid({
   themes,
+  cohortThemes,
   denominator,
   viewKey,
   belowPctLabel,
 }: {
   themes: ProjectorThemeRow[];
+  /** All themes in cohort (for image fallbacks + empty-slot mosaic). */
+  cohortThemes: ProjectorThemeRow[];
   denominator: number;
   viewKey: string;
   /** Slide mode: short line under % (cohort size lives in the rail). */
   belowPctLabel?: string;
 }) {
+  const emptyMosaic = collectCohortMosaicUrls(cohortThemes, 4);
+
   return (
     <div
       className={cn(
@@ -216,7 +283,13 @@ function BentoProjectorGrid({
         const theme = themes[i];
         const cell = (() => {
           if (!theme) {
-            return <ProjectorEmptySlot key={`e-${i}`} accentIndex={i} />;
+            return (
+              <ProjectorEmptySlot
+                key={`e-${i}`}
+                accentIndex={i}
+                mosaicUrls={emptyMosaic}
+              />
+            );
           }
           if (layout.kind === "hero-photo") {
             return (
@@ -226,18 +299,7 @@ function BentoProjectorGrid({
                 denominator={denominator}
                 hero
                 belowPctLabel={belowPctLabel}
-              />
-            );
-          }
-          if (layout.kind === "solid") {
-            return (
-              <ProjectorSolidTile
-                key={theme.tag}
-                theme={theme}
-                denominator={denominator}
-                accentClass={layout.accent}
-                compact={i === 3}
-                belowPctLabel={belowPctLabel}
+                cohortThemes={cohortThemes}
               />
             );
           }
@@ -247,6 +309,9 @@ function BentoProjectorGrid({
               theme={theme}
               denominator={denominator}
               belowPctLabel={belowPctLabel}
+              cohortThemes={cohortThemes}
+              accentOverlay={layout.accentOverlay}
+              compact={i === 3}
             />
           );
         })();
@@ -508,6 +573,7 @@ export function AdminProjectorGallery() {
         ) : (
           <BentoProjectorGrid
             themes={cohort.themes.slice(0, PROJECTOR_TILES)}
+            cohortThemes={cohort.themes}
             denominator={cohort.denominator}
             viewKey={view}
             belowPctLabel={tileBelowPct}
