@@ -324,14 +324,18 @@ export function NetworkRadialGraph({
     nodeStrengthRef.current = nodeStrength;
 
     // ── Tick ──
-    simulation.on("tick", () => {
+    const applyPositions = () => {
       linkSel
         .attr("x1", d => (d.source as SimNode).x!)
         .attr("y1", d => (d.source as SimNode).y!)
         .attr("x2", d => (d.target as SimNode).x!)
         .attr("y2", d => (d.target as SimNode).y!);
       nodeSel.attr("transform", d => `translate(${d.x},${d.y})`);
-    });
+    };
+    simulation.on("tick", applyPositions);
+
+    // Apply pre-settled positions to DOM (simulation.tick() doesn't fire event handlers)
+    applyPositions();
 
     // ── Touch / click ──
     let tapTimer: ReturnType<typeof setTimeout> | null = null;
