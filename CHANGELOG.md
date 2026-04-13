@@ -4,7 +4,12 @@ All notable changes to NetworkNav (Jynx) will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- "Confirm Your Info" step at end of onboarding questionnaire: users can review and edit their name, title, and company before completing onboarding — catches SSO usernames (e.g., APOTTER16) and missing/incorrect company info (`src/components/questionnaire/confirm-profile-step.tsx`, `src/components/questionnaire/conversational-wizard.tsx`)
+
 ### Changed
+- Consolidate `position` and `title` fields: remove `position` from profile form and registration form since it duplicates `title`; position is now synced to title behind the scenes (`src/components/profile/profile-form.tsx`, `src/components/auth/register-form.tsx`, `src/lib/validations.ts`)
+- Simplify onboarding welcome message to show title and company instead of redundant title/position
 - Switch SAML SSO defaults from dev IdP (`devsso.strategiced.com`) to prod IdP (`sso.strategiced.com`) for Vercel production deployment; add prod IdP signing certificate (`certs/strategic-ed-prod-idp.pem`, `src/lib/saml/config.ts`, `.env.example`)
 
 ### Added

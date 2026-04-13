@@ -17,6 +17,7 @@ import {
   PERSONAL_INTEREST_PHOTO_QUESTION,
 } from "@/lib/questionnaire-data";
 import { PersonalInterestPhotoStep } from "./personal-interest-photo-step";
+import { ConfirmProfileStep } from "./confirm-profile-step";
 import { getCannedReaction } from "@/lib/questionnaire-reactions";
 import { QuestionCard } from "./question-card";
 import { ChatMessage, TypingIndicator } from "./chat-message";
@@ -56,12 +57,10 @@ const COMPLETION_MESSAGE =
 function buildWelcomeLines(profile: {
   firstName: string;
   title: string;
-  position: string;
   company?: string;
 }): string {
-  const deptLine = [profile.title, profile.position].filter(Boolean).join(" — ");
-  const org = profile.company ? ` (${profile.company})` : "";
-  return `Hey ${profile.firstName}! I'm your Global Summit guide. I'll ask a few quick questions (about 3 minutes) to learn more about you and connect you to others with shared interests. Nothing too serious, promise.\n\nFirst, let's confirm your title and department: ${deptLine}${org}`;
+  const org = profile.company ? ` at ${profile.company}` : "";
+  return `Hey ${profile.firstName}! I'm your Global Summit guide. I'll ask a few quick questions (about 3 minutes) to learn more about you and connect you to others with shared interests. Nothing too serious, promise.\n\nI see you're a ${profile.title}${org} — we'll confirm your details at the end.`;
 }
 
 export function ConversationalWizard() {
@@ -90,6 +89,13 @@ export function ConversationalWizard() {
   const [isTyping, setIsTyping] = useState(false);
   const [inputLocked, setInputLocked] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
+  const [isConfirmingProfile, setIsConfirmingProfile] = useState(false);
+  const [profileData, setProfileData] = useState<{
+    name: string;
+    title: string;
+    company: string;
+  } | null>(null);
+  const cachedProfileRef = useRef<Record<string, unknown> | null>(null);
   const [hasStarted, setHasStarted] = useState(false);
   const [welcomeReady, setWelcomeReady] = useState(false);
 
@@ -144,7 +150,6 @@ export function ConversationalWizard() {
       let welcome = buildWelcomeLines({
         firstName: "there",
         title: "your title",
-        position: "your department or role",
       });
 
       try {
@@ -156,7 +161,6 @@ export function ConversationalWizard() {
           welcome = buildWelcomeLines({
             firstName: first,
             title: (p.title || p.position || "Your title").trim(),
-            position: (p.position || p.title || "Your department").trim(),
             company: p.company?.trim(),
           });
         }
@@ -304,12 +308,7 @@ export function ConversationalWizard() {
     setIsTyping(false);
 
     if (isLast) {
-      setChatHistory((prev) => [
-        ...prev,
-        { id: "completion", role: "host", content: COMPLETION_MESSAGE },
-      ]);
-      setIsComplete(true);
-      setInputLocked(false);
+      await beginProfileConfirmation();
       return;
     }
 
@@ -398,6 +397,111 @@ export function ConversationalWizard() {
     void advanceAfterPersonalInterestPhoto();
   }
 
+  function showCompletionMessage() {
+    setChatHistory((prev) => [
+      ...prev,
+      { id: "completion", role: "host", content: COMPLETION_MESSAGE },
+    ]);
+    setIsComplete(true);
+    setInputLocked(false);
+  }
+
+  async function beginProfileConfirmation(finalReaction?: string) {
+    if (finalReaction) {
+      setChatHistory((prev) => [
+        ...prev,
+        { id: "final-reaction", role: "host", content: finalReaction },
+      ]);
+    }
+
+    try {
+      const res = await fetch("/api/profile");
+      const d = await res.json();
+      if (d.success && d.data?.user?.profile) {
+        const p = d.data.user.profile;
+        cachedProfileRef.current = p;
+        setProfileData({
+          name: p.name || "",
+          title: p.title || p.position || "",
+          company: p.company || "",
+        });
+
+        await delay(450);
+        setIsTyping(true);
+        await delay(500);
+        setIsTyping(false);
+
+        setChatHistory((prev) => [
+          ...prev,
+          {
+            id: "confirm-info",
+            role: "host",
+            content:
+              "Before we wrap up, let's make sure your info looks right. You can edit any field below.",
+          },
+        ]);
+
+        setIsConfirmingProfile(true);
+        setInputLocked(false);
+        return;
+      }
+    } catch {
+      // Profile fetch failed — skip confirmation
+    }
+
+    // Fallback: no profile available (demo/anonymous), go straight to complete
+    showCompletionMessage();
+  }
+
+  async function handleProfileConfirmed(updated: {
+    name: string;
+    title: string;
+    company: string;
+  }) {
+    setInputLocked(true);
+
+    const changed =
+      updated.name !== profileData?.name ||
+      updated.title !== profileData?.title ||
+      updated.company !== profileData?.company;
+
+    if (changed) {
+      try {
+        await fetch("/api/profile", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: updated.name,
+            position: updated.title,
+            title: updated.title,
+            company: updated.company,
+          }),
+        });
+      } catch {
+        // Non-blocking — profile can be edited later from settings
+      }
+
+      setChatHistory((prev) => [
+        ...prev,
+        { id: "confirm-response", role: "user", content: "Updated my info" },
+      ]);
+    } else {
+      setChatHistory((prev) => [
+        ...prev,
+        { id: "confirm-response", role: "user", content: "Looks good!" },
+      ]);
+    }
+
+    setIsConfirmingProfile(false);
+
+    await delay(300);
+    setIsTyping(true);
+    await delay(400);
+    setIsTyping(false);
+
+    showCompletionMessage();
+  }
+
   async function handleSubmitAnswer() {
     if (inputLocked || !currentQuestion) return;
 
@@ -482,23 +586,7 @@ export function ConversationalWizard() {
     setIsTyping(false);
 
     if (isLast) {
-      setChatHistory((prev) => [
-        ...prev,
-        { id: "final-reaction", role: "host", content: reaction },
-      ]);
-
-      await delay(450);
-      setIsTyping(true);
-      await delay(500);
-      setIsTyping(false);
-
-      setChatHistory((prev) => [
-        ...prev,
-        { id: "completion", role: "host", content: COMPLETION_MESSAGE },
-      ]);
-
-      setIsComplete(true);
-      setInputLocked(false);
+      await beginProfileConfirmation(reaction);
       return;
     }
 
@@ -628,16 +716,7 @@ export function ConversationalWizard() {
     setIsTyping(false);
 
     if (isLast) {
-      setChatHistory((prev) => [
-        ...prev,
-        {
-          id: "completion",
-          role: "host",
-          content: COMPLETION_MESSAGE,
-        },
-      ]);
-      setIsComplete(true);
-      setInputLocked(false);
+      await beginProfileConfirmation();
       return;
     }
 
@@ -676,7 +755,9 @@ export function ConversationalWizard() {
 
   const progressPercent = isComplete
     ? 100
-    : Math.round((activeQuestionIndex / Math.max(totalQuestions, 1)) * 100);
+    : isConfirmingProfile
+      ? 95
+      : Math.round((activeQuestionIndex / Math.max(totalQuestions, 1)) * 100);
 
   return (
     <div className="min-h-screen flex flex-col max-w-2xl mx-auto bg-zinc-950">
@@ -691,7 +772,9 @@ export function ConversationalWizard() {
           <span className="text-xs text-zinc-500">
             {isComplete
               ? "Done!"
-              : `${activeQuestionIndex + 1} / ${totalQuestions}`}
+              : isConfirmingProfile
+                ? "Almost done!"
+                : `${activeQuestionIndex + 1} / ${totalQuestions}`}
           </span>
         </div>
         <div className="h-0.5 bg-white/5">
@@ -810,6 +893,16 @@ export function ConversationalWizard() {
         ))}
 
         {isTyping && <TypingIndicator />}
+
+        {isConfirmingProfile && profileData && (
+          <div className="mt-4 ml-2 sm:ml-11 space-y-4 animate-slide-up">
+            <ConfirmProfileStep
+              profileData={profileData}
+              onConfirm={(updated) => void handleProfileConfirmed(updated)}
+              disabled={inputLocked}
+            />
+          </div>
+        )}
 
         {isComplete && (
           <div className="flex justify-center mt-6 animate-slide-up">

@@ -57,7 +57,6 @@ export function ProfileForm() {
       if (result.success) {
         reset({
           name: result.data.user.profile.name,
-          position: result.data.user.profile.position,
           title: result.data.user.profile.title,
           company: result.data.user.profile.company || "",
           location: result.data.user.profile.location || "",
@@ -161,7 +160,7 @@ export function ProfileForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: watch("name"),
-          position: watch("position"),
+          position: watch("title"),
           title: watch("title"),
           company: watch("company"),
           location: watch("location"),
@@ -178,7 +177,7 @@ export function ProfileForm() {
       const response = await fetch("/api/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, position: data.title }),
       });
 
       const result = await response.json();
@@ -280,31 +279,17 @@ export function ProfileForm() {
         )}
       </div>
 
-      {/* Position & Title */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="position" className="text-white/80">Position</Label>
-          <Input
-            id="position"
-            {...register("position")}
-            className={`bg-white/5 border-white/20 text-white placeholder:text-white/40 ${errors.position ? "border-red-500" : ""}`}
-          />
-          {errors.position && (
-            <p className="text-sm text-red-400">{errors.position.message}</p>
-          )}
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="title" className="text-white/80">Title</Label>
-          <Input
-            id="title"
-            {...register("title")}
-            className={`bg-white/5 border-white/20 text-white placeholder:text-white/40 ${errors.title ? "border-red-500" : ""}`}
-          />
-          {errors.title && (
-            <p className="text-sm text-red-400">{errors.title.message}</p>
-          )}
-        </div>
+      {/* Title */}
+      <div className="space-y-2">
+        <Label htmlFor="title" className="text-white/80">Title</Label>
+        <Input
+          id="title"
+          {...register("title")}
+          className={`bg-white/5 border-white/20 text-white placeholder:text-white/40 ${errors.title ? "border-red-500" : ""}`}
+        />
+        {errors.title && (
+          <p className="text-sm text-red-400">{errors.title.message}</p>
+        )}
       </div>
 
       {/* Company */}

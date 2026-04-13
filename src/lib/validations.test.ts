@@ -89,10 +89,10 @@ describe("Validation Schemas", () => {
       expect(result.success).toBe(false);
     });
 
-    it("should require position field", () => {
+    it("should accept optional position field", () => {
       const { position, ...withoutPosition } = validData;
       const result = registerSchema.safeParse(withoutPosition);
-      expect(result.success).toBe(false);
+      expect(result.success).toBe(true);
     });
 
     it("should require title field", () => {

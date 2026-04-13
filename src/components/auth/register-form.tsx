@@ -42,7 +42,7 @@ export function RegisterForm() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, position: data.title }),
       });
 
       let result: {
@@ -123,34 +123,18 @@ export function RegisterForm() {
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="position" className="text-white/80">Position</Label>
-          <Input
-            id="position"
-            type="text"
-            placeholder="VP of Product"
-            {...register("position")}
-            className={cn(inputStyles, errors.position && "border-red-500/50")}
-          />
-          {errors.position && (
-            <p className="text-sm text-red-400">{errors.position.message}</p>
-          )}
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="title" className="text-white/80">Title</Label>
-          <Input
-            id="title"
-            type="text"
-            placeholder="Product Leader"
-            {...register("title")}
-            className={cn(inputStyles, errors.title && "border-red-500/50")}
-          />
-          {errors.title && (
-            <p className="text-sm text-red-400">{errors.title.message}</p>
-          )}
-        </div>
+      <div className="space-y-2">
+        <Label htmlFor="title" className="text-white/80">Title</Label>
+        <Input
+          id="title"
+          type="text"
+          placeholder="VP of Product"
+          {...register("title")}
+          className={cn(inputStyles, errors.title && "border-red-500/50")}
+        />
+        {errors.title && (
+          <p className="text-sm text-red-400">{errors.title.message}</p>
+        )}
       </div>
 
       <div className="space-y-2">

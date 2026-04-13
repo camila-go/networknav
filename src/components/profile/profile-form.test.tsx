@@ -45,8 +45,7 @@ describe("ProfileForm", () => {
     await waitFor(() => {
       expect(screen.getByLabelText(/full name/i)).toHaveValue("Jane Doe");
     });
-    expect(screen.getByLabelText(/position/i)).toHaveValue("VP Engineering");
-    expect(screen.getByLabelText(/^title$/i)).toHaveValue("Engineering Leader");
+    expect(screen.getByLabelText(/title/i)).toHaveValue("Engineering Leader");
     expect(screen.getByLabelText(/company/i)).toHaveValue("TechCorp");
     expect(screen.getByLabelText(/location/i)).toHaveValue("San Francisco, CA");
   });

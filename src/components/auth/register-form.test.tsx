@@ -33,7 +33,6 @@ describe("RegisterForm", () => {
     render(<RegisterForm />);
     expect(screen.getByLabelText(/full name/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/position/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/title/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^password$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/confirm password/i)).toBeInTheDocument();
@@ -91,8 +90,7 @@ describe("RegisterForm", () => {
 
     await user.type(screen.getByLabelText(/full name/i), "Jane Smith");
     await user.type(screen.getByLabelText(/email/i), "jane@example.com");
-    await user.type(screen.getByLabelText(/position/i), "VP of Product");
-    await user.type(screen.getByLabelText(/title/i), "Product Leader");
+    await user.type(screen.getByLabelText(/title/i), "VP of Product");
     await user.type(screen.getByLabelText(/^password$/i), "StrongPass1");
     await user.type(screen.getByLabelText(/confirm password/i), "StrongPass1");
     await user.click(screen.getByRole("button", { name: /create account/i }));
@@ -114,8 +112,7 @@ describe("RegisterForm", () => {
 
     await user.type(screen.getByLabelText(/full name/i), "Jane Smith");
     await user.type(screen.getByLabelText(/email/i), "jane@example.com");
-    await user.type(screen.getByLabelText(/position/i), "VP of Product");
-    await user.type(screen.getByLabelText(/title/i), "Product Leader");
+    await user.type(screen.getByLabelText(/title/i), "VP of Product");
     await user.type(screen.getByLabelText(/^password$/i), "StrongPass1");
     await user.type(screen.getByLabelText(/confirm password/i), "StrongPass1");
     await user.click(screen.getByRole("button", { name: /create account/i }));
@@ -137,8 +134,7 @@ describe("RegisterForm", () => {
 
     await user.type(screen.getByLabelText(/full name/i), "Jane Smith");
     await user.type(screen.getByLabelText(/email/i), "jane@example.com");
-    await user.type(screen.getByLabelText(/position/i), "VP of Product");
-    await user.type(screen.getByLabelText(/title/i), "Product Leader");
+    await user.type(screen.getByLabelText(/title/i), "VP of Product");
     await user.type(screen.getByLabelText(/^password$/i), "StrongPass1");
     await user.type(screen.getByLabelText(/confirm password/i), "StrongPass1");
     await user.click(screen.getByRole("button", { name: /create account/i }));
@@ -161,8 +157,7 @@ describe("RegisterForm", () => {
 
     await user.type(screen.getByLabelText(/full name/i), "Jane Smith");
     await user.type(screen.getByLabelText(/email/i), "jane@example.com");
-    await user.type(screen.getByLabelText(/position/i), "VP of Product");
-    await user.type(screen.getByLabelText(/title/i), "Product Leader");
+    await user.type(screen.getByLabelText(/title/i), "VP of Product");
     await user.type(screen.getByLabelText(/^password$/i), "StrongPass1");
     await user.type(screen.getByLabelText(/confirm password/i), "StrongPass1");
     await user.click(screen.getByRole("button", { name: /create account/i }));
