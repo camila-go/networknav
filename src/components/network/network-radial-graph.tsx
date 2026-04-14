@@ -12,6 +12,11 @@ interface DiscoverableContact {
   reason: string;
 }
 
+// Internal type used when synthesizing fallback "via" contacts from the
+// in-graph network (preserves real matchType so the detail sheet opens
+// the correct profile view instead of the discoverable flow).
+type OverlayContact = DiscoverableContact & { realMatchType?: NetworkNode["matchType"] };
+
 interface NetworkRadialGraphProps {
   data: NetworkGraphData | null;
   onNodeClick?: (node: NetworkNode) => void;
@@ -520,7 +525,27 @@ export function NetworkRadialGraph({
       .attr("opacity", d => (d.id === selId && d.matchType !== "neutral") ? 1 : 0);
 
     // ── Render discoverable contacts around selected node ──
-    const contacts = (extendedNetwork[selId] || []).slice(0, 3);
+    // Prefer API-provided extendedNetwork; fall back to other non-selected
+    // network members so the purple "via" overlay always appears on tap.
+    const usedIds = new Set<string>([selId]);
+    const primary: OverlayContact[] = (extendedNetwork[selId] || []).slice(0, 3);
+    primary.forEach(c => usedIds.add(c.id));
+    let contacts: OverlayContact[] = [...primary];
+    if (contacts.length < 3) {
+      const selName = selNode.name || "them";
+      const fallback: OverlayContact[] = nodes
+        .filter(n => !usedIds.has(n.id) && n.matchType !== "neutral" && n.matchType !== "discoverable")
+        .slice(0, 3 - contacts.length)
+        .map(n => ({
+          id: n.id,
+          name: n.name,
+          title: n.title ?? "",
+          company: n.company ?? "",
+          reason: `Also connected via ${selName.split(" ")[0]}`,
+          realMatchType: n.matchType,
+        }));
+      contacts = [...contacts, ...fallback].slice(0, 3);
+    }
     if (dGroup && contacts.length > 0) {
       const discR = 55; // distance from selected node
       const startAngle = -Math.PI / 2; // start from top
@@ -594,7 +619,7 @@ export function NetworkRadialGraph({
             name: contact.name,
             title: contact.title,
             company: contact.company,
-            matchType: "discoverable",
+            matchType: contact.realMatchType ?? "discoverable",
             commonalityCount: 0,
             commonalities: [contact.reason],
           });

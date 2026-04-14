@@ -23,6 +23,7 @@ All notable changes to NetworkNav (Jynx) will be documented in this file.
 - `AttributeConsumingService` with `RequestedAttribute` elements in SP metadata XML so IdP knows which attributes to release: `mail`, `name`, `title`, `company` (`src/lib/saml/config.ts`)
 
 ### Fixed
+- Fix missing purple "via" overlay bubbles when tapping a node in the mobile radial network graph: fall back to other non-selected network members when the API's `extendedNetwork` has no entries for the tapped node, so the overlay always renders; preserve the real matchType on fallback contacts so tapping routes to the correct profile view (`src/components/network/network-radial-graph.tsx`)
 - Fix radial graph off-center on initial mobile load: pre-settle simulation synchronously and apply fit transform immediately instead of waiting for async simulation end; deselect now restores centered view instead of resetting to origin (`src/components/network/network-radial-graph.tsx`)
 - Fix blurred/washed-out initials on radial graph nodes: change text fill from black to white for proper contrast against dark gradient backgrounds (`src/components/network/network-radial-graph.tsx`)
 - Broaden SAML company attribute matching to include PingFederate-style names (`companyName`, `CompanyName`, `organizationName`) (`src/app/api/auth/sso/callback/route.ts`)
