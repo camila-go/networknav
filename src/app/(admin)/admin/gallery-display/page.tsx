@@ -1,11 +1,11 @@
-import { AdminProjectorGallery } from "@/components/admin/admin-projector-gallery";
+import { AdminProjectorDashboard } from "@/components/admin/admin-projector-dashboard";
 
 export const metadata = {
   title: "Gallery projector | Admin",
   description:
-    "16:9 presentation slide of top gallery themes with live cohort stats for event displays",
+    "Live 16:9 stats dashboard showing top gallery activities with rotating photo highlight",
 };
 
 export default function AdminGalleryDisplayPage() {
-  return <AdminProjectorGallery />;
+  return <AdminProjectorDashboard />;
 }
