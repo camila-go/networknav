@@ -37,7 +37,6 @@ export function createMockUserProfile(overrides?: Partial<UserProfile>): UserPro
   counter++;
   return {
     name: `Test User ${counter}`,
-    position: "Engineering Manager",
     title: "Senior Director",
     company: "TestCorp",
     photoUrl: undefined,
@@ -66,7 +65,6 @@ export function createMockStoredUser(overrides?: Partial<StoredUser>): StoredUse
     email: `user${counter}@test.com`,
     passwordHash: "$2a$10$hashedpasswordplaceholder",
     name: `Test User ${counter}`,
-    position: "Engineering Manager",
     title: "Senior Director",
     company: "TestCorp",
     photoUrl: undefined,

@@ -13,7 +13,6 @@ export interface StoredUser {
   passwordHash: string;
   role: UserRole;
   name: string;
-  position: string;
   title: string;
   company?: string;
   photoUrl?: string;

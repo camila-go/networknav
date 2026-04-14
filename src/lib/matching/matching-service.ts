@@ -175,7 +175,7 @@ function createMatch(userId: string, candidate: MatchCandidate): Match {
     candidate.matchType,
     firstName,
     {
-      theirPosition: candidate.user.profile.position,
+      theirTitle: candidate.user.profile.title,
       theirCompany: candidate.user.profile.company,
       seed: `${userId}-${candidate.user.id}`,
     }

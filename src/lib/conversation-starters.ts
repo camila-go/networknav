@@ -1,7 +1,7 @@
 import type { Commonality, MatchType } from "@/types";
 
 export type ConversationStarterExtras = {
-  theirPosition?: string;
+  theirTitle?: string;
   theirCompany?: string;
   viewerFirstName?: string;
   /** Stable id so the same pair gets consistent but distinct templates from other pairs */
@@ -102,7 +102,7 @@ export function buildPersonalizedConversationStarters(
   );
   const name = theirFirstName?.trim() || "there";
   const company = extras?.theirCompany?.trim();
-  const role = extras?.theirPosition?.trim();
+  const role = extras?.theirTitle?.trim();
   const viewer = extras?.viewerFirstName?.trim();
   const org = orgPhrase(company);
 

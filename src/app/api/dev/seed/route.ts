@@ -33,7 +33,6 @@ import type { QuestionnaireData, Connection, Message, Meeting, Notification } fr
 interface SeedUser {
   name: string;
   email: string;
-  position: string;
   title: string;
   company: string;
   location: string;
@@ -46,7 +45,6 @@ const seedUsers: SeedUser[] = [
   {
     name: "Sarah Chen",
     email: "sarah@example.com",
-    position: "VP Engineering",
     title: "Engineering Leader",
     company: "TechCorp",
     location: "San Francisco, CA",
@@ -67,7 +65,6 @@ const seedUsers: SeedUser[] = [
   {
     name: "Marcus Johnson",
     email: "marcus@example.com",
-    position: "CEO",
     title: "Chief Executive Officer",
     company: "FinanceFlow",
     location: "New York, NY",
@@ -88,7 +85,6 @@ const seedUsers: SeedUser[] = [
   {
     name: "Elena Rodriguez",
     email: "elena@example.com",
-    position: "Founder & CEO",
     title: "Healthcare Tech Innovator",
     company: "MedConnect AI",
     location: "Austin, TX",
@@ -109,7 +105,6 @@ const seedUsers: SeedUser[] = [
   {
     name: "David Park",
     email: "david@example.com",
-    position: "Director of Strategy",
     title: "Strategic Advisor",
     company: "McKinsey & Company",
     location: "Chicago, IL",
@@ -130,7 +125,6 @@ const seedUsers: SeedUser[] = [
   {
     name: "Priya Sharma",
     email: "priya@example.com",
-    position: "CTO",
     title: "AI/ML Technology Leader",
     company: "NeuralScale",
     location: "Seattle, WA",
@@ -151,7 +145,6 @@ const seedUsers: SeedUser[] = [
   {
     name: "James Wilson",
     email: "james@example.com",
-    position: "VP Sales",
     title: "Revenue Leader",
     company: "CloudScale Enterprise",
     location: "Denver, CO",
@@ -207,7 +200,6 @@ export async function POST() {
         passwordHash,
         role: 'user',
         name: seed.name,
-        position: seed.position,
         title: seed.title,
         company: seed.company,
         location: seed.location,
@@ -246,7 +238,6 @@ export async function POST() {
               email: seed.email.toLowerCase(),
               password_hash: passwordHash,
               name: seed.name,
-              position: seed.position,
               title: seed.title,
               company: seed.company,
               location: seed.location,
@@ -276,7 +267,6 @@ export async function POST() {
         id: u.id,
         profile: {
           name: u.name,
-          position: u.position,
           title: u.title,
           company: u.company,
         },
@@ -577,7 +567,7 @@ export async function POST() {
     const summary = createdUsers.map((u) => ({
       email: u.email,
       name: u.name,
-      role: `${u.position} at ${u.company}`,
+      role: `${u.title} at ${u.company}`,
       id: u.id,
       matchCount: userMatches.get(u.id)?.length ?? 0,
     }));

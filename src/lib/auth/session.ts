@@ -81,7 +81,7 @@ async function refreshSession(refreshToken: string): Promise<AuthSession | null>
         if (profile) {
           const p = profile as {
             id: string; email: string; password_hash?: string; role?: string;
-            name?: string; position?: string; title?: string; company?: string;
+            name?: string; title?: string; company?: string;
             questionnaire_completed?: boolean;
           };
           const storedUser = {
@@ -90,7 +90,6 @@ async function refreshSession(refreshToken: string): Promise<AuthSession | null>
             passwordHash: p.password_hash || '',
             role: (p.role as "user" | "moderator" | "admin") || 'user',
             name: p.name || 'User',
-            position: p.position || '',
             title: p.title || '',
             company: p.company || '',
             questionnaireCompleted: p.questionnaire_completed || false,

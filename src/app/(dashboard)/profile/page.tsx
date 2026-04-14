@@ -48,7 +48,7 @@ const PROFILE_UI_PREFS_KEY = "nn_profile_ui_prefs_v1";
 interface ConnectionSummary {
   id: string;
   name: string;
-  position?: string;
+  title?: string;
   company?: string;
   photoUrl?: string;
   matchType?: string;
@@ -195,7 +195,7 @@ export default function ProfilePage() {
 
   const filteredConnections = connections.filter(conn =>
     conn.name.toLowerCase().includes(connectionSearch.toLowerCase()) ||
-    conn.position?.toLowerCase().includes(connectionSearch.toLowerCase()) ||
+    conn.title?.toLowerCase().includes(connectionSearch.toLowerCase()) ||
     conn.company?.toLowerCase().includes(connectionSearch.toLowerCase())
   );
 
@@ -359,8 +359,8 @@ export default function ProfilePage() {
                       </Avatar>
                       <div className="text-center">
                         <p className="text-sm font-medium text-white truncate max-w-[120px]">{conn.name}</p>
-                        {conn.position && (
-                          <p className="text-xs text-white/50 truncate max-w-[120px]">{conn.position}</p>
+                        {conn.title && (
+                          <p className="text-xs text-white/50 truncate max-w-[120px]">{conn.title}</p>
                         )}
                       </div>
                       {style && (

@@ -34,7 +34,7 @@ function buildNetworkFromMatches(userId: string): NetworkGraphData {
     nodes.push({
       id: userId,
       name: currentUser.name,
-      title: currentUser.position,
+      title: currentUser.title,
       company: currentUser.company,
       matchType: "neutral",
       commonalityCount: 0,
@@ -65,7 +65,7 @@ function buildNetworkFromMatches(userId: string): NetworkGraphData {
     nodes.push({
       id: match.matchedUserId,
       name: match.matchedUser.profile.name,
-      title: match.matchedUser.profile.title || match.matchedUser.profile.position || "Member",
+      title: match.matchedUser.profile.title || "Member",
       company: match.matchedUser.profile.company,
       photoUrl: match.matchedUser.profile.photoUrl,
       matchType,
@@ -174,7 +174,7 @@ export async function GET(_request: NextRequest) {
       const center = networkData.nodes.find((n) => n.id === currentUserId && n.matchType === "neutral");
       if (center) {
         center.name = profile.name;
-        center.title = profile.position;
+        center.title = profile.title;
         center.company = profile.company;
         center.email = profile.email ?? undefined;
         center.photoUrl = profile.photoUrl;
@@ -236,22 +236,22 @@ export async function GET(_request: NextRequest) {
       Array<{ id: string; name: string; title: string; company: string; reason: string }>
     > = {};
 
-    let outsidePool: Array<{ id: string; name: string; position: string; company: string }> = [];
+    let outsidePool: Array<{ id: string; name: string; title: string; company: string }> = [];
     if (isSupabaseConfigured && supabaseAdmin && otherNodes.length > 0) {
       try {
         const { data: allUsers } = await supabaseAdmin
           .from("user_profiles")
-          .select("id, name, position, title, company")
+          .select("id, name, title, company")
           .eq("is_active", true)
           .limit(80);
 
         if (allUsers) {
-          outsidePool = (allUsers as Array<{ id: string; name: string; position?: string; title?: string; company?: string }>)
+          outsidePool = (allUsers as Array<{ id: string; name: string; title?: string; company?: string }>)
             .filter((u) => !networkUserIds.has(u.id) && u.name?.trim())
             .map((u) => ({
               id: u.id,
               name: u.name,
-              position: u.position || u.title || "Professional",
+              title: u.title || "Professional",
               company: u.company || "",
             }));
         }
@@ -285,7 +285,7 @@ export async function GET(_request: NextRequest) {
           extendedNetwork[node.id] = chunk.map((u) => ({
             id: u.id,
             name: u.name,
-            title: u.position,
+            title: u.title,
             company: u.company,
             reason: `${node.name.split(" ")[0]} may know people in your org`,
           }));

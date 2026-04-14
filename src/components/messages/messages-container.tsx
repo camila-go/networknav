@@ -16,7 +16,7 @@ interface Conversation {
   otherUser?: {
     id: string;
     name: string;
-    position: string;
+    title: string;
     company?: string;
   };
 }

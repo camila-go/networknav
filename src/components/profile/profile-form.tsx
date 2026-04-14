@@ -160,7 +160,6 @@ export function ProfileForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: watch("name"),
-          position: watch("title"),
           title: watch("title"),
           company: watch("company"),
           location: watch("location"),
@@ -177,7 +176,7 @@ export function ProfileForm() {
       const response = await fetch("/api/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...data, position: data.title }),
+        body: JSON.stringify(data),
       });
 
       const result = await response.json();

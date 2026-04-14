@@ -91,7 +91,6 @@ export async function POST(request: NextRequest) {
           try {
             const profileText = createProfileText({
               name: memoryUser?.name,
-              position: memoryUser?.position,
               title: memoryUser?.title,
               company: memoryUser?.company,
               interests,
@@ -123,7 +122,7 @@ export async function POST(request: NextRequest) {
           .single();
 
         if (existingProfile) {
-          // User exists - only update questionnaire data, don't touch name/position/etc
+          // User exists - only update questionnaire data, don't touch name/title/etc
           const { error: updateError } = await supabaseAdmin
             .from('user_profiles')
             .update(updateData as never)
@@ -139,7 +138,6 @@ export async function POST(request: NextRequest) {
             user_id: userId,
             email: userEmail,
             name: memoryUser?.name || 'User',
-            position: memoryUser?.position || null,
             title: memoryUser?.title || null,
             company: memoryUser?.company || null,
             is_active: true,

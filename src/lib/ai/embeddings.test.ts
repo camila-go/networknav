@@ -66,15 +66,13 @@ describe("Embeddings", () => {
   });
 
   describe("createProfileText", () => {
-    it("should include name, position, title, company", () => {
+    it("should include name, title, company", () => {
       const text = createProfileText({
         name: "Jane Doe",
-        position: "CTO",
         title: "Chief Technology Officer",
         company: "Acme Corp",
       });
       expect(text).toContain("Name: Jane Doe");
-      expect(text).toContain("Position: CTO");
       expect(text).toContain("Title: Chief Technology Officer");
       expect(text).toContain("Company: Acme Corp");
     });

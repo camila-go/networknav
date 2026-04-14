@@ -75,7 +75,6 @@ describe("Extended Validation Schemas", () => {
         interests: null,
         location: null,
         age: null,
-        position: null,
         title: null,
         company: null,
         photoUrl: null,

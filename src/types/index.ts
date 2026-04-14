@@ -17,7 +17,6 @@ export interface User {
 
 export interface UserProfile {
   name: string;
-  position: string;
   title: string;
   company?: string;
   photoUrl?: string;
@@ -410,7 +409,6 @@ export interface RegisterCredentials {
   email: string;
   password: string;
   name: string;
-  position: string;
   title: string;
   company?: string;
 }

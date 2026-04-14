@@ -18,7 +18,7 @@ function createUserWithResponses(
 ) {
   return {
     id,
-    profile: { name, position: "Manager", title: "Director" },
+    profile: { name, title: "Director" },
     responses: createMockQuestionnaireData(overrides),
   };
 }

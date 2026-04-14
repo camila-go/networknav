@@ -96,7 +96,6 @@ type RawProfileRow = {
   id: string;
   name: string | null;
   title: string | null;
-  position: string | null;
   company: string | null;
   location: string | null;
   questionnaire_data: Record<string, unknown> | null;
@@ -131,7 +130,7 @@ export async function GET() {
 
     const { data: allProfiles, error: allErr } = await supabaseAdmin
       .from("user_profiles")
-      .select("id, name, title, position, company, location, questionnaire_data");
+      .select("id, name, title, company, location, questionnaire_data");
 
     if (allErr) throw allErr;
 
@@ -144,7 +143,6 @@ export async function GET() {
         id: row.id,
         name: row.name,
         title: row.title,
-        position: row.position,
         company: row.company,
         location: row.location,
       });

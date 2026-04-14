@@ -40,20 +40,7 @@ describe("buildThemeEnrichment", () => {
     expect(kayaking!.topCompanies[0]).toEqual({ value: "Acme", count: 2, percent: 66.7 });
   });
 
-  it("falls back to position when title missing", () => {
-    const photos: EnrichmentPhotoRow[] = [
-      { user_id: "a", activity_tag: "fishing" },
-      { user_id: "b", activity_tag: "fishing" },
-    ];
-    const profiles = new Map<string, EnrichmentProfile>([
-      ["a", profile("a", { title: null, position: "Founder" })],
-      ["b", profile("b", { title: null, position: "Founder" })],
-    ]);
-    const result = buildThemeEnrichment(photos, profiles, new Map());
-    expect(result.get("fishing")!.topTitles[0].value).toBe("Founder");
-  });
-
-  it("computes mode for growthArea and talkTopic from questionnaire", () => {
+it("computes mode for growthArea and talkTopic from questionnaire", () => {
     const photos: EnrichmentPhotoRow[] = [
       { user_id: "a", activity_tag: "yoga" },
       { user_id: "b", activity_tag: "yoga" },

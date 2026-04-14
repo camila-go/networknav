@@ -62,9 +62,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { email, password, name, position, title, company } = result.data;
-    
-    console.log('📝 Registration attempt:', { email, name, position, title, company });
+    const { email, password, name, title, company } = result.data;
+
+    console.log('📝 Registration attempt:', { email, name, title, company });
 
     // Check if user already exists in memory
     if (users.has(email.toLowerCase())) {
@@ -89,7 +89,6 @@ export async function POST(request: NextRequest) {
       passwordHash,
       role: 'user' as const,
       name,
-      position: position ?? title,
       title,
       company: company ?? "",
       questionnaireCompleted: false,
@@ -122,7 +121,6 @@ export async function POST(request: NextRequest) {
         email: email.toLowerCase(),
         password_hash: passwordHash,
         name,
-        position,
         title,
         company,
         questionnaire_completed: false,
@@ -179,7 +177,6 @@ export async function POST(request: NextRequest) {
             email: user.email,
             profile: {
               name: user.name,
-              position: user.position,
               title: user.title,
               company: user.company,
             },

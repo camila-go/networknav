@@ -45,7 +45,6 @@ describe("Validation Schemas", () => {
       password: "StrongPass1",
       confirmPassword: "StrongPass1",
       name: "John Doe",
-      position: "Engineering Manager",
       title: "Senior Director",
       company: "TestCorp",
     };
@@ -87,12 +86,6 @@ describe("Validation Schemas", () => {
     it("should reject name under 2 characters", () => {
       const result = registerSchema.safeParse({ ...validData, name: "A" });
       expect(result.success).toBe(false);
-    });
-
-    it("should accept optional position field", () => {
-      const { position, ...withoutPosition } = validData;
-      const result = registerSchema.safeParse(withoutPosition);
-      expect(result.success).toBe(true);
     });
 
     it("should require title field", () => {
@@ -150,7 +143,6 @@ describe("Validation Schemas", () => {
     it("should accept valid profile data", () => {
       const result = profileSchema.safeParse({
         name: "Jane Doe",
-        position: "CTO",
         title: "Chief Technology Officer",
       });
       expect(result.success).toBe(true);
@@ -159,7 +151,6 @@ describe("Validation Schemas", () => {
     it("should accept optional fields", () => {
       const result = profileSchema.safeParse({
         name: "Jane Doe",
-        position: "CTO",
         title: "CTO",
         company: "Acme",
         location: "NYC",
@@ -171,7 +162,6 @@ describe("Validation Schemas", () => {
     it("should reject invalid photoUrl", () => {
       const result = profileSchema.safeParse({
         name: "Jane Doe",
-        position: "CTO",
         title: "CTO",
         photoUrl: "not-a-url",
       });
@@ -181,7 +171,6 @@ describe("Validation Schemas", () => {
     it("should accept empty string photoUrl", () => {
       const result = profileSchema.safeParse({
         name: "Jane Doe",
-        position: "CTO",
         title: "CTO",
         photoUrl: "",
       });

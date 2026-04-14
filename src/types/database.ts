@@ -171,7 +171,6 @@ export type UserProfileRow = {
   role: string;
 
   // Extended fields for Jynx leadership profiles
-  position?: string;
   title?: string;
   company?: string;
   photo_url?: string;
@@ -196,7 +195,6 @@ export type UserProfileInsert = {
   blocked_users?: string[];
   created_at?: string;
   updated_at?: string;
-  position?: string;
   title?: string;
   company?: string;
   photo_url?: string;
@@ -220,7 +218,6 @@ export type UserProfileUpdate = {
   email_verified?: boolean;
   blocked_users?: string[];
   updated_at?: string;
-  position?: string;
   title?: string;
   company?: string;
   photo_url?: string;

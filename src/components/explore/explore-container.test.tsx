@@ -75,7 +75,7 @@ const mockResults: AttendeeSearchResult[] = [
   {
     user: {
       id: "user-1",
-      profile: { name: "Alice Johnson", position: "CTO", title: "Tech Leader", company: "TechCo" },
+      profile: { name: "Alice Johnson", title: "Tech Leader", company: "TechCo" },
       questionnaireCompleted: true,
     },
     matchPercentage: 92,
@@ -84,7 +84,7 @@ const mockResults: AttendeeSearchResult[] = [
   {
     user: {
       id: "user-2",
-      profile: { name: "Bob Smith", position: "VP Sales", title: "Sales Leader", company: "SalesCo" },
+      profile: { name: "Bob Smith", title: "Sales Leader", company: "SalesCo" },
       questionnaireCompleted: true,
     },
     matchPercentage: 78,

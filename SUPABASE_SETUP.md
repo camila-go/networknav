@@ -637,3 +637,13 @@ CREATE INDEX IF NOT EXISTS idx_moderation_queue_created ON moderation_queue(crea
 CREATE INDEX IF NOT EXISTS idx_moderation_queue_user ON moderation_queue(user_id);
 ```
 
+
+---
+
+## Drop legacy `position` column
+
+The `position` field has been removed from user profiles (consolidated into `title`). Drop the column:
+
+```sql
+ALTER TABLE user_profiles DROP COLUMN IF EXISTS position;
+```

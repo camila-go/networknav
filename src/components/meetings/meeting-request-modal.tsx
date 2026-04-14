@@ -297,7 +297,7 @@ export function MeetingRequestModal({
             </div>
           </DialogTitle>
           <DialogDescription className="text-white/60">
-            {recipient.profile.position}
+            {recipient.profile.title}
             {recipient.profile.company && ` at ${recipient.profile.company}`}
           </DialogDescription>
         </DialogHeader>

@@ -34,7 +34,6 @@ export const users = pgTable("users", {
   email: varchar("email", { length: 255 }).notNull().unique(),
   passwordHash: text("password_hash").notNull(),
   name: varchar("name", { length: 255 }).notNull(),
-  position: varchar("position", { length: 255 }).notNull(),
   title: varchar("title", { length: 255 }).notNull(),
   company: varchar("company", { length: 255 }),
   photoUrl: text("photo_url"),

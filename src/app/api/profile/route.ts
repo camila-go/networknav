@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
           const { data: byId } = await supabaseAdmin
             .from("user_profiles")
             .select(
-              "id, email, name, position, title, company, location, photo_url, bio"
+              "id, email, name, title, company, location, photo_url, bio"
             )
             .eq("id", currentUserId)
             .maybeSingle();
@@ -49,7 +49,6 @@ export async function GET(request: NextRequest) {
             id: string;
             email: string;
             name?: string;
-            position?: string;
             title?: string;
             company?: string;
             location?: string;
@@ -63,8 +62,7 @@ export async function GET(request: NextRequest) {
               passwordHash: "",
               role: "user" as UserRole,
               name: row.name || "User",
-              position: row.position || "",
-              title: row.title || row.position || "",
+              title: row.title || "",
               company: row.company || "",
               location: row.location,
               photoUrl: row.photo_url,
@@ -84,7 +82,7 @@ export async function GET(request: NextRequest) {
           const { data: byEmail } = await supabaseAdmin
             .from("user_profiles")
             .select(
-              "id, email, name, position, title, company, location, photo_url, bio"
+              "id, email, name, title, company, location, photo_url, bio"
             )
             .eq("email", session.email.toLowerCase())
             .maybeSingle();
@@ -92,7 +90,6 @@ export async function GET(request: NextRequest) {
             id: string;
             email: string;
             name?: string;
-            position?: string;
             title?: string;
             company?: string;
             location?: string;
@@ -106,8 +103,7 @@ export async function GET(request: NextRequest) {
               passwordHash: "",
               role: "user" as UserRole,
               name: row.name || "User",
-              position: row.position || "",
-              title: row.title || row.position || "",
+              title: row.title || "",
               company: row.company || "",
               location: row.location,
               photoUrl: row.photo_url,
@@ -137,8 +133,7 @@ export async function GET(request: NextRequest) {
             email: currentUser.email,
             profile: {
               name: currentUser.name,
-              position: currentUser.position,
-              title: currentUser.title || currentUser.position,
+              title: currentUser.title,
               company: currentUser.company,
               location: currentUser.location,
               photoUrl: currentUser.photoUrl,
@@ -175,8 +170,7 @@ export async function GET(request: NextRequest) {
             id: supabaseUser.id,
             email: supabaseUser.email,
             name: supabaseUser.name,
-            position: supabaseUser.position,
-            title: supabaseUser.title || supabaseUser.position,
+            title: supabaseUser.title || "",
             company: supabaseUser.company,
             location: supabaseUser.location,
             photoUrl: supabaseUser.photo_url,
@@ -202,8 +196,7 @@ export async function GET(request: NextRequest) {
           id: targetUser.id,
           profile: {
             name: targetUser.name,
-            position: targetUser.position,
-            title: targetUser.title || targetUser.position,
+            title: targetUser.title,
             company: targetUser.company,
             location: targetUser.location,
             photoUrl: targetUser.photoUrl,
@@ -247,7 +240,7 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const { name, position, title, company, location, photoUrl } = result.data;
+    const { name, title, company, location, photoUrl } = result.data;
 
     // Find and update user
     const user = users.get(session.email);
@@ -259,7 +252,6 @@ export async function PATCH(request: NextRequest) {
     }
 
     user.name = name;
-    user.position = position ?? title;
     user.title = title;
     user.company = company ?? "";
     if (location !== undefined) user.location = location;
@@ -275,7 +267,6 @@ export async function PATCH(request: NextRequest) {
           .from("user_profiles")
           .update({
             name,
-            position,
             title,
             company,
             location: location ?? null,
@@ -297,7 +288,6 @@ export async function PATCH(request: NextRequest) {
           email: user.email,
           profile: {
             name: user.name,
-            position: user.position,
             title: user.title,
             company: user.company,
             location: user.location,

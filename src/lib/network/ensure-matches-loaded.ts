@@ -47,7 +47,7 @@ export async function ensureMatchesLoaded(
 
   const { data: profiles, error } = await supabaseAdmin
     .from("user_profiles")
-    .select("id, name, email, position, title, company, photo_url, questionnaire_data")
+    .select("id, name, email, title, company, photo_url, questionnaire_data")
     .eq("is_active", true)
     .limit(80);
 
@@ -57,7 +57,6 @@ export async function ensureMatchesLoaded(
     id: string;
     name: string;
     email?: string;
-    position?: string;
     title?: string;
     company?: string;
     photo_url?: string;
@@ -96,8 +95,8 @@ export async function ensureMatchesLoaded(
       commonalities = [
         {
           category: "professional" as const,
-          description: p.position
-            ? `${p.position} at ${p.company || "their organization"}`
+          description: p.title
+            ? `${p.title} at ${p.company || "their organization"}`
             : "Fellow conference attendee",
           weight: 0.6,
         },
@@ -113,7 +112,6 @@ export async function ensureMatchesLoaded(
         email: p.email,
         profile: {
           name: p.name || "Anonymous",
-          position: p.position || "",
           title: p.title || "",
           company: p.company,
           photoUrl: p.photo_url,

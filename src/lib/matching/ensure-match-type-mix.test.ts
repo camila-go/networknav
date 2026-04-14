@@ -17,7 +17,7 @@ function row(
       matchedUserId: id,
       matchedUser: {
         id,
-        profile: { name: `User ${id}`, position: "", title: "", company: "" },
+        profile: { name: `User ${id}`, title: "", company: "" },
         questionnaireCompleted: true,
       },
       type,

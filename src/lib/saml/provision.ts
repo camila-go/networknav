@@ -49,8 +49,7 @@ export async function provisionSamlUser(
           passwordHash: "SAML_SSO_NO_PASSWORD",
           role: (data.role || "user") as UserRole,
           name: data.name,
-          position: data.position || data.title || "",
-          title: data.title || data.position || "",
+          title: data.title || "",
           company: data.company || undefined,
           photoUrl: data.photo_url || undefined,
           location: data.location || undefined,
@@ -71,7 +70,6 @@ export async function provisionSamlUser(
       ...existing,
       name: attrs.name || existing.name,
       title: attrs.title || existing.title,
-      position: attrs.title || existing.position, // same IdP field
       company: attrs.company ?? existing.company,
       updatedAt: new Date(),
     };
@@ -85,7 +83,6 @@ export async function provisionSamlUser(
         .update({
           name: updated.name,
           title: updated.title,
-          position: updated.position,
           company: updated.company,
           role: updated.role,
           updated_at: updated.updatedAt.toISOString(),
@@ -121,7 +118,6 @@ export async function provisionSamlUser(
     role: initialRole,
     name: attrs.name,
     title: attrs.title,
-    position: attrs.title, // same IdP field mapped to both
     company: attrs.company,
     questionnaireCompleted: false,
     createdAt: now,
@@ -143,7 +139,6 @@ export async function provisionSamlUser(
           password_hash: passwordHash,
           role: newUser.role,
           name: newUser.name,
-          position: newUser.position,
           title: newUser.title,
           company: newUser.company,
           questionnaire_completed: false,

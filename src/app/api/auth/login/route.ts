@@ -93,7 +93,6 @@ async function findUserFromSupabase(email: string): Promise<{
   passwordHash: string;
   role: UserRole;
   name: string;
-  position: string;
   title: string;
   company: string;
   questionnaireCompleted: boolean;
@@ -116,7 +115,6 @@ async function findUserFromSupabase(email: string): Promise<{
       password_hash?: string;
       role?: string;
       name?: string;
-      position?: string;
       title?: string;
       company?: string;
       questionnaire_completed?: boolean;
@@ -140,7 +138,6 @@ async function findUserFromSupabase(email: string): Promise<{
       passwordHash: typedProfile.password_hash,
       role: (typedProfile.role as UserRole) || 'user',
       name: typedProfile.name || 'User',
-      position: typedProfile.position || '',
       title: typedProfile.title || '',
       company: typedProfile.company || '',
       questionnaireCompleted: typedProfile.questionnaire_completed || false,
@@ -219,7 +216,6 @@ export async function POST(request: NextRequest) {
           passwordHash: supabaseUser.passwordHash,
           role: supabaseUser.role,
           name: supabaseUser.name,
-          position: supabaseUser.position,
           title: supabaseUser.title,
           company: supabaseUser.company,
           questionnaireCompleted: supabaseUser.questionnaireCompleted,
@@ -308,7 +304,6 @@ export async function POST(request: NextRequest) {
           role: userRole,
           profile: {
             name: user.name,
-            position: user.position,
             title: user.title,
             company: user.company,
           },

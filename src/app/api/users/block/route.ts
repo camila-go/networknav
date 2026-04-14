@@ -193,7 +193,7 @@ export async function GET(req: NextRequest) {
     // Get details of blocked users
     const { data: blockedUsers, error } = await supabaseAdmin
       .from('user_profiles')
-      .select('id, name, photo_url, position, company')
+      .select('id, name, photo_url, title, company')
       .in('id', blockedUserIds);
 
     if (error) {

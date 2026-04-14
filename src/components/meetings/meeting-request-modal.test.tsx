@@ -24,7 +24,6 @@ const mockRecipient: PublicUser = {
   id: "user-2",
   profile: {
     name: "Alice Johnson",
-    position: "CTO",
     title: "Tech Leader",
     company: "TechCorp",
   },
@@ -69,7 +68,7 @@ describe("MeetingRequestModal", () => {
   it("should display recipient info", () => {
     renderModal();
     expect(screen.getByText("Alice Johnson")).toBeInTheDocument();
-    expect(screen.getByText(/CTO at TechCorp/)).toBeInTheDocument();
+    expect(screen.getByText(/Tech Leader at TechCorp/)).toBeInTheDocument();
   });
 
   it("should display meeting type options", () => {

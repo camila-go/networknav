@@ -23,7 +23,6 @@ import { SHOW_GAMIFICATION_UI } from "@/lib/feature-flags";
 interface UserProfile {
   id: string;
   name: string;
-  position: string;
   title: string;
   company?: string;
   photoUrl?: string;
@@ -157,7 +156,6 @@ export default function UserProfilePage() {
               if (directProfileData.success && directProfileData.data?.user?.profile) {
                 setProfile({
                   ...directProfileData.data.user.profile,
-                  position: directProfileData.data.user.profile.position || directProfileData.data.user.profile.title,
                 });
                 if (directProfileData.data.user.email) setUserEmail(directProfileData.data.user.email);
               }
@@ -174,7 +172,6 @@ export default function UserProfilePage() {
             if (directProfileData.success && directProfileData.data?.user?.profile) {
               setProfile({
                 ...directProfileData.data.user.profile,
-                position: directProfileData.data.user.profile.position || directProfileData.data.user.profile.title,
               });
               if (directProfileData.data.user.email) setUserEmail(directProfileData.data.user.email);
             }
@@ -189,14 +186,14 @@ export default function UserProfilePage() {
             (m: {
               id: string;
               name: string;
-              position: string;
+              title: string;
               company?: string;
               matchType: string;
               photoUrl?: string;
             }) => ({
               id: m.id,
               name: m.name,
-              title: m.position,
+              title: m.title,
               company: m.company,
               matchType: m.matchType as "high-affinity" | "strategic",
               photoUrl: m.photoUrl,
@@ -334,8 +331,7 @@ export default function UserProfilePage() {
 
             <div className="flex items-center gap-2 text-white/70 mb-1">
               <Briefcase className="h-4 w-4 shrink-0" />
-              <span className="truncate">{profile.position}</span>
-              {profile.title && <span className="text-white/50 truncate">• {profile.title}</span>}
+              <span className="truncate">{profile.title}</span>
             </div>
 
             {profile.company && (

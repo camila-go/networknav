@@ -21,7 +21,7 @@ interface Conversation {
   otherUser?: {
     id: string;
     name: string;
-    position: string;
+    title: string;
     company?: string;
   };
 }
@@ -68,7 +68,7 @@ export function ChatWindow({
   const otherUser = conversation?.otherUser || (newConversation ? {
     id: newConversation.userId,
     name: newConversation.userName,
-    position: "",
+    title: "",
     company: undefined,
   } : undefined);
   const connectionId = conversation?.connectionId;
@@ -387,7 +387,7 @@ export function ChatWindow({
               <span className="text-cyan-400">typing...</span>
             ) : (
               <>
-                {otherUser?.position}
+                {otherUser?.title}
                 {otherUser?.company && ` at ${otherUser.company}`}
               </>
             )}

@@ -160,7 +160,7 @@ export function ConversationalWizard() {
           const first = String(p.name).trim().split(/\s+/)[0] || "there";
           welcome = buildWelcomeLines({
             firstName: first,
-            title: (p.title || p.position || "Your title").trim(),
+            title: (p.title || "Your title").trim(),
             company: p.company?.trim(),
           });
         }
@@ -422,7 +422,7 @@ export function ConversationalWizard() {
         cachedProfileRef.current = p;
         setProfileData({
           name: p.name || "",
-          title: p.title || p.position || "",
+          title: p.title || "",
           company: p.company || "",
         });
 
@@ -472,7 +472,6 @@ export function ConversationalWizard() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             name: updated.name,
-            position: updated.title,
             title: updated.title,
             company: updated.company,
           }),

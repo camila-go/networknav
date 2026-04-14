@@ -14,7 +14,6 @@ export interface ProfileUpdateRequest {
   interests?: string[] | null;
   location?: string | null;
   age?: number;
-  position?: string;
   title?: string;
   company?: string;
   photoUrl?: string;
@@ -29,7 +28,6 @@ export interface ProfileUpdateResponse {
     interests?: string[] | null;
     location?: string | null;
     age?: number | null;
-    position?: string;
     title?: string;
     company?: string;
   };
@@ -56,7 +54,6 @@ export interface MatchWithProfile {
     interests?: string[] | null;
     location?: string | null;
     age?: number | null;
-    position?: string;
     title?: string;
     company?: string;
     photo_url?: string;

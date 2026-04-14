@@ -42,7 +42,7 @@ export function RegisterForm() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ ...data, position: data.title }),
+        body: JSON.stringify(data),
       });
 
       let result: {

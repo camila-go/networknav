@@ -44,7 +44,7 @@ function createConversation(overrides = {}) {
     otherUser: {
       id: "user-2",
       name: "Sarah Chen",
-      position: "VP of Engineering",
+      title: "VP of Engineering",
       company: "TechCorp",
     },
     ...overrides,

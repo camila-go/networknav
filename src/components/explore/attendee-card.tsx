@@ -62,10 +62,10 @@ export function AttendeeCard({
             {
               category: "professional",
               description:
-                user.profile.position && user.profile.company
-                  ? `${user.profile.position} at ${user.profile.company}`
-                  : user.profile.position
-                    ? user.profile.position
+                user.profile.title && user.profile.company
+                  ? `${user.profile.title} at ${user.profile.company}`
+                  : user.profile.title
+                    ? user.profile.title
                     : "Fellow attendee",
               weight: 0.6,
             },
@@ -75,7 +75,7 @@ export function AttendeeCard({
       matchType,
       user.profile.name.split(/\s+/)[0],
       {
-        theirPosition: user.profile.position,
+        theirTitle: user.profile.title,
         theirCompany: user.profile.company ?? undefined,
         viewerFirstName,
         seed: `${user.id}-explore`,
@@ -85,7 +85,7 @@ export function AttendeeCard({
     topCommonalities,
     matchType,
     user.profile.name,
-    user.profile.position,
+    user.profile.title,
     user.profile.company,
     viewerFirstName,
     user.id,
@@ -93,10 +93,8 @@ export function AttendeeCard({
 
   const profileUrl = `/user/${user.id}`;
 
-  const title = user.profile.title?.trim();
-  const position = user.profile.position?.trim();
-  const teamPositionLine =
-    title && position ? `${title} | ${position}` : position || title || "";
+  const title = user.profile.title?.trim() || "";
+  const teamPositionLine = title;
 
   const scorePercent = Math.min(100, Math.max(0, Math.round(matchPercentage)));
   const barWidth = `${scorePercent}%`;

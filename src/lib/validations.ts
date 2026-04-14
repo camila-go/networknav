@@ -20,7 +20,6 @@ export const registerSchema = z
       .regex(/[0-9]/, "Password must contain at least one number"),
     confirmPassword: z.string(),
     name: z.string().min(2, "Name must be at least 2 characters"),
-    position: z.string().optional(),
     title: z.string().min(2, "Title is required"),
     company: z.string().optional(),
   })
@@ -54,7 +53,6 @@ export const resetPasswordSchema = z
 
 export const profileSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
-  position: z.string().optional(),
   title: z.string().min(2, "Title is required"),
   company: z.string().optional(),
   location: z.string().optional(),

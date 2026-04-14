@@ -16,7 +16,6 @@ function getUserById(userId: string): PublicUser | null {
         id: user.id,
         profile: {
           name: user.name,
-          position: user.position,
           title: user.title,
           company: user.company,
           photoUrl: user.photoUrl,
@@ -34,14 +33,14 @@ function getUserById(userId: string): PublicUser | null {
 
 function getDemoUser(userId: string): PublicUser | null {
   const demoUsers: Record<string, PublicUser> = {
-    "demo-sarah": { id: "demo-sarah", profile: { name: "Sarah Chen", position: "VP of Engineering", title: "Engineering Leader", company: "TechCorp" }, questionnaireCompleted: true },
-    "demo-marcus": { id: "demo-marcus", profile: { name: "Marcus Johnson", position: "Chief People Officer", title: "HR Executive", company: "GrowthStartup" }, questionnaireCompleted: true },
-    "demo-elena": { id: "demo-elena", profile: { name: "Elena Rodriguez", position: "CEO", title: "Founder & CEO", company: "InnovateCo" }, questionnaireCompleted: true },
-    "demo-david": { id: "demo-david", profile: { name: "David Park", position: "VP of Product", title: "Product Leader", company: "ScaleUp Inc" }, questionnaireCompleted: true },
-    "demo-aisha": { id: "demo-aisha", profile: { name: "Aisha Patel", position: "CTO", title: "Technology Executive", company: "FinanceFlow" }, questionnaireCompleted: true },
-    "demo-james": { id: "demo-james", profile: { name: "James Wilson", position: "Director of Operations", title: "Operations Leader", company: "LogiTech Solutions" }, questionnaireCompleted: true },
-    "demo-lisa": { id: "demo-lisa", profile: { name: "Lisa Thompson", position: "Senior Manager", title: "Marketing Leader", company: "BrandCo" }, questionnaireCompleted: true },
-    "demo-michael": { id: "demo-michael", profile: { name: "Michael Brown", position: "SVP Sales", title: "Sales Executive", company: "EnterpriseNow" }, questionnaireCompleted: true },
+    "demo-sarah": { id: "demo-sarah", profile: { name: "Sarah Chen", title: "Engineering Leader", company: "TechCorp" }, questionnaireCompleted: true },
+    "demo-marcus": { id: "demo-marcus", profile: { name: "Marcus Johnson", title: "HR Executive", company: "GrowthStartup" }, questionnaireCompleted: true },
+    "demo-elena": { id: "demo-elena", profile: { name: "Elena Rodriguez", title: "Founder & CEO", company: "InnovateCo" }, questionnaireCompleted: true },
+    "demo-david": { id: "demo-david", profile: { name: "David Park", title: "Product Leader", company: "ScaleUp Inc" }, questionnaireCompleted: true },
+    "demo-aisha": { id: "demo-aisha", profile: { name: "Aisha Patel", title: "Technology Executive", company: "FinanceFlow" }, questionnaireCompleted: true },
+    "demo-james": { id: "demo-james", profile: { name: "James Wilson", title: "Operations Leader", company: "LogiTech Solutions" }, questionnaireCompleted: true },
+    "demo-lisa": { id: "demo-lisa", profile: { name: "Lisa Thompson", title: "Marketing Leader", company: "BrandCo" }, questionnaireCompleted: true },
+    "demo-michael": { id: "demo-michael", profile: { name: "Michael Brown", title: "Sales Executive", company: "EnterpriseNow" }, questionnaireCompleted: true },
   };
   return demoUsers[userId] || null;
 }
@@ -52,7 +51,7 @@ async function getUserFromSupabase(userId: string): Promise<PublicUser | null> {
   
   const { data, error } = await supabaseAdmin
     .from('user_profiles')
-    .select('id, name, position, title, company, photo_url, location, questionnaire_completed')
+    .select('id, name, title, company, photo_url, location, questionnaire_completed')
     .eq('id', userId)
     .single();
   
@@ -62,7 +61,6 @@ async function getUserFromSupabase(userId: string): Promise<PublicUser | null> {
   const row = data as {
     id: string;
     name: string;
-    position?: string;
     title?: string;
     company?: string;
     photo_url?: string;
@@ -74,7 +72,6 @@ async function getUserFromSupabase(userId: string): Promise<PublicUser | null> {
     id: row.id,
     profile: {
       name: row.name,
-      position: row.position || '',
       title: row.title || '',
       company: row.company,
       photoUrl: row.photo_url,

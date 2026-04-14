@@ -35,7 +35,6 @@ export function createProfileText(profile: {
   interests?: string[];
   location?: string;
   age?: number;
-  position?: string;
   title?: string;
   company?: string;
   questionnaireData?: Record<string, unknown>;
@@ -45,7 +44,6 @@ export function createProfileText(profile: {
   // Basic profile info
   if (profile.name) parts.push(`Name: ${profile.name}`);
   if (profile.bio) parts.push(`Bio: ${profile.bio}`);
-  if (profile.position) parts.push(`Position: ${profile.position}`);
   if (profile.title) parts.push(`Title: ${profile.title}`);
   if (profile.company) parts.push(`Company: ${profile.company}`);
   if (profile.location) parts.push(`Location: ${profile.location}`);

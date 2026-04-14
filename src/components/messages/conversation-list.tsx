@@ -18,7 +18,7 @@ interface Conversation {
   otherUser?: {
     id: string;
     name: string;
-    position: string;
+    title: string;
     company?: string;
   };
 }
@@ -164,7 +164,7 @@ function ConversationItem({
         </div>
 
         <p className="text-sm text-white/60 truncate">
-          {otherUser?.position}
+          {otherUser?.title}
           {otherUser?.company && ` at ${otherUser.company}`}
         </p>
 

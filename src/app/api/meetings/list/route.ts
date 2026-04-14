@@ -44,7 +44,6 @@ export async function GET(req: NextRequest) {
           name,
           email,
           photo_url,
-          position,
           company
         ),
         guest:user_profiles!guest_user_id (
@@ -52,7 +51,6 @@ export async function GET(req: NextRequest) {
           name,
           email,
           photo_url,
-          position,
           company
         )
       `)

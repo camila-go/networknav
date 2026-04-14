@@ -79,9 +79,9 @@ export function MatchCard({
             {
               category: "professional",
               description:
-                matchedUser.profile.position && matchedUser.profile.company
-                  ? `${matchedUser.profile.position} at ${matchedUser.profile.company}`
-                  : matchedUser.profile.position || "Fellow attendee",
+                matchedUser.profile.title && matchedUser.profile.company
+                  ? `${matchedUser.profile.title} at ${matchedUser.profile.company}`
+                  : matchedUser.profile.title || "Fellow attendee",
               weight: 0.6,
             },
           ];
@@ -90,7 +90,7 @@ export function MatchCard({
       type,
       matchedUser.profile.name.split(/\s+/)[0],
       {
-        theirPosition: matchedUser.profile.position,
+        theirTitle: matchedUser.profile.title,
         theirCompany: matchedUser.profile.company ?? undefined,
         viewerFirstName,
         seed: `${match.userId}-${match.matchedUserId}`,
@@ -100,7 +100,7 @@ export function MatchCard({
     commonalities,
     type,
     matchedUser.profile.name,
-    matchedUser.profile.position,
+    matchedUser.profile.title,
     matchedUser.profile.company,
     viewerFirstName,
     match.userId,
@@ -119,10 +119,8 @@ export function MatchCard({
 
   const profileUrl = `/user/${match.matchedUserId}`;
 
-  const title = matchedUser.profile.title?.trim();
-  const position = matchedUser.profile.position?.trim();
-  const teamPositionLine =
-    title && position ? `${title} | ${position}` : position || title || "";
+  const title = matchedUser.profile.title?.trim() || "";
+  const teamPositionLine = title;
 
   const scorePercent = Math.round((score > 1 ? score : score * 100));
   const barWidth = `${Math.min(100, Math.max(0, scorePercent))}%`;

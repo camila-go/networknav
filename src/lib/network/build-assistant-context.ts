@@ -24,7 +24,7 @@ export function buildNetworkAssistantContext(
 
   const lines = active.map((m, i) => {
     const p = m.matchedUser.profile;
-    const role = [p.position || p.title, p.company].filter(Boolean).join(" · ");
+    const role = [p.title, p.company].filter(Boolean).join(" · ");
     const common = m.commonalities.map((c) => c.description).join("; ");
     return [
       `${i + 1}. ${p.name}`,

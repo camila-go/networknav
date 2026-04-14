@@ -117,7 +117,6 @@ export async function getCachedMatches(userId: string) {
         interests,
         location,
         age,
-        position,
         title,
         company,
         photo_url

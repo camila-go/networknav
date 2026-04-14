@@ -59,7 +59,6 @@ describe("Auth API Routes", () => {
         email: "test@test.com",
         passwordHash,
         name: "Test User",
-        position: "Manager",
         title: "Director",
         company: "TestCorp",
         questionnaireCompleted: false,
@@ -79,7 +78,6 @@ describe("Auth API Routes", () => {
         email: "test@test.com",
         passwordHash,
         name: "Test User",
-        position: "Manager",
         title: "Director",
         company: "TestCorp",
         questionnaireCompleted: true,
@@ -125,7 +123,6 @@ describe("Auth API Routes", () => {
       password: "StrongPass1",
       confirmPassword: "StrongPass1",
       name: "New User",
-      position: "Engineer",
       title: "Staff Engineer",
     };
 
@@ -155,7 +152,6 @@ describe("Auth API Routes", () => {
         email: "newuser@test.com",
         passwordHash: "hash",
         name: "Existing",
-        position: "Pos",
         title: "Title",
         questionnaireCompleted: false,
         createdAt: new Date(),

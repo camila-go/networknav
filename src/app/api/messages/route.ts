@@ -8,7 +8,7 @@ import { isLiveDatabaseMode } from "@/lib/supabase/data-mode";
 import { updateStreaks } from "@/lib/gamification/streaks";
 import { applyGamificationUnlockNotifications } from "@/lib/gamification/unlock-notifications";
 
-type SimpleUser = { id: string; name: string; position: string; company?: string };
+type SimpleUser = { id: string; name: string; title: string; company?: string };
 
 // Helper to get user profile by ID from in-memory
 function getUserById(userId: string): SimpleUser | null {
@@ -17,7 +17,7 @@ function getUserById(userId: string): SimpleUser | null {
       return {
         id: user.id,
         name: user.name,
-        position: user.position,
+        title: user.title,
         company: user.company,
       };
     }
@@ -26,11 +26,11 @@ function getUserById(userId: string): SimpleUser | null {
     return null;
   }
   const demoUsers: Record<string, SimpleUser> = {
-    "demo-sarah": { id: "demo-sarah", name: "Sarah Chen", position: "VP of Engineering", company: "TechCorp" },
-    "demo-marcus": { id: "demo-marcus", name: "Marcus Johnson", position: "Chief People Officer", company: "GrowthStartup" },
-    "demo-elena": { id: "demo-elena", name: "Elena Rodriguez", position: "CEO", company: "InnovateCo" },
-    "demo-david": { id: "demo-david", name: "David Park", position: "VP of Product", company: "ScaleUp Inc" },
-    "demo-aisha": { id: "demo-aisha", name: "Aisha Patel", position: "CTO", company: "FinanceFlow" },
+    "demo-sarah": { id: "demo-sarah", name: "Sarah Chen", title: "VP of Engineering", company: "TechCorp" },
+    "demo-marcus": { id: "demo-marcus", name: "Marcus Johnson", title: "Chief People Officer", company: "GrowthStartup" },
+    "demo-elena": { id: "demo-elena", name: "Elena Rodriguez", title: "CEO", company: "InnovateCo" },
+    "demo-david": { id: "demo-david", name: "David Park", title: "VP of Product", company: "ScaleUp Inc" },
+    "demo-aisha": { id: "demo-aisha", name: "Aisha Patel", title: "CTO", company: "FinanceFlow" },
   };
   return demoUsers[userId] || null;
 }
@@ -41,19 +41,19 @@ async function getUserFromSupabase(userId: string): Promise<SimpleUser | null> {
   
   const { data, error } = await supabaseAdmin
     .from('user_profiles')
-    .select('id, name, position, company')
+    .select('id, name, title, company')
     .eq('id', userId)
     .single();
   
   if (error || !data) return null;
   
   // Type assertion for Supabase response
-  const row = data as { id: string; name: string; position?: string; company?: string };
-  
+  const row = data as { id: string; name: string; title?: string; company?: string };
+
   return {
     id: row.id,
     name: row.name,
-    position: row.position || '',
+    title: row.title || '',
     company: row.company || undefined,
   };
 }
@@ -557,10 +557,10 @@ async function getConversations(userId: string) {
       lastMessage,
       unreadCount,
       messageCount: connectionMessages.length,
-      otherUser: otherUser || { 
-        id: otherUserId, 
-        name: "Unknown User", 
-        position: "Member" 
+      otherUser: otherUser || {
+        id: otherUserId,
+        name: "Unknown User",
+        title: "Member"
       },
     });
   }

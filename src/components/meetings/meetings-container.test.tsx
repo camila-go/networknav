@@ -44,12 +44,12 @@ function createMockMeetingWithUsers(
     updatedAt: new Date("2026-02-01"),
     requester: {
       id: "user-1",
-      profile: { name: "Sarah Chen", position: "VP Engineering", title: "Eng Leader", company: "TechCo" },
+      profile: { name: "Sarah Chen", title: "Eng Leader", company: "TechCo" },
       questionnaireCompleted: true,
     },
     recipient: {
       id: "user-2",
-      profile: { name: "Bob Smith", position: "VP Sales", title: "Sales Leader", company: "SalesCo" },
+      profile: { name: "Bob Smith", title: "Sales Leader", company: "SalesCo" },
       questionnaireCompleted: true,
     },
     ...overrides,
@@ -150,7 +150,7 @@ describe("MeetingsContainer", () => {
     await waitFor(() => {
       expect(screen.getByText("Sarah Chen")).toBeInTheDocument();
     });
-    expect(screen.getByText("VP Engineering")).toBeInTheDocument();
+    expect(screen.getByText("Eng Leader")).toBeInTheDocument();
   });
 
   it("should display context message", async () => {

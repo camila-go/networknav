@@ -135,7 +135,6 @@ async function generateMatchesForUser(
       email: email,
       profile: {
         name: user.name,
-        position: user.position,
         title: user.title,
         company: user.company,
         photoUrl: undefined,
@@ -155,7 +154,6 @@ async function generateMatchesForUser(
       id: userId,
       profile: {
         name: currentUser.name,
-        position: currentUser.position,
         title: currentUser.title,
         company: currentUser.company,
       },
@@ -176,7 +174,6 @@ async function generateMatchesFromSupabase(currentUserId: string, currentUserEma
       id: string;
       name: string;
       email?: string;
-      position?: string;
       title?: string;
       company?: string;
       photo_url?: string;
@@ -233,7 +230,7 @@ async function generateMatchesFromSupabase(currentUserId: string, currentUserEma
     // Fetch all users from Supabase
     const { data: profiles, error } = await supabaseAdmin
       .from('user_profiles')
-      .select('id, name, email, position, title, company, photo_url, questionnaire_data, interests')
+      .select('id, name, email, title, company, photo_url, questionnaire_data, interests')
       .eq('is_active', true)
       .limit(30);
 
@@ -310,8 +307,8 @@ async function generateMatchesFromSupabase(currentUserId: string, currentUserEma
       if (commonalities.length === 0) {
         commonalities = [{
           category: 'professional' as const,
-          description: profile.position
-            ? `${profile.position} at ${profile.company || 'their organization'}`
+          description: profile.title
+            ? `${profile.title} at ${profile.company || 'their organization'}`
             : 'Fellow conference attendee',
           weight: 0.6,
         }];
@@ -328,7 +325,6 @@ async function generateMatchesFromSupabase(currentUserId: string, currentUserEma
           email: profile.email,
           profile: {
             name: profile.name || 'Anonymous',
-            position: profile.position || '',
             title: profile.title || '',
             company: profile.company,
             photoUrl: profile.photo_url,
@@ -338,7 +334,7 @@ async function generateMatchesFromSupabase(currentUserId: string, currentUserEma
         type,
         commonalities,
         conversationStarters: generateConversationStarters(commonalities, type, firstName, {
-          theirPosition: profile.position || profile.title,
+          theirTitle: profile.title,
           theirCompany: profile.company,
           viewerFirstName: currentViewerFirstName,
           seed: `${currentUserId}-${profile.id}`,
@@ -355,7 +351,6 @@ async function generateMatchesFromSupabase(currentUserId: string, currentUserEma
         strategicScore,
         meta: {
           firstName,
-          position: profile.position,
           title: profile.title,
           company: profile.company,
           seed: `${currentUserId}-${profile.id}`,
@@ -374,7 +369,7 @@ async function generateMatchesFromSupabase(currentUserId: string, currentUserEma
             matchName: match.matchedUser.profile.name.split(" ")[0] || "them",
             matchType: match.type,
             commonalities: match.commonalities.map((c) => c.description),
-            matchPosition: match.matchedUser.profile.position,
+            matchPosition: match.matchedUser.profile.title,
             matchCompany: match.matchedUser.profile.company,
           })
         )
@@ -426,7 +421,6 @@ function generateDemoMatches(userId: string): Match[] {
         id: "demo-user-1",
         profile: {
           name: "Sarah Chen",
-          position: "VP of Engineering",
           title: "Engineering Leader",
           company: "TechCorp",
         },
@@ -456,7 +450,6 @@ function generateDemoMatches(userId: string): Match[] {
         id: "demo-user-2",
         profile: {
           name: "Marcus Johnson",
-          position: "Chief People Officer",
           title: "HR Executive",
           company: "GrowthStartup",
         },
@@ -485,7 +478,6 @@ function generateDemoMatches(userId: string): Match[] {
         id: "demo-user-3",
         profile: {
           name: "Elena Rodriguez",
-          position: "CEO",
           title: "Founder & CEO",
           company: "InnovateCo",
         },
@@ -514,7 +506,6 @@ function generateDemoMatches(userId: string): Match[] {
         id: "demo-user-4",
         profile: {
           name: "David Park",
-          position: "VP of Product",
           title: "Product Leader",
           company: "ScaleUp Inc",
         },
@@ -543,7 +534,6 @@ function generateDemoMatches(userId: string): Match[] {
         id: "demo-user-5",
         profile: {
           name: "Aisha Patel",
-          position: "CTO",
           title: "Technology Executive",
           company: "FinanceFlow",
         },
@@ -572,7 +562,6 @@ function generateDemoMatches(userId: string): Match[] {
         id: "demo-user-6",
         profile: {
           name: "James Wilson",
-          position: "Director of Operations",
           title: "Operations Leader",
           company: "LogiTech Solutions",
         },

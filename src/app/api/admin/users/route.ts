@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     if (isSupabaseConfigured && supabaseAdmin) {
       let query = supabaseAdmin
         .from("user_profiles")
-        .select("id, email, name, position, title, company, role, photo_url, questionnaire_completed, is_active, created_at", {
+        .select("id, email, name, title, company, role, photo_url, questionnaire_completed, is_active, created_at", {
           count: "exact",
         });
 
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
       if (error) throw error;
 
       const data = (rawData || []) as unknown as Array<{
-        id: string; email: string; name: string; position: string;
+        id: string; email: string; name: string;
         title: string; company: string; role: string; photo_url: string | null;
         questionnaire_completed: boolean; is_active: boolean; created_at: string;
       }>;
@@ -52,7 +52,6 @@ export async function GET(request: NextRequest) {
             id: u.id,
             email: u.email,
             name: u.name,
-            position: u.position,
             title: u.title,
             company: u.company,
             role: u.role || "user",
@@ -74,7 +73,6 @@ export async function GET(request: NextRequest) {
       id: u.id,
       email: u.email,
       name: u.name,
-      position: u.position,
       title: u.title,
       company: u.company,
       role: (u.role || "user") as UserRole,

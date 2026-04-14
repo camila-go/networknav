@@ -166,7 +166,6 @@ describe("SSO API Routes", () => {
       expect(user).toBeDefined();
       expect(user?.name).toBe("Jane Doe");
       expect(user?.title).toBe("VP Engineering");
-      expect(user?.position).toBe("VP Engineering"); // mapped from title
       expect(user?.company).toBe("Acme Corp");
       expect(user?.questionnaireCompleted).toBe(false);
       // SSO users have non-authenticatable passwords
@@ -180,7 +179,6 @@ describe("SSO API Routes", () => {
         email: "returning@company.com",
         passwordHash: "SAML_SSO:some-random-hash",
         name: "Returning User",
-        position: "Director",
         title: "Director",
         company: "Acme Corp",
         questionnaireCompleted: true,
@@ -238,7 +236,6 @@ describe("SSO API Routes", () => {
         email: "user@company.com",
         passwordHash: "SAML_SSO:random",
         name: "Jane Doe",
-        position: "Manager",
         title: "Manager",
         company: "Old Corp",
         questionnaireCompleted: false,
@@ -262,7 +259,6 @@ describe("SSO API Routes", () => {
       const user = users.get("user@company.com");
       expect(user?.name).toBe("Jane Doe-Smith");
       expect(user?.title).toBe("VP Engineering");
-      expect(user?.position).toBe("VP Engineering");
       expect(user?.company).toBe("New Corp");
     });
 

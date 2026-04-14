@@ -11,6 +11,7 @@ All notable changes to NetworkNav (Jynx) will be documented in this file.
 
 ### Removed
 - Remove Two-Factor Authentication, Download My Data, Contact Support, and Messages notification toggle from profile settings UI (`src/app/(dashboard)/profile/page.tsx`)
+- Remove the legacy `position` field from user profiles entirely; `title` is now the single source of truth for a user's role/headline. All UI (match cards, explore, messages, meetings, profile, admin), API routes, SAML JIT provisioning, matching/embedding pipelines, and tests updated. Drops `user_profiles.position` column — run the migration in `SUPABASE_SETUP.md`.
 
 ### Changed
 - Redesign admin gallery projector as a live stats dashboard: replaces the cinematic slideshow with a persistent layout — small Ken Burns photo card on the left cycling through activities every 5s, and a 4-tile colored grid (blue/teal/teal/orange) on the right showing the top 4 activity percentages; tiles animate smoothly with an eased number count-up and a brief scale/ring pulse when values change; polls `/api/admin/gallery-projector` every 12s for live updates (`src/components/admin/admin-projector-dashboard.tsx`, `src/lib/hooks/use-animated-number.ts`, `src/app/(admin)/admin/gallery-display/page.tsx`; removes `src/components/admin/admin-projector-gallery.tsx`)

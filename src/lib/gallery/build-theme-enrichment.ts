@@ -13,7 +13,6 @@ export type EnrichmentProfile = {
   id: string;
   name?: string | null;
   title?: string | null;
-  position?: string | null;
   company?: string | null;
   location?: string | null;
 };
@@ -104,7 +103,7 @@ export function buildThemeEnrichment(
       .filter((p): p is EnrichmentProfile => !!p);
 
     const denom = profiles.length;
-    const titles = profiles.map((p) => p.title ?? p.position);
+    const titles = profiles.map((p) => p.title);
     const locations = profiles.map((p) => p.location);
     const companies = profiles.map((p) => p.company);
 

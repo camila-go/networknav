@@ -11,7 +11,6 @@ vi.mock("@/components/ui/use-toast", () => ({
 
 const profileData = {
   name: "Jane Doe",
-  position: "VP Engineering",
   title: "Engineering Leader",
   company: "TechCorp",
   location: "San Francisco, CA",

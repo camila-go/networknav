@@ -33,7 +33,7 @@ export async function GET() {
         if (profile) {
           const p = profile as {
             id: string; email: string; password_hash?: string; role?: string;
-            name?: string; position?: string; title?: string; company?: string;
+            name?: string; title?: string; company?: string;
             location?: string; photo_url?: string; bio?: string;
             questionnaire_completed?: boolean;
           };
@@ -43,7 +43,6 @@ export async function GET() {
             passwordHash: p.password_hash || '',
             role: (p.role as UserRole) || 'user',
             name: p.name || 'User',
-            position: p.position || '',
             title: p.title || '',
             company: p.company || '',
             location: p.location,
@@ -80,7 +79,6 @@ export async function GET() {
           role: user.role || 'user',
           profile: {
             name: user.name,
-            position: user.position,
             title: user.title,
             company: user.company,
             location: user.location ?? "",

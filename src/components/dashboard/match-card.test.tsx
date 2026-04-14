@@ -31,7 +31,6 @@ function createMatch(overrides: Partial<MatchWithUser> = {}): MatchWithUser {
       id: "user-2",
       profile: {
         name: "Sarah Chen",
-        position: "VP of Engineering",
         title: "Engineering Leader",
         company: "TechCorp",
       },
@@ -67,9 +66,9 @@ describe("MatchCard", () => {
     expect(screen.getByText("Sarah Chen")).toBeInTheDocument();
   });
 
-  it("should render position and company", () => {
+  it("should render title and company", () => {
     render(<MatchCard match={createMatch()} onPass={mockOnPass} />);
-    expect(screen.getByText("VP of Engineering")).toBeInTheDocument();
+    expect(screen.getByText("Engineering Leader")).toBeInTheDocument();
     expect(screen.getByText("TechCorp")).toBeInTheDocument();
   });
 
@@ -145,7 +144,6 @@ describe("MatchCard", () => {
         email: "sarah@techcorp.com",
         profile: {
           name: "Sarah Chen",
-          position: "VP of Engineering",
           title: "Engineering Leader",
           company: "TechCorp",
         },

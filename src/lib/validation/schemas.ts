@@ -38,12 +38,6 @@ export const profileUpdateSchema = z.object({
     .nullable(),
 
   // Extended Jynx profile fields
-  position: z
-    .string()
-    .max(100, 'Position too long')
-    .optional()
-    .nullable(),
-
   title: z
     .string()
     .max(100, 'Title too long')

@@ -7,7 +7,6 @@ export type MatchBuildRow = {
   strategicScore: number;
   meta: {
     firstName?: string;
-    position?: string;
     title?: string;
     company?: string;
     seed: string;
@@ -50,7 +49,7 @@ export function ensureMatchTypeMix(
       newType,
       row.meta.firstName,
       {
-        theirPosition: row.meta.position || row.meta.title,
+        theirTitle: row.meta.title,
         theirCompany: row.meta.company,
         viewerFirstName,
         seed: row.meta.seed,

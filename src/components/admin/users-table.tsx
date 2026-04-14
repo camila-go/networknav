@@ -37,7 +37,6 @@ interface AdminUser {
   id: string;
   email: string;
   name: string;
-  position: string;
   title: string;
   company: string;
   role: UserRole;
@@ -240,7 +239,7 @@ export function UsersTable() {
                         </div>
                         <div>
                           <p className="text-white font-medium">{user.name}</p>
-                          <p className="text-white/40 text-xs">{user.title || user.position}</p>
+                          <p className="text-white/40 text-xs">{user.title}</p>
                         </div>
                       </div>
                     </td>

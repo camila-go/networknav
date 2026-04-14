@@ -8,7 +8,7 @@ export interface SamlUserAttributes {
   email: string;
   /** Full display name */
   name: string;
-  /** Job title — mapped to both `title` and `position` fields in the app */
+  /** Job title */
   title: string;
   /** Organization name (optional) */
   company?: string;

@@ -264,14 +264,13 @@ function collectAllQuestionnaireStrings(r: Record<string, unknown>): string[] {
 
 /** Widen search: raw values + option labels for every questionnaire multi-select we know */
 function fullSearchBlob(
-  userProfile: { name: string; position: string; title: string; company?: string },
+  userProfile: { name: string; title: string; company?: string },
   responses: Record<string, unknown>,
   profileInterestTags: string[],
   galleryActivityTags: string[] = []
 ): string {
   const parts: string[] = [
     userProfile.name,
-    userProfile.position,
     userProfile.title,
     userProfile.company || "",
     ...profileInterestTags,
@@ -375,7 +374,7 @@ function matchedInterestLabels(
 type SearchScope = "all" | "interests";
 
 function keywordMatchResult(
-  userProfile: { name: string; position: string; title: string; company?: string },
+  userProfile: { name: string; title: string; company?: string },
   responses: Record<string, unknown>,
   keywords: string,
   profileInterestTags: string[],
@@ -413,7 +412,6 @@ function getDemoUsers(currentResponses: Record<string, unknown>): AttendeeSearch
     {
       id: "demo-sarah",
       name: "Sarah Chen",
-      position: "VP Engineering",
       title: "Engineering Leader",
       company: "TechCorp",
       location: "San Francisco, CA",
@@ -432,7 +430,6 @@ function getDemoUsers(currentResponses: Record<string, unknown>): AttendeeSearch
     {
       id: "demo-marcus",
       name: "Marcus Johnson",
-      position: "CEO",
       title: "Chief Executive Officer",
       company: "FinanceFlow",
       location: "New York, NY",
@@ -451,7 +448,6 @@ function getDemoUsers(currentResponses: Record<string, unknown>): AttendeeSearch
     {
       id: "demo-elena",
       name: "Elena Rodriguez",
-      position: "Founder & CEO",
       title: "Healthcare Tech Innovator",
       company: "MedConnect AI",
       location: "Austin, TX",
@@ -470,7 +466,6 @@ function getDemoUsers(currentResponses: Record<string, unknown>): AttendeeSearch
     {
       id: "demo-david",
       name: "David Park",
-      position: "Director of Strategy",
       title: "Strategic Advisor",
       company: "McKinsey & Company",
       location: "Chicago, IL",
@@ -489,7 +484,6 @@ function getDemoUsers(currentResponses: Record<string, unknown>): AttendeeSearch
     {
       id: "demo-priya",
       name: "Priya Sharma",
-      position: "CTO",
       title: "AI/ML Technology Leader",
       company: "NeuralScale",
       location: "Seattle, WA",
@@ -508,7 +502,6 @@ function getDemoUsers(currentResponses: Record<string, unknown>): AttendeeSearch
     {
       id: "demo-james",
       name: "James Wilson",
-      position: "VP Sales",
       title: "Revenue Leader",
       company: "CloudScale Enterprise",
       location: "Denver, CO",
@@ -527,7 +520,6 @@ function getDemoUsers(currentResponses: Record<string, unknown>): AttendeeSearch
     {
       id: "demo-alex",
       name: "Alex Rivera",
-      position: "Head of Product",
       title: "Product Leader",
       company: "GameStudio Interactive",
       location: "Los Angeles, CA",
@@ -553,7 +545,6 @@ function getDemoUsers(currentResponses: Record<string, unknown>): AttendeeSearch
         id: demo.id,
         profile: {
           name: demo.name,
-          position: demo.position,
           title: demo.title,
           company: demo.company,
           location: demo.location,
@@ -693,7 +684,6 @@ export async function POST(request: NextRequest) {
           const { ok, labels } = keywordMatchResult(
             {
               name: user.name,
-              position: user.position,
               title: user.title,
               company: user.company,
             },
@@ -717,7 +707,6 @@ export async function POST(request: NextRequest) {
           email: user.email,
           profile: {
             name: user.name,
-            position: user.position,
             title: user.title,
             company: user.company,
             photoUrl: user.photoUrl,
@@ -821,7 +810,7 @@ async function searchSupabaseUsers(
     // many rows have null auth `user_id`, and in SQL `NULL <> x` drops those rows.
     let query = supabaseAdmin
       .from('user_profiles')
-      .select('id, user_id, name, email, position, title, company, photo_url, location, questionnaire_data, questionnaire_completed, interests')
+      .select('id, user_id, name, email, title, company, photo_url, location, questionnaire_data, questionnaire_completed, interests')
       .eq('is_active', true)
       .not('name', 'is', null);
 
@@ -915,7 +904,6 @@ async function searchSupabaseUsers(
         const { ok, labels } = keywordMatchResult(
           {
             name: profile.name!,
-            position: profile.position || "",
             title: profile.title || "",
             company: profile.company || undefined,
           },
@@ -941,7 +929,6 @@ async function searchSupabaseUsers(
           email: profile.email || undefined,
           profile: {
             name: profile.name!,
-            position: profile.position || '',
             title: profile.title || '',
             company: profile.company || undefined,
             photoUrl: profile.photo_url || undefined,

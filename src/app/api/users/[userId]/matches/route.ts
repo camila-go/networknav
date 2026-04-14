@@ -9,7 +9,7 @@ import { cookies } from "next/headers";
 interface UserMatchSummary {
   id: string;
   name: string;
-  position: string;
+  title: string;
   company?: string;
   matchType: "high-affinity" | "strategic";
   photoUrl?: string;
@@ -17,14 +17,14 @@ interface UserMatchSummary {
 
 // Demo connections for users without stored matches
 const DEMO_CONNECTIONS = [
-  { id: "demo-sarah", name: "Sarah Chen", position: "VP of Engineering", company: "TechCorp", matchType: "high-affinity" as const },
-  { id: "demo-marcus", name: "Marcus Johnson", position: "Chief People Officer", company: "GrowthStartup", matchType: "strategic" as const },
-  { id: "demo-elena", name: "Elena Rodriguez", position: "Founder & CEO", company: "InnovateCo", matchType: "high-affinity" as const },
-  { id: "demo-david", name: "David Park", position: "VP of Product", company: "ScaleUp Inc", matchType: "strategic" as const },
-  { id: "demo-aisha", name: "Aisha Patel", position: "CTO", company: "FinanceFlow", matchType: "high-affinity" as const },
-  { id: "demo-james", name: "James Wilson", position: "Director of Operations", company: "LogiTech Solutions", matchType: "strategic" as const },
-  { id: "demo-lisa", name: "Lisa Thompson", position: "Senior Manager", company: "BrandCo", matchType: "high-affinity" as const },
-  { id: "demo-michael", name: "Michael Brown", position: "SVP Sales", company: "EnterpriseNow", matchType: "strategic" as const },
+  { id: "demo-sarah", name: "Sarah Chen", title: "VP of Engineering", company: "TechCorp", matchType: "high-affinity" as const },
+  { id: "demo-marcus", name: "Marcus Johnson", title: "Chief People Officer", company: "GrowthStartup", matchType: "strategic" as const },
+  { id: "demo-elena", name: "Elena Rodriguez", title: "Founder & CEO", company: "InnovateCo", matchType: "high-affinity" as const },
+  { id: "demo-david", name: "David Park", title: "VP of Product", company: "ScaleUp Inc", matchType: "strategic" as const },
+  { id: "demo-aisha", name: "Aisha Patel", title: "CTO", company: "FinanceFlow", matchType: "high-affinity" as const },
+  { id: "demo-james", name: "James Wilson", title: "Director of Operations", company: "LogiTech Solutions", matchType: "strategic" as const },
+  { id: "demo-lisa", name: "Lisa Thompson", title: "Senior Manager", company: "BrandCo", matchType: "high-affinity" as const },
+  { id: "demo-michael", name: "Michael Brown", title: "SVP Sales", company: "EnterpriseNow", matchType: "strategic" as const },
 ];
 
 export async function GET(
@@ -55,7 +55,7 @@ export async function GET(
           .map((match) => ({
             id: match.matchedUserId,
             name: match.matchedUser.profile.name,
-            position: match.matchedUser.profile.position || match.matchedUser.profile.title,
+            title: match.matchedUser.profile.title,
             company: match.matchedUser.profile.company,
             matchType: match.type,
             photoUrl: match.matchedUser.profile.photoUrl,
@@ -89,9 +89,7 @@ export async function GET(
           .map((match) => ({
             id: match.matchedUserId,
             name: match.matchedUser.profile.name,
-            position:
-              match.matchedUser.profile.position ||
-              match.matchedUser.profile.title,
+            title: match.matchedUser.profile.title,
             company: match.matchedUser.profile.company,
             matchType: match.type,
             photoUrl: match.matchedUser.profile.photoUrl,
@@ -111,7 +109,7 @@ export async function GET(
       try {
         const { data: supabaseUsers } = await supabaseAdmin
           .from("user_profiles")
-          .select("id, name, position, company, photo_url")
+          .select("id, name, title, company, photo_url")
           .eq("is_active", true)
           .neq("id", targetUserId)
           .limit(12);
@@ -120,7 +118,7 @@ export async function GET(
           publicMatches = supabaseUsers.map((user, index) => ({
             id: user.id,
             name: user.name || "User",
-            position: user.position || "Professional",
+            title: user.title || "Professional",
             company: user.company || undefined,
             matchType: index % 2 === 0 ? ("high-affinity" as const) : ("strategic" as const),
             photoUrl: user.photo_url || undefined,
@@ -137,7 +135,7 @@ export async function GET(
         publicMatches = allUsers.slice(0, 10).map((user, index) => ({
           id: user.id,
           name: user.name,
-          position: user.position || "Professional",
+          title: user.title || "Professional",
           company: user.company || undefined,
           matchType: index % 2 === 0 ? ("high-affinity" as const) : ("strategic" as const),
           photoUrl: user.photoUrl || undefined,

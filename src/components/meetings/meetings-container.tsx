@@ -486,7 +486,7 @@ export function MeetingsContainer() {
                                 </Badge>
                               </div>
                               <p className="text-xs text-white/60 mt-0.5">
-                                {otherPerson.profile.position}
+                                {otherPerson.profile.title}
                                 {otherPerson.profile.company && ` at ${otherPerson.profile.company}`}
                               </p>
                               
@@ -760,7 +760,7 @@ function UpcomingMeetingCard({
                 </h3>
               </Link>
               <p className="text-sm text-white/60">
-                {otherPerson.profile.position}
+                {otherPerson.profile.title}
               </p>
             </div>
             {isStartingSoon && (
@@ -875,7 +875,7 @@ function RequestCard({
                 </h3>
               </Link>
               <p className="text-sm text-white/60">
-                {otherPerson.profile.position}
+                {otherPerson.profile.title}
               </p>
             </div>
             <Badge variant="outline" className={cn(
