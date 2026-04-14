@@ -793,11 +793,13 @@ export function ConversationalWizard() {
             {entry.role === "host" &&
               entry.questionIndex !== undefined &&
               entry.questionIndex === activeQuestionIndex &&
-              !isComplete && (
-                <div className="mt-4 ml-2 sm:ml-11 space-y-4">
-                  <p className="text-xs text-zinc-500 pl-1">
-                    Your answers help us personalize who we surface for you
-                  </p>
+                           !isComplete && (
+                <div className="mt-3 ml-2 space-y-3 sm:ml-11 sm:mt-4 sm:space-y-4">
+                  {entry.questionIndex === 0 ? (
+                    <p className="pl-1 text-xs text-zinc-500">
+                      Your answers help us personalize who we surface for you
+                    </p>
+                  ) : null}
                   {flowSteps[entry.questionIndex].question.id ===
                   "personalInterestPhoto" ? (
                     <PersonalInterestPhotoStep

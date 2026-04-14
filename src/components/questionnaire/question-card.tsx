@@ -184,13 +184,14 @@ export function QuestionCard({
     return <div className="space-y-6">{body}</div>;
   }
 
+  const questionForA11y = question.conversationalPrompt || question.text;
+
   return (
     <div className="rounded-2xl border border-white/10 bg-zinc-800/90 shadow-2xl shadow-black/40 backdrop-blur-sm">
-      <div className="border-b border-white/[0.08] px-5 py-4">
-        <div className="flex items-start justify-between gap-3">
-          <h3 className="text-base font-semibold leading-snug text-zinc-100 md:text-lg">
-            {question.text}
-          </h3>
+      <div className="border-b border-white/[0.08] px-5 py-3 md:py-4">
+        <div className="flex items-center justify-end gap-2">
+          {/* Chat already surfaced the question — keep full wording for AT only. */}
+          <span className="sr-only">{questionForA11y}</span>
           {summitMeta && (
             <div className="flex shrink-0 items-center gap-1 text-zinc-500">
               {summitMeta.onPrev && (
