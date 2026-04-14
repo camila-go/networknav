@@ -307,7 +307,8 @@ export function NetworkRadialGraph({
       .attr("text-anchor", "middle")
       .attr("font-size", "8px")
       .attr("font-weight", "500")
-      .attr("fill", "rgba(255,255,255,0)")
+      .attr("fill", "rgba(255,255,255,0.95)")
+      .attr("opacity", 0)
       .style("text-shadow", "0 1px 3px rgba(0,0,0,0.9), 0 0 6px rgba(0,0,0,0.7)")
       .attr("pointer-events", "none")
       .text(d => firstName(d.name));
@@ -458,7 +459,7 @@ export function NetworkRadialGraph({
         .attr("stroke", d => d.isDiscoverable ? "rgba(167,139,250,0.15)" : "rgba(255,255,255,0.06)")
         .attr("stroke-width", d => d.isDiscoverable ? 0.8 : Math.max(0.3, d.strength * 1.5));
       nameLabels.transition().duration(300)
-        .attr("fill", "rgba(255,255,255,0)");
+        .attr("opacity", 0);
       if (initials) {
         initials.transition().duration(300).attr("opacity", 1);
       }
@@ -516,10 +517,7 @@ export function NetworkRadialGraph({
 
     // Show name only for the selected node
     nameLabels.transition().duration(300)
-      .attr("fill", d => {
-        if (d.id === selId && d.matchType !== "neutral") return "rgba(255,255,255,0.95)";
-        return "rgba(255,255,255,0)";
-      });
+      .attr("opacity", d => (d.id === selId && d.matchType !== "neutral") ? 1 : 0);
 
     // ── Render discoverable contacts around selected node ──
     const contacts = (extendedNetwork[selId] || []).slice(0, 3);
