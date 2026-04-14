@@ -406,3 +406,21 @@ input[type="datetime-local"]::-webkit-datetime-edit-ampm-field:focus {
   border-radius: 2px;
 }
 
+@keyframes kenburns {
+  0%   { transform: scale(1.02) translate(0, 0); }
+  100% { transform: scale(1.12) translate(-2%, -1.2%); }
+}
+.animate-kenburns {
+  animation: kenburns 14s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+@keyframes kenburns-reverse {
+  0%   { transform: scale(1.12) translate(-2%, -1.2%); }
+  100% { transform: scale(1.02) translate(0, 0); }
+}
+.animate-kenburns-reverse {
+  animation: kenburns-reverse 14s ease-in-out infinite alternate;
+  will-change: transform;
+}
+

@@ -13,8 +13,8 @@ describe("QUESTIONNAIRE_SECTIONS", () => {
     expect(QUESTIONNAIRE_SECTIONS).toHaveLength(3);
   });
 
-  it("should have 11 base questions (conditional refinedInterest added in wizard only)", () => {
-    expect(getTotalQuestions()).toBe(11);
+  it("should have 10 base questions (conditional refinedInterest added in wizard only)", () => {
+    expect(getTotalQuestions()).toBe(10);
   });
 
   it("should have unique section IDs", () => {

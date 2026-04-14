@@ -84,9 +84,7 @@ export function ExploreContainer() {
   }, [searchParams]);
 
   // Header magnifier: sessionStorage (nav from other tabs) + CustomEvent (already on /explore). URL ?focusSearch=1 still supported.
-  const emphasizeClearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null
-  );
+  const emphasizeClearTimerRef = useRef<number | null>(null);
 
   const triggerSearchFieldHighlight = useCallback(() => {
     setEmphasizeSearchField(true);

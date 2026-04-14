@@ -13,6 +13,7 @@ All notable changes to NetworkNav (Jynx) will be documented in this file.
 - Remove Two-Factor Authentication, Download My Data, Contact Support, and Messages notification toggle from profile settings UI (`src/app/(dashboard)/profile/page.tsx`)
 
 ### Changed
+- Redesign admin gallery projector as a cinematic auto-advancing slideshow: replaces the static hero + 3×2 stat grid with full-bleed photo slides (Ken Burns pan/zoom, rank-based comparison footer) that cycle through all themes every 8s, with a deep-dive template every 4th slide surfacing top role/location/company/growth area/talk topic and a sample caption for users who tagged that activity; arrow keys navigate, space pauses, Esc exits (`src/components/admin/admin-projector-gallery.tsx`, `src/app/api/admin/gallery-projector/route.ts`, `src/lib/gallery/build-theme-enrichment.ts`, `src/types/gallery.ts`, `src/app/globals.css`)
 - Consolidate `position` and `title` fields: remove `position` from profile form and registration form since it duplicates `title`; position is now synced to title behind the scenes (`src/components/profile/profile-form.tsx`, `src/components/auth/register-form.tsx`, `src/lib/validations.ts`)
 - Simplify onboarding welcome message to show title and company instead of redundant title/position
 - Switch SAML SSO defaults from dev IdP (`devsso.strategiced.com`) to prod IdP (`sso.strategiced.com`) for Vercel production deployment; add prod IdP signing certificate (`certs/strategic-ed-prod-idp.pem`, `src/lib/saml/config.ts`, `.env.example`)

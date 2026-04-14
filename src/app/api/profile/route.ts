@@ -259,9 +259,9 @@ export async function PATCH(request: NextRequest) {
     }
 
     user.name = name;
-    user.position = position;
+    user.position = position ?? title;
     user.title = title;
-    user.company = company;
+    user.company = company ?? "";
     if (location !== undefined) user.location = location;
     if (photoUrl !== undefined) user.photoUrl = photoUrl;
     user.updatedAt = new Date();

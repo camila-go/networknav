@@ -106,6 +106,7 @@ const ATTRIBUTE_WEIGHTS: Record<keyof QuestionnaireData, { weight: number; categ
   talkTopic: { weight: 0.72, category: "hobby" },
   refinedInterest: { weight: 0.65, category: "professional" },
   personalInterest: { weight: 0.8, category: "hobby" },
+  personalInterestPhoto: { weight: 0, category: "hobby" },
   personalityTags: { weight: 0.78, category: "lifestyle" },
   joyTrigger: { weight: 0.5, category: "lifestyle" },
   threeWords: { weight: 0.45, category: "values" },

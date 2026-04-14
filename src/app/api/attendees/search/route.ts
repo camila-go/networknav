@@ -622,25 +622,29 @@ export async function POST(request: NextRequest) {
       const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
         currentUserId
       );
-      let currentProfile: { questionnaire_data?: Record<string, unknown> } | null = null;
+      type MaybeProfile = { questionnaire_data?: Record<string, unknown> } | null;
+      let currentProfile: MaybeProfile = null;
       if (isUuid) {
         const byId = await supabaseAdmin
           .from("user_profiles")
           .select("questionnaire_data")
           .eq("id", currentUserId)
           .maybeSingle();
-        currentProfile = byId.data as typeof currentProfile;
+        currentProfile = (byId.data ?? null) as MaybeProfile;
       }
-      if (!currentProfile?.questionnaire_data) {
+      const needsAuthLookup =
+        !currentProfile || !currentProfile.questionnaire_data;
+      if (needsAuthLookup) {
         const byAuth = await supabaseAdmin
           .from("user_profiles")
           .select("questionnaire_data")
           .eq("user_id", currentUserId)
           .maybeSingle();
-        currentProfile = byAuth.data as typeof currentProfile;
+        currentProfile = (byAuth.data ?? null) as MaybeProfile;
       }
-      if (currentProfile?.questionnaire_data) {
-        currentResponses = currentProfile.questionnaire_data;
+      const qData = currentProfile?.questionnaire_data;
+      if (qData) {
+        currentResponses = qData;
       }
     }
     

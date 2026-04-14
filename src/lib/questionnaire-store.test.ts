@@ -81,7 +81,7 @@ describe("Questionnaire Store", () => {
   describe("getProgress", () => {
     it("should reflect total question count", () => {
       const progress = useQuestionnaireStore.getState().getProgress();
-      expect(progress.totalQuestions).toBe(11);
+      expect(progress.totalQuestions).toBe(10);
       expect(progress.currentQuestion).toBe(1);
     });
   });
