@@ -76,6 +76,7 @@ export function NetworkRadialGraph({
   const svgSelRef = useRef<d3.Selection<SVGSVGElement, unknown, null, undefined> | null>(null);
   const gRef = useRef<d3.Selection<SVGGElement, unknown, null, undefined> | null>(null);
   const discoverGroupRef = useRef<d3.Selection<SVGGElement, unknown, null, undefined> | null>(null);
+  const discoverLinesGroupRef = useRef<d3.Selection<SVGGElement, unknown, null, undefined> | null>(null);
   const fitTransformRef = useRef<d3.ZoomTransform | null>(null);
   const hadSelectionRef = useRef(false);
 
@@ -251,6 +252,12 @@ export function NetworkRadialGraph({
       .attr("stroke", d => d.isDiscoverable ? "rgba(167,139,250,0.15)" : "rgba(255,255,255,0.06)")
       .attr("stroke-width", d => d.isDiscoverable ? 0.8 : Math.max(0.3, d.strength * 1.5))
       .attr("stroke-dasharray", d => d.isDiscoverable ? "3,3" : "none");
+
+    // Discoverable dashed lines — appended BEFORE nodes so they render under
+    // the selected node (prevents the purple line from slicing across the
+    // teal selection bubble)
+    const discoverLinesGroup = g.append("g").attr("class", "discoverable-lines");
+    discoverLinesGroupRef.current = discoverLinesGroup;
 
     // ── Node groups ──
     const nodeGroup = g.append("g");
@@ -428,6 +435,7 @@ export function NetworkRadialGraph({
       svgSelRef.current = null;
       gRef.current = null;
       discoverGroupRef.current = null;
+      discoverLinesGroupRef.current = null;
     };
   }, [data, dimensions, filter]);
 
@@ -440,14 +448,16 @@ export function NetworkRadialGraph({
     const zoom = zoomRef.current;
     const svgSel = svgSelRef.current;
     const dGroup = discoverGroupRef.current;
+    const dLinesGroup = discoverLinesGroupRef.current;
     if (!linkSel || !circleSel || !nameLabels) return;
 
     const links = linksDataRef.current;
     const nodes = nodesDataRef.current;
     const { width, height } = dimensions;
 
-    // Always clear previous discoverable overlay
+    // Always clear previous discoverable overlay (bubbles + lines)
     if (dGroup) dGroup.selectAll("*").remove();
+    if (dLinesGroup) dLinesGroup.selectAll("*").remove();
 
     if (!selId) {
       // Reset — restore per-type opacity + zoom out to overview
@@ -558,8 +568,9 @@ export function NetworkRadialGraph({
         const cx = selNode.x! + discR * Math.cos(angle);
         const cy = selNode.y! + discR * Math.sin(angle);
 
-        // Dashed line from selected node to discoverable
-        dGroup.append("line")
+        // Dashed line from selected node to discoverable — drawn in the
+        // under-nodes group so it renders beneath the selected teal bubble
+        (dLinesGroup ?? dGroup).append("line")
           .attr("x1", selNode.x!).attr("y1", selNode.y!)
           .attr("x2", selNode.x!).attr("y2", selNode.y!)
           .attr("stroke", "#a78bfa")
