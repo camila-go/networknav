@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 type Gs26LockupLinkProps = {
@@ -8,24 +9,26 @@ type Gs26LockupLinkProps = {
 };
 
 /**
- * GS26 + “Powered by JYNX” wordmark — marketing header, auth, dashboard shell, etc.
+ * JYNX GS26 lockup logo
  */
 export function Gs26LockupLink({ className, href = "/" }: Gs26LockupLinkProps) {
   return (
     <Link
       href={href}
-      aria-label="Global Summit 2026 home"
+      aria-label="JYNX GS26 home"
       className={cn(
-        "flex min-w-0 shrink flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-3",
+        "flex items-center",
         className,
       )}
     >
-      <span className="text-left text-lg font-bold leading-none tracking-tight text-white sm:text-2xl">
-        GS26
-      </span>
-      <span className="text-left text-[9px] font-semibold uppercase leading-tight tracking-[0.18em] text-white/90 sm:text-[11px] sm:tracking-[0.22em]">
-        Powered by JYNX
-      </span>
+      <Image
+        src="/lockup-jynx.svg"
+        alt="JYNX GS26"
+        width={160}
+        height={37}
+        className="h-8 w-auto sm:h-10"
+        priority
+      />
     </Link>
   );
 }

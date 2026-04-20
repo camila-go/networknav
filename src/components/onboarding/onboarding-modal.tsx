@@ -35,9 +35,9 @@ interface OnboardingStep {
 const ALL_ONBOARDING_STEPS: OnboardingStep[] = [
   {
     id: "welcome",
-    title: "Welcome to GS26!",
+    title: "Welcome to JYNX GS26!",
     description:
-      "Your AI-powered networking companion (powered by JYNX) for meaningful connections at Global Summit 2026.",
+      "Your AI-powered networking companion for meaningful connections at Global Summit 2026.",
     icon: <Sparkles className="h-12 w-12" />,
     highlights: [
       { icon: <Users className="h-5 w-5" />, text: "Discover like-minded professionals" },
