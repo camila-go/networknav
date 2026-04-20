@@ -3,6 +3,7 @@
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { X, MessageCircle, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 
 interface AboutJynxModalProps {
   open: boolean;
@@ -11,20 +12,33 @@ interface AboutJynxModalProps {
 
 const teamMembers = [
   {
+    id: "team-camila-gonzalez",
     name: "Camila Gonzalez",
     title: "UI/UX Designer",
   },
   {
+    id: "team-austin-potter",
     name: "Austin Potter",
     title: "Artificial Intelligence Innovation Developer",
   },
   {
+    id: "team-lisa-lucas",
     name: "Lisa Lucas",
     title: "Senior Designer",
   },
 ];
 
-function TeamMemberCard({ name, title }: { name: string; title: string }) {
+function TeamMemberCard({ 
+  id,
+  name, 
+  title,
+  onNavigate,
+}: { 
+  id: string;
+  name: string; 
+  title: string;
+  onNavigate: () => void;
+}) {
   return (
     <div className="bg-[#0d0d0d] border border-[#444] rounded-2xl overflow-hidden flex flex-col min-w-0">
       <div className="pt-10 pb-6 flex flex-col items-center gap-4">
@@ -35,14 +49,22 @@ function TeamMemberCard({ name, title }: { name: string; title: string }) {
         </div>
       </div>
       <div className="bg-[#191919] px-4 py-5 flex flex-wrap gap-3 justify-center">
-        <button className="flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-full border border-[#343434] text-white text-sm font-semibold hover:bg-white/5 transition-colors">
+        <Link 
+          href={`/user/${id}`}
+          onClick={onNavigate}
+          className="flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-full border border-[#343434] text-white text-sm font-semibold hover:bg-white/5 transition-colors"
+        >
           View Profile
-        </button>
-        <button className="flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-full bg-[#29606f] text-white text-sm font-semibold hover:bg-[#347a8c] transition-colors">
+        </Link>
+        <Link 
+          href={`/messages?new=${id}&name=${encodeURIComponent(name)}`}
+          onClick={onNavigate}
+          className="flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-full bg-[#29606f] text-white text-sm font-semibold hover:bg-[#347a8c] transition-colors"
+        >
           <MessageCircle className="w-4 h-4" />
           Chat
           <ExternalLink className="w-3 h-3 opacity-80" />
-        </button>
+        </Link>
       </div>
     </div>
   );
@@ -107,9 +129,11 @@ export function AboutJynxModal({ open, onOpenChange }: AboutJynxModalProps) {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {teamMembers.map((member) => (
                     <TeamMemberCard
-                      key={member.name}
+                      key={member.id}
+                      id={member.id}
                       name={member.name}
                       title={member.title}
+                      onNavigate={() => onOpenChange(false)}
                     />
                   ))}
                 </div>

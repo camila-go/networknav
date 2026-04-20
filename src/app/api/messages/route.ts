@@ -31,6 +31,9 @@ function getUserById(userId: string): SimpleUser | null {
     "demo-elena": { id: "demo-elena", name: "Elena Rodriguez", title: "CEO", company: "InnovateCo" },
     "demo-david": { id: "demo-david", name: "David Park", title: "VP of Product", company: "ScaleUp Inc" },
     "demo-aisha": { id: "demo-aisha", name: "Aisha Patel", title: "CTO", company: "FinanceFlow" },
+    "team-camila-gonzalez": { id: "team-camila-gonzalez", name: "Camila Gonzalez", title: "UI/UX Designer", company: "Strategic Education" },
+    "team-austin-potter": { id: "team-austin-potter", name: "Austin Potter", title: "Artificial Intelligence Innovation Developer", company: "Strategic Education" },
+    "team-lisa-lucas": { id: "team-lisa-lucas", name: "Lisa Lucas", title: "Senior Designer", company: "Strategic Education" },
   };
   return demoUsers[userId] || null;
 }

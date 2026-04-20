@@ -182,6 +182,48 @@ export async function GET(request: NextRequest) {
       }
     }
     
+    // Fallback: Check if this is a team member from the About page
+    if (!targetUser) {
+      const teamMembers: Record<string, { name: string; title: string; company: string; bio: string }> = {
+        "team-camila-gonzalez": {
+          name: "Camila Gonzalez",
+          title: "UI/UX Designer",
+          company: "Strategic Education",
+          bio: "UI/UX Designer who helped bring JYNX to life through thoughtful design and user-centered thinking.",
+        },
+        "team-austin-potter": {
+          name: "Austin Potter",
+          title: "Artificial Intelligence Innovation Developer",
+          company: "Strategic Education",
+          bio: "AI developer who architected the intelligent matching system that powers JYNX connections.",
+        },
+        "team-lisa-lucas": {
+          name: "Lisa Lucas",
+          title: "Senior Designer",
+          company: "Strategic Education",
+          bio: "Senior designer whose creative vision shaped the visual identity and experience of JYNX.",
+        },
+      };
+      
+      if (teamMembers[targetUserId]) {
+        const member = teamMembers[targetUserId];
+        return NextResponse.json({
+          success: true,
+          data: {
+            user: {
+              id: targetUserId,
+              profile: {
+                name: member.name,
+                title: member.title,
+                company: member.company,
+                bio: member.bio,
+              },
+            },
+          },
+        });
+      }
+    }
+    
     if (!targetUser) {
       return NextResponse.json(
         { success: false, error: "User not found" },
