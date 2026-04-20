@@ -96,11 +96,11 @@ export default function WelcomePage() {
             <div className="absolute left-1/2 top-1/2 z-[2] flex w-[min(88vw,360px)] -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center gap-3 px-4 py-2 animate-fade-in-opacity motion-reduce:animate-none sm:w-[min(84vw,380px)] md:w-[min(44vmin,400px)] md:gap-4 md:px-6 lg:w-[min(42vmin,400px)]">
               <Image
                 src="/brand/hero-lockup.svg"
-                alt="Global Summit 2026, powered by JYNX"
-                width={524}
-                height={490}
+                alt="JYNX - Connecting Leaders by AI"
+                width={888}
+                height={497}
                 priority
-                className="h-auto w-full max-w-[min(72vw,48vmin,288px)] drop-shadow-[0_12px_28px_rgba(0,0,0,0.12)] sm:max-w-[min(70vw,46vmin,300px)] md:max-w-[min(40vmin,340px)] lg:max-w-[min(38vmin,360px)]"
+                className="h-auto w-full max-w-[min(85vw,58vmin,380px)] drop-shadow-[0_12px_28px_rgba(0,0,0,0.12)] sm:max-w-[min(82vw,56vmin,400px)] md:max-w-[min(50vmin,440px)] lg:max-w-[min(48vmin,480px)]"
               />
             </div>
           </div>
