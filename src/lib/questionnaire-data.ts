@@ -13,7 +13,7 @@ export const PERSONAL_INTEREST_PHOTO_QUESTION: Question = {
 };
 
 export const SUMMIT_RESPONSE_HINT =
-  "Keep answers short—1 sentence or quick taps work great.";
+  "Keep answers short – one sentence or quick taps work great.";
 
 /** Conditional Q6A — same capture key as leadership branch */
 export const REFINED_INTEREST_AI: Question = {
@@ -68,9 +68,9 @@ export const QUESTIONNAIRE_SECTIONS: QuestionSection[] = [
     questions: [
       {
         id: "roleSummary",
-        text: "In one sentence—what do you actually do (not your title)?",
+        text: "In one sentence, what do you actually do – beyond your title?",
         conversationalPrompt:
-          "In one sentence—what do you actually do (not your title)?",
+          "In one sentence, what do you actually do – beyond your title?",
         type: "text",
         required: true,
         textPlaceholder: "e.g. I help teams ship AI products customers trust",
@@ -139,8 +139,8 @@ export const QUESTIONNAIRE_SECTIONS: QuestionSection[] = [
     questions: [
       {
         id: "personalInterest",
-        text: "Outside of work—what do you genuinely enjoy?",
-        conversationalPrompt: "Outside of work—what do you genuinely enjoy?",
+        text: "What do you genuinely enjoy outside of work?",
+        conversationalPrompt: "What do you genuinely enjoy outside of work?",
         type: "text",
         required: true,
         textPlaceholder: "Hobbies, people, places…",
@@ -164,36 +164,10 @@ export const QUESTIONNAIRE_SECTIONS: QuestionSection[] = [
         ],
       },
       {
-        id: "joyTrigger",
-        text: "What's a small thing that makes your day better?",
-        conversationalPrompt: "What's a small thing that makes your day better?",
-        type: "text",
-        required: true,
-        textPlaceholder: "Coffee, a walk, a playlist…",
-        textMultiline: false,
-      },
-    ],
-  },
-  {
-    id: "summit-profile",
-    title: "Your Summit profile",
-    subtitle: "Almost done",
-    icon: "🎤",
-    questions: [
-      {
-        id: "threeWords",
-        text: "Describe yourself in 3 words",
-        conversationalPrompt: "Describe yourself in 3 words",
-        type: "text",
-        required: true,
-        textPlaceholder: "Three words, any order",
-        textMultiline: false,
-      },
-      {
         id: "funFact",
-        text: "Fun fact—something people wouldn't guess about you?",
+        text: "What's a fun fact about you that people wouldn't guess?",
         conversationalPrompt:
-          "Fun fact—something people wouldn't guess about you?",
+          "What's a fun fact about you that people wouldn't guess?",
         type: "text",
         required: true,
         textPlaceholder: "The weirder, the better",

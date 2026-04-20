@@ -52,7 +52,7 @@ interface ChatEntry {
 const TRANSITION_MORE = "Just a few more questions";
 
 const COMPLETION_MESSAGE =
-  "That's it—you're all set! We'll use this to help you meet great people and surface shared interests during the event. Keep an eye out for your profile on the screens.";
+  "That's it – you're all set 🙌\n\nWe'll use this to help you meet great people and surface shared interests during the event.\n\nKeep an eye out for your profile on screens during the summit 👀";
 
 function buildWelcomeLines(profile: {
   firstName: string;
@@ -60,7 +60,7 @@ function buildWelcomeLines(profile: {
   company?: string;
 }): string {
   const org = profile.company ? ` at ${profile.company}` : "";
-  return `Hey ${profile.firstName}! I'm your Global Summit guide. I'll ask a few quick questions (about 3 minutes) to learn more about you and connect you to others with shared interests. Nothing too serious, promise.\n\nI see you're a ${profile.title}${org} — we'll confirm your details at the end.`;
+  return `Hey ${profile.firstName} 👋 I'm your Networking Navigator.\n\nI'll ask eight quick questions to learn more about you and help connect you with other attendees who share your interests. It'll only take about three minutes.\n\nFirst, let's confirm your department and title.\n${profile.title}${org}`;
 }
 
 export function ConversationalWizard() {
