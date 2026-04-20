@@ -1,12 +1,8 @@
 "use client";
 
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { X, MessageCircle, ExternalLink } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface AboutJynxModalProps {
   open: boolean;
@@ -30,19 +26,19 @@ const teamMembers = [
 
 function TeamMemberCard({ name, title }: { name: string; title: string }) {
   return (
-    <div className="bg-[#0d0d0d] border border-[#444] rounded-2xl overflow-hidden flex flex-col">
-      <div className="pt-8 pb-4 flex flex-col items-center gap-3">
-        <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-[#141e21]" />
+    <div className="bg-[#0d0d0d] border border-[#444] rounded-2xl overflow-hidden flex flex-col min-w-0">
+      <div className="pt-10 pb-6 flex flex-col items-center gap-4">
+        <div className="w-28 h-28 md:w-36 md:h-36 rounded-full bg-[#141e21] shrink-0" />
         <div className="text-center px-4">
-          <h3 className="text-lg sm:text-xl font-bold text-white">{name}</h3>
-          <p className="text-sm text-white/70 mt-1">{title}</p>
+          <h3 className="text-xl md:text-2xl font-bold text-white">{name}</h3>
+          <p className="text-sm md:text-base text-white/70 mt-1">{title}</p>
         </div>
       </div>
-      <div className="bg-[#191919] px-4 py-4 flex gap-3 justify-center">
-        <button className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-full border border-[#343434] text-white text-sm font-medium hover:bg-white/5 transition-colors">
+      <div className="bg-[#191919] px-4 py-5 flex flex-wrap gap-3 justify-center">
+        <button className="flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-full border border-[#343434] text-white text-sm font-semibold hover:bg-white/5 transition-colors">
           View Profile
         </button>
-        <button className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-full bg-[#29606f] text-white text-sm font-medium hover:bg-[#347a8c] transition-colors">
+        <button className="flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-full bg-[#29606f] text-white text-sm font-semibold hover:bg-[#347a8c] transition-colors">
           <MessageCircle className="w-4 h-4" />
           Chat
           <ExternalLink className="w-3 h-3 opacity-80" />
@@ -54,60 +50,74 @@ function TeamMemberCard({ name, title }: { name: string; title: string }) {
 
 export function AboutJynxModal({ open, onOpenChange }: AboutJynxModalProps) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-black border-white/10 p-0">
-        <button
-          onClick={() => onOpenChange(false)}
-          className="absolute right-4 top-4 z-10 rounded-sm text-white/50 hover:text-white transition-opacity focus:outline-none focus:ring-2 focus:ring-cyan-500"
+    <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Overlay 
+          className="fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" 
+        />
+        <DialogPrimitive.Content
+          className={cn(
+            "fixed inset-4 z-50 mx-auto my-auto flex flex-col bg-black border border-white/10 rounded-xl shadow-2xl",
+            "max-w-5xl max-h-[calc(100vh-2rem)] md:inset-8 md:max-h-[calc(100vh-4rem)]",
+            "data-[state=open]:animate-in data-[state=closed]:animate-out",
+            "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+            "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
+          )}
         >
-          <X className="h-6 w-6" />
-          <span className="sr-only">Close</span>
-        </button>
+          {/* Close button */}
+          <DialogPrimitive.Close 
+            className="absolute right-4 top-4 z-10 p-2 rounded-full text-white/60 hover:text-white hover:bg-white/10 transition-all focus:outline-none focus:ring-2 focus:ring-cyan-500"
+          >
+            <X className="h-6 w-6" />
+            <span className="sr-only">Close</span>
+          </DialogPrimitive.Close>
 
-        <div className="px-6 sm:px-12 py-10 space-y-12">
-          {/* About Section */}
-          <section className="space-y-6">
-            <DialogHeader>
-              <DialogTitle className="text-3xl sm:text-4xl font-bold text-white">
-                About Jynx
-              </DialogTitle>
-            </DialogHeader>
-            <div className="space-y-6 text-white/80 text-base sm:text-lg leading-relaxed">
-              <p>
-                It started as a seed of an idea: a way to help leaders build meaningful 
-                connections tailored to their interests. So we built it ourselves, drawing 
-                on the needs of our community and the insights of the people it&apos;s designed 
-                to serve. The result is a networking experience shaped from within, designed 
-                to strengthen relationships, spark new ideas and help every leader get more 
-                from every interaction.
-              </p>
-              <p>
-                This work began as a pie-in-the-sky idea for the CAPS team working on 
-                Global Summit 2026; the application took shape through a combination of 
-                product design and AI, with a stretch assignment providing coding support, 
-                validation and refinement. Special thanks to Camila Gonzalez, Austin Potter 
-                and Lisa Lucas, whose creativity and drive helped turn the idea into reality.
-              </p>
-            </div>
-          </section>
+          {/* Scrollable content */}
+          <div className="flex-1 overflow-y-auto px-6 py-10 md:px-12 md:py-14">
+            <div className="space-y-14 max-w-4xl mx-auto">
+              {/* About Section */}
+              <section className="space-y-6">
+                <DialogPrimitive.Title className="text-3xl md:text-5xl font-bold text-white">
+                  About Jynx
+                </DialogPrimitive.Title>
+                <div className="space-y-6 text-white/80 text-base md:text-xl leading-relaxed">
+                  <p>
+                    It started as a seed of an idea: a way to help leaders build meaningful 
+                    connections tailored to their interests. So we built it ourselves, drawing 
+                    on the needs of our community and the insights of the people it&apos;s designed 
+                    to serve. The result is a networking experience shaped from within, designed 
+                    to strengthen relationships, spark new ideas and help every leader get more 
+                    from every interaction.
+                  </p>
+                  <p>
+                    This work began as a pie-in-the-sky idea for the CAPS team working on 
+                    Global Summit 2026; the application took shape through a combination of 
+                    product design and AI, with a stretch assignment providing coding support, 
+                    validation and refinement. Special thanks to Camila Gonzalez, Austin Potter 
+                    and Lisa Lucas, whose creativity and drive helped turn the idea into reality.
+                  </p>
+                </div>
+              </section>
 
-          {/* Team Section */}
-          <section className="space-y-6">
-            <h2 className="text-3xl sm:text-4xl font-bold text-white text-center">
-              The Team
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {teamMembers.map((member) => (
-                <TeamMemberCard
-                  key={member.name}
-                  name={member.name}
-                  title={member.title}
-                />
-              ))}
+              {/* Team Section */}
+              <section className="space-y-8">
+                <h2 className="text-3xl md:text-5xl font-bold text-white text-center">
+                  The Team
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {teamMembers.map((member) => (
+                    <TeamMemberCard
+                      key={member.name}
+                      name={member.name}
+                      title={member.title}
+                    />
+                  ))}
+                </div>
+              </section>
             </div>
-          </section>
-        </div>
-      </DialogContent>
-    </Dialog>
+          </div>
+        </DialogPrimitive.Content>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   );
 }
