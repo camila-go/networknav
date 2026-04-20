@@ -6,9 +6,9 @@ import { Gs26LockupLink } from "@/components/brand/gs26-lockup-link";
 import { Button } from "@/components/ui/button";
 
 export const metadata = {
-  title: "Global Summit 2026 | GS26",
+  title: "Global Summit 2026 | JYNX",
   description:
-    "Transform your conference experience with AI-powered leadership matches.",
+    "Transform your conference experience. Answer a few quick questions to unlock AI-powered matches with peers and leaders who complement your expertise.",
 };
 
 export default function WelcomePage() {
@@ -110,8 +110,8 @@ export default function WelcomePage() {
               Transform your conference experience
             </h1>
             <p className="mx-auto mt-4 max-w-md text-pretty text-sm font-medium leading-relaxed text-white antialiased sm:max-w-lg sm:text-base">
-              Take a 1-minute questionnaire to unlock AI-powered matches with peers and leaders who
-              complement your expertise – so you can connect, strategize and get more from the conference.
+              Answer a few quick questions to unlock AI-powered matches with peers and leaders who
+              complement your expertise – so you can connect, strategize and get more from Global Summit.
             </p>
           </div>
 
@@ -125,8 +125,8 @@ export default function WelcomePage() {
               Transform your conference experience
             </h1>
             <p className="hidden w-full text-pretty text-center text-sm font-medium leading-relaxed text-white antialiased sm:text-[0.95rem] md:mb-6 md:block">
-              Take a 1-minute questionnaire to unlock AI-powered matches with peers and leaders who
-              complement your expertise – so you can connect, strategize and get more from the conference.
+              Answer a few quick questions to unlock AI-powered matches with peers and leaders who
+              complement your expertise – so you can connect, strategize and get more from Global Summit.
             </p>
             <div className="mb-10 flex w-full max-w-md flex-col items-stretch justify-center gap-4 sm:max-w-none sm:flex-row sm:items-center sm:justify-center animate-fade-in [animation-delay:200ms] md:mb-10">
               <Link href="/register" className="w-full min-h-[48px] sm:w-auto sm:min-w-[12rem]">
