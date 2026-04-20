@@ -247,11 +247,11 @@ export default function WelcomePage() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <Link href="/welcome" className="flex shrink-0 items-center opacity-90 hover:opacity-100">
               <Image
-                src="/brand/header-logo.svg"
-                alt="Disney Institute"
-                width={255}
-                height={50}
-                className="h-7 w-auto max-w-[180px] brightness-0 invert sm:h-8 sm:max-w-[200px]"
+                src="/lockup-jynx.svg"
+                alt="JYNX GS26"
+                width={160}
+                height={37}
+                className="h-7 w-auto sm:h-8"
               />
             </Link>
             <p className="text-sm text-white/40">
