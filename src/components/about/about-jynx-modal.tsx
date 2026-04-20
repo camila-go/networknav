@@ -66,9 +66,9 @@ export function AboutJynxModal({ open, onOpenChange }: AboutJynxModalProps) {
         >
           {/* Close button */}
           <DialogPrimitive.Close 
-            className="absolute right-4 top-4 z-10 p-2 rounded-full text-white/60 hover:text-white hover:bg-white/10 transition-all focus:outline-none focus:ring-2 focus:ring-cyan-500"
+            className="absolute right-5 top-5 z-10 text-white/50 hover:text-white transition-colors focus:outline-none"
           >
-            <X className="h-6 w-6" />
+            <X className="h-8 w-8" />
             <span className="sr-only">Close</span>
           </DialogPrimitive.Close>
 
