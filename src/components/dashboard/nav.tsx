@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   Sparkles,
@@ -12,10 +13,10 @@ import {
   Shield,
   GalleryThumbnails,
 } from "lucide-react";
-import { Gs26LockupLink } from "@/components/brand/gs26-lockup-link";
 import { cn } from "@/lib/utils";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { MobileSearchNavButton } from "@/components/explore/explore-mobile-header-search";
+import { AboutJynxModal } from "@/components/about";
 import type { UserRole } from "@/types";
 
 const navItems = [
@@ -29,6 +30,7 @@ const navItems = [
 export function DashboardNav() {
   const pathname = usePathname();
   const [userRole, setUserRole] = useState<UserRole>("user");
+  const [aboutOpen, setAboutOpen] = useState(false);
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -51,10 +53,21 @@ export function DashboardNav() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-black/80 backdrop-blur supports-[backdrop-filter]:bg-black/60">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        <Gs26LockupLink
-          href="/dashboard"
-          className="max-w-[min(100%,14rem)] shrink-0 sm:max-w-none"
-        />
+        <button
+          onClick={() => setAboutOpen(true)}
+          className="flex items-center max-w-[min(100%,14rem)] shrink-0 sm:max-w-none hover:opacity-80 transition-opacity"
+          aria-label="About JYNX"
+        >
+          <Image
+            src="/lockup-jynx.svg"
+            alt="JYNX GS26"
+            width={160}
+            height={37}
+            className="h-8 w-auto sm:h-10"
+            priority
+          />
+        </button>
+        <AboutJynxModal open={aboutOpen} onOpenChange={setAboutOpen} />
 
         <nav className="flex min-w-0 flex-1 items-center justify-end gap-2">
           <MobileSearchNavButton />
