@@ -31,22 +31,61 @@ function getUserById(userId: string): SimpleUser | null {
     "demo-elena": { id: "demo-elena", name: "Elena Rodriguez", title: "CEO", company: "InnovateCo" },
     "demo-david": { id: "demo-david", name: "David Park", title: "VP of Product", company: "ScaleUp Inc" },
     "demo-aisha": { id: "demo-aisha", name: "Aisha Patel", title: "CTO", company: "FinanceFlow" },
-    "team-camila-gonzalez": { id: "team-camila-gonzalez", name: "Camila Gonzalez", title: "UI/UX Designer", company: "Strategic Education" },
-    "team-austin-potter": { id: "team-austin-potter", name: "Austin Potter", title: "Artificial Intelligence Innovation Developer", company: "Strategic Education" },
     "team-lisa-lucas": { id: "team-lisa-lucas", name: "Lisa Lucas", title: "Senior Designer", company: "Strategic Education" },
   };
   return demoUsers[userId] || null;
 }
 
-// Get user from Supabase
+// Get user from Supabase - tries by ID, then by name, then by email prefix
 async function getUserFromSupabase(userId: string): Promise<SimpleUser | null> {
   if (!isSupabaseConfigured || !supabaseAdmin) return null;
   
-  const { data, error } = await supabaseAdmin
+  // First try by ID
+  let { data, error } = await supabaseAdmin
     .from('user_profiles')
     .select('id, name, title, company')
     .eq('id', userId)
-    .single();
+    .maybeSingle();
+  
+  // If not found by ID, try by name (case-insensitive)
+  if (!data && !error) {
+    const nameResult = await supabaseAdmin
+      .from('user_profiles')
+      .select('id, name, title, company')
+      .ilike('name', userId)
+      .maybeSingle();
+    
+    if (!nameResult.error && nameResult.data) {
+      data = nameResult.data;
+    }
+  }
+  
+  // If not found by name, try with spaces instead of periods
+  if (!data && !error && userId.includes('.')) {
+    const nameWithSpaces = userId.replace(/\./g, ' ');
+    const nameResult = await supabaseAdmin
+      .from('user_profiles')
+      .select('id, name, title, company')
+      .ilike('name', nameWithSpaces)
+      .maybeSingle();
+    
+    if (!nameResult.error && nameResult.data) {
+      data = nameResult.data;
+    }
+  }
+  
+  // If still not found, try by email prefix
+  if (!data && !error) {
+    const emailResult = await supabaseAdmin
+      .from('user_profiles')
+      .select('id, name, title, company')
+      .ilike('email', `${userId}@%`)
+      .maybeSingle();
+    
+    if (!emailResult.error && emailResult.data) {
+      data = emailResult.data;
+    }
+  }
   
   if (error || !data) return null;
   

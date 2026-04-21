@@ -73,11 +73,50 @@ export async function GET(
         let targetEmail: string | undefined =
           session?.userId === targetUserId ? session.email : undefined;
         if (!targetEmail) {
-          const { data: row } = await supabaseAdmin
+          // Try by ID first, then by name, then by email prefix
+          let { data: row } = await supabaseAdmin
             .from("user_profiles")
-            .select("email")
+            .select("email, id")
             .eq("id", targetUserId)
             .maybeSingle();
+          
+          // If not found by ID, try by name
+          if (!row) {
+            const nameResult = await supabaseAdmin
+              .from("user_profiles")
+              .select("email, id")
+              .ilike("name", targetUserId)
+              .maybeSingle();
+            if (nameResult.data) {
+              row = nameResult.data;
+            }
+          }
+          
+          // If not found by name, try with spaces instead of periods
+          if (!row && targetUserId.includes('.')) {
+            const nameWithSpaces = targetUserId.replace(/\./g, ' ');
+            const nameResult = await supabaseAdmin
+              .from("user_profiles")
+              .select("email, id")
+              .ilike("name", nameWithSpaces)
+              .maybeSingle();
+            if (nameResult.data) {
+              row = nameResult.data;
+            }
+          }
+          
+          // If still not found, try by email prefix
+          if (!row) {
+            const emailResult = await supabaseAdmin
+              .from("user_profiles")
+              .select("email, id")
+              .ilike("email", `${targetUserId}@%`)
+              .maybeSingle();
+            if (emailResult.data) {
+              row = emailResult.data;
+            }
+          }
+          
           const em = (row as { email?: string } | null)?.email;
           if (typeof em === "string" && em.trim()) {
             targetEmail = em.trim();

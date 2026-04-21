@@ -36,8 +36,6 @@ function getDemoUser(userId: string): PublicUser | null {
     "demo-sarah": { id: "demo-sarah", profile: { name: "Sarah Chen", title: "Engineering Leader", company: "TechCorp" }, questionnaireCompleted: true },
     "demo-marcus": { id: "demo-marcus", profile: { name: "Marcus Johnson", title: "HR Executive", company: "GrowthStartup" }, questionnaireCompleted: true },
     "demo-elena": { id: "demo-elena", profile: { name: "Elena Rodriguez", title: "Founder & CEO", company: "InnovateCo" }, questionnaireCompleted: true },
-    "team-camila-gonzalez": { id: "team-camila-gonzalez", profile: { name: "Camila Gonzalez", title: "UI/UX Designer", company: "Strategic Education" }, questionnaireCompleted: true },
-    "team-austin-potter": { id: "team-austin-potter", profile: { name: "Austin Potter", title: "Artificial Intelligence Innovation Developer", company: "Strategic Education" }, questionnaireCompleted: true },
     "team-lisa-lucas": { id: "team-lisa-lucas", profile: { name: "Lisa Lucas", title: "Senior Designer", company: "Strategic Education" }, questionnaireCompleted: true },
     "demo-david": { id: "demo-david", profile: { name: "David Park", title: "Product Leader", company: "ScaleUp Inc" }, questionnaireCompleted: true },
     "demo-aisha": { id: "demo-aisha", profile: { name: "Aisha Patel", title: "Technology Executive", company: "FinanceFlow" }, questionnaireCompleted: true },
@@ -48,15 +46,56 @@ function getDemoUser(userId: string): PublicUser | null {
   return demoUsers[userId] || null;
 }
 
-// Get user from Supabase by ID
+// Get user from Supabase by ID, name, or email prefix
 async function getUserFromSupabase(userId: string): Promise<PublicUser | null> {
   if (!isSupabaseConfigured || !supabaseAdmin) return null;
   
-  const { data, error } = await supabaseAdmin
+  // First try by ID
+  let { data, error } = await supabaseAdmin
     .from('user_profiles')
     .select('id, name, title, company, photo_url, location, questionnaire_completed')
     .eq('id', userId)
-    .single();
+    .maybeSingle();
+  
+  // If not found by ID, try by name (case-insensitive)
+  if (!data && !error) {
+    const nameResult = await supabaseAdmin
+      .from('user_profiles')
+      .select('id, name, title, company, photo_url, location, questionnaire_completed')
+      .ilike('name', userId)
+      .maybeSingle();
+    
+    if (!nameResult.error && nameResult.data) {
+      data = nameResult.data;
+    }
+  }
+  
+  // If not found by name, try with spaces instead of periods
+  if (!data && !error && userId.includes('.')) {
+    const nameWithSpaces = userId.replace(/\./g, ' ');
+    const nameResult = await supabaseAdmin
+      .from('user_profiles')
+      .select('id, name, title, company, photo_url, location, questionnaire_completed')
+      .ilike('name', nameWithSpaces)
+      .maybeSingle();
+    
+    if (!nameResult.error && nameResult.data) {
+      data = nameResult.data;
+    }
+  }
+  
+  // If still not found, try by email prefix
+  if (!data && !error) {
+    const emailResult = await supabaseAdmin
+      .from('user_profiles')
+      .select('id, name, title, company, photo_url, location, questionnaire_completed')
+      .ilike('email', `${userId}@%`)
+      .maybeSingle();
+    
+    if (!emailResult.error && emailResult.data) {
+      data = emailResult.data;
+    }
+  }
   
   if (error || !data) return null;
   

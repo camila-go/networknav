@@ -3,7 +3,7 @@
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { X, MessageCircle, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 interface AboutJynxModalProps {
   open: boolean;
@@ -12,17 +12,17 @@ interface AboutJynxModalProps {
 
 const teamMembers = [
   {
-    id: "team-camila-gonzalez",
+    id: "Camila.Gonzalez",  // Real profile name
     name: "Camila Gonzalez",
     title: "UI/UX Designer",
   },
   {
-    id: "team-austin-potter",
+    id: "APOTTER16",  // Real profile name
     name: "Austin Potter",
     title: "Artificial Intelligence Innovation Developer",
   },
   {
-    id: "team-lisa-lucas",
+    id: "team-lisa-lucas",  // Placeholder until real profile exists
     name: "Lisa Lucas",
     title: "Senior Designer",
   },
@@ -32,14 +32,10 @@ function TeamMemberCard({
   id,
   name, 
   title,
-  onViewProfile,
-  onChat,
 }: { 
   id: string;
   name: string; 
   title: string;
-  onViewProfile: () => void;
-  onChat: () => void;
 }) {
   return (
     <div className="bg-[#0d0d0d] border border-[#444] rounded-2xl overflow-hidden flex flex-col min-w-0">
@@ -51,42 +47,26 @@ function TeamMemberCard({
         </div>
       </div>
       <div className="bg-[#191919] px-4 py-5 flex flex-wrap gap-3 justify-center">
-        <button 
-          onClick={onViewProfile}
+        <Link 
+          href={`/user/${id}`}
           className="flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-full border border-[#343434] text-white text-sm font-semibold hover:bg-white/5 transition-colors"
         >
           View Profile
-        </button>
-        <button 
-          onClick={onChat}
+        </Link>
+        <Link 
+          href={`/messages?new=${id}&name=${encodeURIComponent(name)}`}
           className="flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-full bg-[#29606f] text-white text-sm font-semibold hover:bg-[#347a8c] transition-colors"
         >
           <MessageCircle className="w-4 h-4" />
           Chat
           <ExternalLink className="w-3 h-3 opacity-80" />
-        </button>
+        </Link>
       </div>
     </div>
   );
 }
 
 export function AboutJynxModal({ open, onOpenChange }: AboutJynxModalProps) {
-  const router = useRouter();
-
-  const handleViewProfile = (id: string) => {
-    onOpenChange(false);
-    setTimeout(() => {
-      router.push(`/user/${id}`);
-    }, 100);
-  };
-
-  const handleChat = (id: string, name: string) => {
-    onOpenChange(false);
-    setTimeout(() => {
-      router.push(`/messages?new=${id}&name=${encodeURIComponent(name)}`);
-    }, 100);
-  };
-
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
@@ -149,8 +129,6 @@ export function AboutJynxModal({ open, onOpenChange }: AboutJynxModalProps) {
                       id={member.id}
                       name={member.name}
                       title={member.title}
-                      onViewProfile={() => handleViewProfile(member.id)}
-                      onChat={() => handleChat(member.id, member.name)}
                     />
                   ))}
                 </div>

@@ -154,14 +154,55 @@ export async function GET(request: NextRequest) {
       }
     }
     
-    // If not in memory, try Supabase
+    // If not in memory, try Supabase by ID first, then by name, then by email prefix
     if (!targetUser && isSupabaseConfigured && supabaseAdmin) {
       try {
-        const { data: supabaseUser, error } = await supabaseAdmin
+        // First try by ID
+        let { data: supabaseUser, error } = await supabaseAdmin
           .from("user_profiles")
           .select("*")
           .eq("id", targetUserId)
           .maybeSingle();
+        
+        // If not found by ID, try by name (case-insensitive exact match)
+        if (!supabaseUser && !error) {
+          const nameResult = await supabaseAdmin
+            .from("user_profiles")
+            .select("*")
+            .ilike("name", targetUserId)
+            .maybeSingle();
+          
+          if (!nameResult.error && nameResult.data) {
+            supabaseUser = nameResult.data;
+          }
+        }
+        
+        // If not found by name, try by name with spaces instead of periods
+        if (!supabaseUser && !error && targetUserId.includes(".")) {
+          const nameWithSpaces = targetUserId.replace(/\./g, " ");
+          const nameResult = await supabaseAdmin
+            .from("user_profiles")
+            .select("*")
+            .ilike("name", nameWithSpaces)
+            .maybeSingle();
+          
+          if (!nameResult.error && nameResult.data) {
+            supabaseUser = nameResult.data;
+          }
+        }
+        
+        // If still not found, try by email prefix (e.g., "Camila.Gonzalez" matches "camila.gonzalez@...")
+        if (!supabaseUser && !error) {
+          const emailResult = await supabaseAdmin
+            .from("user_profiles")
+            .select("*")
+            .ilike("email", `${targetUserId}@%`)
+            .maybeSingle();
+          
+          if (!emailResult.error && emailResult.data) {
+            supabaseUser = emailResult.data;
+          }
+        }
         
         if (error) {
           console.error("Supabase query error:", error);
@@ -182,21 +223,9 @@ export async function GET(request: NextRequest) {
       }
     }
     
-    // Fallback: Check if this is a team member from the About page
+    // Fallback: Check if this is a team member from the About page (only for Lisa who doesn't have a real profile yet)
     if (!targetUser) {
       const teamMembers: Record<string, { name: string; title: string; company: string; bio: string }> = {
-        "team-camila-gonzalez": {
-          name: "Camila Gonzalez",
-          title: "UI/UX Designer",
-          company: "Strategic Education",
-          bio: "UI/UX Designer who helped bring JYNX to life through thoughtful design and user-centered thinking.",
-        },
-        "team-austin-potter": {
-          name: "Austin Potter",
-          title: "Artificial Intelligence Innovation Developer",
-          company: "Strategic Education",
-          bio: "AI developer who architected the intelligent matching system that powers JYNX connections.",
-        },
         "team-lisa-lucas": {
           name: "Lisa Lucas",
           title: "Senior Designer",

@@ -309,6 +309,52 @@ function getStatFieldForActivity(activityType: ActivityType): string {
   }
 }
 
+// Helper to resolve userId - looks up by ID, then by name, then by email prefix
+async function resolveUserId(userId: string): Promise<string> {
+  if (!isSupabaseConfigured || !supabaseAdmin) return userId;
+  
+  // First check if it's a valid ID
+  const { data: byId } = await supabaseAdmin
+    .from("user_profiles")
+    .select("id")
+    .eq("id", userId)
+    .maybeSingle();
+  
+  if (byId?.id) return byId.id;
+  
+  // Try by name (case-insensitive)
+  const { data: byName } = await supabaseAdmin
+    .from("user_profiles")
+    .select("id")
+    .ilike("name", userId)
+    .maybeSingle();
+  
+  if (byName?.id) return byName.id;
+  
+  // Try with spaces instead of periods
+  if (userId.includes('.')) {
+    const nameWithSpaces = userId.replace(/\./g, ' ');
+    const { data: byNameSpaces } = await supabaseAdmin
+      .from("user_profiles")
+      .select("id")
+      .ilike("name", nameWithSpaces)
+      .maybeSingle();
+    
+    if (byNameSpaces?.id) return byNameSpaces.id;
+  }
+  
+  // Try by email prefix
+  const { data: byEmail } = await supabaseAdmin
+    .from("user_profiles")
+    .select("id")
+    .ilike("email", `${userId}@%`)
+    .maybeSingle();
+  
+  if (byEmail?.id) return byEmail.id;
+  
+  return userId;
+}
+
 // ============================================
 // GET - Fetch activity summary
 // ============================================
@@ -329,8 +375,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const userId = targetUserId || currentUserId || "demo";
-    const isOwnProfile = !targetUserId || targetUserId === currentUserId;
+    // Resolve the userId (handles both ID and name lookups)
+    let userId = targetUserId || currentUserId || "demo";
+    if (targetUserId) {
+      userId = await resolveUserId(targetUserId);
+    }
+    
+    const isOwnProfile = !targetUserId || userId === currentUserId;
 
     // Check if Supabase is configured
     if (!isSupabaseConfigured || !supabaseAdmin) {

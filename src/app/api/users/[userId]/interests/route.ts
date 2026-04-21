@@ -77,11 +77,49 @@ export async function GET(
     let questionnaireRaw: Record<string, unknown> | null = null;
 
     if (isSupabaseConfigured && supabaseAdmin) {
-      const { data: byProfileId, error: e1 } = await supabaseAdmin
+      // First try by profile ID
+      let { data: byProfileId, error: e1 } = await supabaseAdmin
         .from("user_profiles")
         .select("name, questionnaire_data, questionnaire_completed")
         .eq("id", targetUserId)
         .maybeSingle();
+
+      // If not found by ID, try by name (case-insensitive)
+      if (!byProfileId && !e1) {
+        const nameResult = await supabaseAdmin
+          .from("user_profiles")
+          .select("name, questionnaire_data, questionnaire_completed")
+          .ilike("name", targetUserId)
+          .maybeSingle();
+        if (!nameResult.error && nameResult.data) {
+          byProfileId = nameResult.data;
+        }
+      }
+      
+      // If not found by name, try with spaces instead of periods
+      if (!byProfileId && !e1 && targetUserId.includes('.')) {
+        const nameWithSpaces = targetUserId.replace(/\./g, ' ');
+        const nameResult = await supabaseAdmin
+          .from("user_profiles")
+          .select("name, questionnaire_data, questionnaire_completed")
+          .ilike("name", nameWithSpaces)
+          .maybeSingle();
+        if (!nameResult.error && nameResult.data) {
+          byProfileId = nameResult.data;
+        }
+      }
+      
+      // If still not found, try by email prefix
+      if (!byProfileId && !e1) {
+        const emailResult = await supabaseAdmin
+          .from("user_profiles")
+          .select("name, questionnaire_data, questionnaire_completed")
+          .ilike("email", `${targetUserId}@%`)
+          .maybeSingle();
+        if (!emailResult.error && emailResult.data) {
+          byProfileId = emailResult.data;
+        }
+      }
 
       if (!e1 && byProfileId) {
         userName = (byProfileId.name as string)?.trim() || "User";

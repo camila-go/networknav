@@ -18,6 +18,7 @@ import {
 import type { MatchWithUser, MatchType, StreakStatus } from "@/types";
 import { SHOW_GAMIFICATION_UI } from "@/lib/feature-flags";
 import { cn } from "@/lib/utils";
+import { getHorizontalCarouselStride } from "@/lib/horizontal-carousel";
 import { Button } from "@/components/ui/button";
 
 // Personalized encouragement messages based on user state
@@ -316,16 +317,6 @@ function interleaveMatchesByType<T extends { type: MatchType }>(items: T[]): T[]
   return rest.length > 0 ? [...out, ...rest] : out;
 }
 
-function getCarouselSlideStride(scrollEl: HTMLDivElement): number {
-  const slide = scrollEl.querySelector<HTMLElement>("[data-match-slide]");
-  if (!slide) return Math.max(scrollEl.clientWidth * 0.85 + 16, 1);
-  const gap =
-    parseInt(getComputedStyle(scrollEl).gap || "16", 10) || 16;
-  const w = slide.getBoundingClientRect().width;
-  // Avoid 0 when slides are display:none (desktop) or not laid out — scrollLeft/0 → NaN → dots break
-  return Math.max(w + gap, 1);
-}
-
 function getDesktopMatchPageStride(scrollEl: HTMLDivElement): number {
   return scrollEl.clientWidth;
 }
@@ -425,7 +416,7 @@ function MatchGrid({
       observer = null;
       if (!mq.matches) return;
 
-      const slides = root.querySelectorAll<HTMLElement>("[data-match-slide]");
+      const slides = root.querySelectorAll<HTMLElement>("[data-carousel-slide]");
       if (slides.length === 0) return;
 
       observer = new IntersectionObserver(
@@ -464,11 +455,12 @@ function MatchGrid({
   const handleScroll = () => {
     if (!scrollRef.current) return;
     const scrollLeft = scrollRef.current.scrollLeft;
-    const stride = getCarouselSlideStride(scrollRef.current);
+    const stride = getHorizontalCarouselStride(scrollRef.current);
     if (stride < 8) return;
     const newIndex = Math.round(scrollLeft / stride);
     if (!Number.isFinite(newIndex)) return;
-    setActiveIndex(Math.min(Math.max(0, newIndex), matches.length - 1));
+    const clamped = Math.min(Math.max(0, newIndex), matches.length - 1);
+    setActiveIndex((prev) => (prev === clamped ? prev : clamped));
   };
 
   const handleDesktopPageScroll = () => {
@@ -518,7 +510,7 @@ function MatchGrid({
         <div
           ref={scrollRef}
           onScroll={handleScroll}
-          className="flex min-w-0 touch-manipulation touch-pan-x items-stretch gap-4 overflow-x-auto overflow-y-hidden overscroll-x-contain snap-x snap-mandatory scroll-smooth pb-0 scrollbar-hide"
+          className="flex min-w-0 touch-manipulation touch-pan-x items-stretch gap-4 overflow-x-auto overflow-y-hidden overscroll-x-contain snap-x snap-mandatory pb-0 scrollbar-hide"
           style={{
             scrollPaddingLeft: "0px",
             WebkitOverflowScrolling: "touch",
@@ -528,8 +520,8 @@ function MatchGrid({
           {matches.map((match) => (
             <div
               key={match.id}
-              data-match-slide
-              className="flex h-[min(720px,calc(100dvh-9.5rem))] w-[85vw] max-w-[340px] flex-shrink-0 snap-start flex-col"
+              data-carousel-slide
+              className="flex h-[min(720px,calc(100svh-9.5rem))] w-[85vw] max-w-[340px] flex-shrink-0 snap-start flex-col"
             >
               <MatchCard
                 match={match}

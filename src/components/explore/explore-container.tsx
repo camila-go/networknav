@@ -35,6 +35,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getHorizontalCarouselStride } from "@/lib/horizontal-carousel";
 import { useToast } from "@/components/ui/use-toast";
 import {
   EXPLORE_SEARCH_FOCUS_EVENT,
@@ -637,12 +638,74 @@ function MobileCardSwiper({
   const [activeIndex, setActiveIndex] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  const resultsKey = useMemo(
+    () => results.map((r) => r.user.id).join("\0"),
+    [results]
+  );
+
+  useEffect(() => {
+    setActiveIndex(0);
+    const el = scrollRef.current;
+    if (el) el.scrollTo({ left: 0, behavior: "auto" });
+  }, [resultsKey]);
+
+  // IntersectionObserver tracks the centered slide — iOS often under-reports scroll events
+  useEffect(() => {
+    const root = scrollRef.current;
+    if (!root || results.length <= 1) return;
+
+    const mq = window.matchMedia("(max-width: 639px)");
+    let observer: IntersectionObserver | null = null;
+
+    const attach = () => {
+      observer?.disconnect();
+      observer = null;
+      if (!mq.matches) return;
+
+      const slides = root.querySelectorAll<HTMLElement>("[data-carousel-slide]");
+      if (slides.length === 0) return;
+
+      observer = new IntersectionObserver(
+        (entries) => {
+          let bestIdx = 0;
+          let bestRatio = 0;
+          for (const entry of entries) {
+            if (!entry.isIntersecting) continue;
+            const idx = [...slides].indexOf(entry.target as HTMLElement);
+            if (idx < 0) continue;
+            const r = entry.intersectionRatio;
+            if (r > bestRatio) {
+              bestRatio = r;
+              bestIdx = idx;
+            }
+          }
+          if (bestRatio > 0.05) {
+            setActiveIndex((prev) => (prev === bestIdx ? prev : bestIdx));
+          }
+        },
+        { root, rootMargin: "-8% 0px -8% 0px", threshold: [0.1, 0.25, 0.5, 0.75, 0.95] }
+      );
+
+      slides.forEach((el) => observer!.observe(el));
+    };
+
+    attach();
+    mq.addEventListener("change", attach);
+    return () => {
+      mq.removeEventListener("change", attach);
+      observer?.disconnect();
+    };
+  }, [resultsKey, results.length]);
+
   const handleScroll = () => {
     if (!scrollRef.current) return;
-    const scrollLeft = scrollRef.current.scrollLeft;
-    const cardWidth = scrollRef.current.offsetWidth * 0.85 + 16;
-    const newIndex = Math.round(scrollLeft / cardWidth);
-    setActiveIndex(Math.min(newIndex, results.length - 1));
+    const el = scrollRef.current;
+    const stride = getHorizontalCarouselStride(el);
+    if (stride < 8) return;
+    const newIndex = Math.round(el.scrollLeft / stride);
+    if (!Number.isFinite(newIndex)) return;
+    const clamped = Math.min(Math.max(0, newIndex), results.length - 1);
+    setActiveIndex((prev) => (prev === clamped ? prev : clamped));
   };
 
   if (results.length === 0) return null;
@@ -657,15 +720,20 @@ function MobileCardSwiper({
         <span className="text-xs text-white/40">Swipe to browse →</span>
       </div>
 
-      <div 
+      <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-4 scrollbar-hide scroll-smooth"
+        className="flex min-w-0 touch-manipulation touch-pan-x items-stretch gap-4 overflow-x-auto overflow-y-hidden overscroll-x-contain snap-x snap-mandatory pb-0 scrollbar-hide"
+        style={{
+          WebkitOverflowScrolling: "touch",
+          overscrollBehaviorX: "contain",
+        }}
       >
         {results.map((attendee) => (
           <div
             key={attendee.user.id}
-            className="flex-shrink-0 w-[85vw] max-w-[340px] snap-start"
+            data-carousel-slide
+            className="flex h-[min(720px,calc(100svh-9.5rem))] w-[85vw] max-w-[340px] flex-shrink-0 snap-start flex-col"
           >
             <AttendeeCard
               attendee={attendee}
@@ -684,16 +752,17 @@ function MobileCardSwiper({
           {results.map((_, index) => (
             <button
               key={index}
+              type="button"
               onClick={() => {
-                if (scrollRef.current) {
-                  const cardWidth = scrollRef.current.offsetWidth * 0.85 + 16;
-                  scrollRef.current.scrollTo({ left: cardWidth * index, behavior: 'smooth' });
-                }
+                const el = scrollRef.current;
+                if (!el) return;
+                const stride = getHorizontalCarouselStride(el);
+                el.scrollTo({ left: stride * index, behavior: "smooth" });
               }}
               className={`h-1.5 rounded-full transition-all ${
-                index === activeIndex 
-                  ? 'w-6 bg-cyan-400' 
-                  : 'w-1.5 bg-white/30 hover:bg-white/50'
+                index === activeIndex
+                  ? "w-6 bg-cyan-400"
+                  : "w-1.5 bg-white/30 hover:bg-white/50"
               }`}
             />
           ))}

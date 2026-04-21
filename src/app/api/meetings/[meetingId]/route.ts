@@ -69,8 +69,6 @@ function getDemoUser(userId: string): PublicUser | null {
     "demo-sarah": { id: "demo-sarah", profile: { name: "Sarah Chen", title: "Engineering Leader", company: "TechCorp" }, questionnaireCompleted: true },
     "demo-marcus": { id: "demo-marcus", profile: { name: "Marcus Johnson", title: "HR Executive", company: "GrowthStartup" }, questionnaireCompleted: true },
     "demo-elena": { id: "demo-elena", profile: { name: "Elena Rodriguez", title: "Founder & CEO", company: "InnovateCo" }, questionnaireCompleted: true },
-    "team-camila-gonzalez": { id: "team-camila-gonzalez", profile: { name: "Camila Gonzalez", title: "UI/UX Designer", company: "Strategic Education" }, questionnaireCompleted: true },
-    "team-austin-potter": { id: "team-austin-potter", profile: { name: "Austin Potter", title: "Artificial Intelligence Innovation Developer", company: "Strategic Education" }, questionnaireCompleted: true },
     "team-lisa-lucas": { id: "team-lisa-lucas", profile: { name: "Lisa Lucas", title: "Senior Designer", company: "Strategic Education" }, questionnaireCompleted: true },
     "demo-david": { id: "demo-david", profile: { name: "David Park", title: "Product Leader", company: "ScaleUp Inc" }, questionnaireCompleted: true },
     "demo-aisha": { id: "demo-aisha", profile: { name: "Aisha Patel", title: "Technology Executive", company: "FinanceFlow" }, questionnaireCompleted: true },

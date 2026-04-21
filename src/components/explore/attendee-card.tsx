@@ -155,6 +155,7 @@ export function AttendeeCard({
           isCarousel &&
             "touch-pan-y overflow-y-auto overscroll-y-contain"
         )}
+        style={isCarousel ? { WebkitOverflowScrolling: "touch" } : undefined}
       >
         {searchMatchLabels && searchMatchLabels.length > 0 && (
           <div className="w-full rounded-[12px] bg-[#141e21] p-3">
