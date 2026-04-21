@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth";
 import { profileSchema } from "@/lib/validations";
 import { users } from "@/lib/stores";
 import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
+import { lookupUserProfileByIdentifier } from "@/lib/profile/lookup-user-profile";
 import { cookies } from "next/headers";
 import type { UserRole } from "@/types";
 
@@ -154,59 +155,17 @@ export async function GET(request: NextRequest) {
       }
     }
     
-    // If not in memory, try Supabase by ID first, then by name, then by email prefix
+    // If not in memory, resolve via Supabase (shared lookup: uuid, name, email patterns)
     if (!targetUser && isSupabaseConfigured && supabaseAdmin) {
+      console.log(`[Profile API] Looking up user: ${targetUserId}`);
       try {
-        // First try by ID
-        let { data: supabaseUser, error } = await supabaseAdmin
-          .from("user_profiles")
-          .select("*")
-          .eq("id", targetUserId)
-          .maybeSingle();
-        
-        // If not found by ID, try by name (case-insensitive exact match)
-        if (!supabaseUser && !error) {
-          const nameResult = await supabaseAdmin
-            .from("user_profiles")
-            .select("*")
-            .ilike("name", targetUserId)
-            .maybeSingle();
-          
-          if (!nameResult.error && nameResult.data) {
-            supabaseUser = nameResult.data;
-          }
-        }
-        
-        // If not found by name, try by name with spaces instead of periods
-        if (!supabaseUser && !error && targetUserId.includes(".")) {
-          const nameWithSpaces = targetUserId.replace(/\./g, " ");
-          const nameResult = await supabaseAdmin
-            .from("user_profiles")
-            .select("*")
-            .ilike("name", nameWithSpaces)
-            .maybeSingle();
-          
-          if (!nameResult.error && nameResult.data) {
-            supabaseUser = nameResult.data;
-          }
-        }
-        
-        // If still not found, try by email prefix (e.g., "Camila.Gonzalez" matches "camila.gonzalez@...")
-        if (!supabaseUser && !error) {
-          const emailResult = await supabaseAdmin
-            .from("user_profiles")
-            .select("*")
-            .ilike("email", `${targetUserId}@%`)
-            .maybeSingle();
-          
-          if (!emailResult.error && emailResult.data) {
-            supabaseUser = emailResult.data;
-          }
-        }
-        
-        if (error) {
-          console.error("Supabase query error:", error);
-        } else if (supabaseUser) {
+        const supabaseUser = await lookupUserProfileByIdentifier(targetUserId);
+        if (supabaseUser) {
+          console.log(
+            `[Profile API] Found user:`,
+            supabaseUser.name,
+            supabaseUser.id
+          );
           targetUser = {
             id: supabaseUser.id,
             email: supabaseUser.email,

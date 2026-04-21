@@ -131,13 +131,15 @@ export default function UserProfilePage() {
           setIsOwnProfile(true);
         }
 
-        // Find match data between current user and target user
+        // Find match data between current user and target user (if any)
+        let matchedFromMatches = false;
         if (matchesData.success && matchesData.data?.matches) {
           const match = matchesData.data.matches.find(
             (m: { matchedUserId: string }) => m.matchedUserId === userId
           );
 
           if (match) {
+            matchedFromMatches = true;
             setProfile(match.matchedUser.profile);
             if (match.matchedUser.email) setUserEmail(match.matchedUser.email);
             setMatchData({
@@ -147,33 +149,29 @@ export default function UserProfilePage() {
               commonalities: match.commonalities,
               conversationStarters: match.conversationStarters,
             });
-          } else {
-            // User not in matches - try fetching their profile directly
-            try {
-              const directProfileRes = await fetch(`/api/profile?userId=${userId}`);
-              const directProfileData = await directProfileRes.json();
-              
-              if (directProfileData.success && directProfileData.data?.user?.profile) {
-                setProfile({
-                  ...directProfileData.data.user.profile,
-                });
-                if (directProfileData.data.user.email) setUserEmail(directProfileData.data.user.email);
-              }
-            } catch (err) {
-              console.error("Failed to fetch direct profile:", err);
-            }
           }
-        } else {
-          // No matches data - try fetching profile directly
-          try {
-            const directProfileRes = await fetch(`/api/profile?userId=${userId}`);
-            const directProfileData = await directProfileRes.json();
+        }
 
-            if (directProfileData.success && directProfileData.data?.user?.profile) {
+        // If not found in matches, always fetch profile directly
+        if (!matchedFromMatches) {
+          try {
+            const directProfileRes = await fetch(`/api/profile?userId=${encodeURIComponent(userId)}`);
+            const directProfileData = await directProfileRes.json();
+            console.log("[UserProfile] Direct profile fetch:", { userId, success: directProfileData.success, data: directProfileData.data });
+
+            if (directProfileData.success && directProfileData.data?.user) {
+              const u = directProfileData.data.user;
+              const p = u.profile || {};
               setProfile({
-                ...directProfileData.data.user.profile,
+                id: u.id,
+                name: p.name || "User",
+                title: p.title || "",
+                company: p.company,
+                photoUrl: p.photoUrl,
               });
-              if (directProfileData.data.user.email) setUserEmail(directProfileData.data.user.email);
+              if (u.email) setUserEmail(u.email);
+            } else {
+              console.warn("[UserProfile] Profile API returned no profile:", directProfileData);
             }
           } catch (err) {
             console.error("Failed to fetch direct profile:", err);

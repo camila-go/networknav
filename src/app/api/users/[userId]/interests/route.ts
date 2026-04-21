@@ -4,6 +4,7 @@ import { questionnaireResponses, users } from "@/lib/stores";
 import { cookies } from "next/headers";
 import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
 import { profileAnswerRowsFromQuestionnaire } from "@/lib/profile/questionnaire-answers-display";
+import { lookupUserProfileByIdentifier } from "@/lib/profile/lookup-user-profile";
 
 interface UserInterests {
   archetype: string | null;
@@ -77,70 +78,50 @@ export async function GET(
     let questionnaireRaw: Record<string, unknown> | null = null;
 
     if (isSupabaseConfigured && supabaseAdmin) {
-      // First try by profile ID
-      let { data: byProfileId, error: e1 } = await supabaseAdmin
-        .from("user_profiles")
-        .select("name, questionnaire_data, questionnaire_completed")
-        .eq("id", targetUserId)
-        .maybeSingle();
+      let byProfileId: {
+        name: string | null;
+        questionnaire_data: unknown;
+        questionnaire_completed: boolean | null;
+      } | null = null;
 
-      // If not found by ID, try by name (case-insensitive)
-      if (!byProfileId && !e1) {
-        const nameResult = await supabaseAdmin
+      const resolved = await lookupUserProfileByIdentifier(targetUserId);
+      if (resolved) {
+        const result = await supabaseAdmin
           .from("user_profiles")
           .select("name, questionnaire_data, questionnaire_completed")
-          .ilike("name", targetUserId)
+          .eq("id", resolved.id)
           .maybeSingle();
-        if (!nameResult.error && nameResult.data) {
-          byProfileId = nameResult.data;
-        }
-      }
-      
-      // If not found by name, try with spaces instead of periods
-      if (!byProfileId && !e1 && targetUserId.includes('.')) {
-        const nameWithSpaces = targetUserId.replace(/\./g, ' ');
-        const nameResult = await supabaseAdmin
-          .from("user_profiles")
-          .select("name, questionnaire_data, questionnaire_completed")
-          .ilike("name", nameWithSpaces)
-          .maybeSingle();
-        if (!nameResult.error && nameResult.data) {
-          byProfileId = nameResult.data;
-        }
-      }
-      
-      // If still not found, try by email prefix
-      if (!byProfileId && !e1) {
-        const emailResult = await supabaseAdmin
-          .from("user_profiles")
-          .select("name, questionnaire_data, questionnaire_completed")
-          .ilike("email", `${targetUserId}@%`)
-          .maybeSingle();
-        if (!emailResult.error && emailResult.data) {
-          byProfileId = emailResult.data;
+        if (result.data) {
+          const r = result.data;
+          byProfileId = {
+            name: r.name ?? null,
+            questionnaire_data: r.questionnaire_data ?? null,
+            questionnaire_completed: r.questionnaire_completed ?? null,
+          };
         }
       }
 
-      if (!e1 && byProfileId) {
+      if (!byProfileId) {
+        const { data: byAuthId } = await supabaseAdmin
+          .from("user_profiles")
+          .select("name, questionnaire_data, questionnaire_completed")
+          .eq("user_id", targetUserId)
+          .maybeSingle();
+        if (byAuthId) {
+          byProfileId = {
+            name: byAuthId.name ?? null,
+            questionnaire_data: byAuthId.questionnaire_data ?? null,
+            questionnaire_completed: byAuthId.questionnaire_completed ?? null,
+          };
+        }
+      }
+
+      if (byProfileId) {
         userName = (byProfileId.name as string)?.trim() || "User";
         questionnaireCompleted = !!byProfileId.questionnaire_completed;
         questionnaireRaw =
           (byProfileId.questionnaire_data as Record<string, unknown>) || null;
         interests = interestsFromQuestionnaireData(questionnaireRaw);
-      } else {
-        const { data: byAuthId, error: e2 } = await supabaseAdmin
-          .from("user_profiles")
-          .select("name, questionnaire_data, questionnaire_completed")
-          .eq("user_id", targetUserId)
-          .maybeSingle();
-
-        if (!e2 && byAuthId) {
-          userName = (byAuthId.name as string)?.trim() || "User";
-          questionnaireCompleted = !!byAuthId.questionnaire_completed;
-          questionnaireRaw =
-            (byAuthId.questionnaire_data as Record<string, unknown>) || null;
-          interests = interestsFromQuestionnaireData(questionnaireRaw);
-        }
       }
     }
 

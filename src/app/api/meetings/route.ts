@@ -50,15 +50,21 @@ function getDemoUser(userId: string): PublicUser | null {
 async function getUserFromSupabase(userId: string): Promise<PublicUser | null> {
   if (!isSupabaseConfigured || !supabaseAdmin) return null;
   
-  // First try by ID
-  let { data, error } = await supabaseAdmin
-    .from('user_profiles')
-    .select('id, name, title, company, photo_url, location, questionnaire_completed')
-    .eq('id', userId)
-    .maybeSingle();
+  let data = null;
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
+  
+  // First try by ID (only if valid UUID)
+  if (isUuid) {
+    const result = await supabaseAdmin
+      .from('user_profiles')
+      .select('id, name, title, company, photo_url, location, questionnaire_completed')
+      .eq('id', userId)
+      .maybeSingle();
+    if (result.data) data = result.data;
+  }
   
   // If not found by ID, try by name (case-insensitive)
-  if (!data && !error) {
+  if (!data) {
     const nameResult = await supabaseAdmin
       .from('user_profiles')
       .select('id, name, title, company, photo_url, location, questionnaire_completed')
@@ -71,7 +77,7 @@ async function getUserFromSupabase(userId: string): Promise<PublicUser | null> {
   }
   
   // If not found by name, try with spaces instead of periods
-  if (!data && !error && userId.includes('.')) {
+  if (!data && userId.includes('.')) {
     const nameWithSpaces = userId.replace(/\./g, ' ');
     const nameResult = await supabaseAdmin
       .from('user_profiles')
@@ -85,7 +91,7 @@ async function getUserFromSupabase(userId: string): Promise<PublicUser | null> {
   }
   
   // If still not found, try by email prefix
-  if (!data && !error) {
+  if (!data) {
     const emailResult = await supabaseAdmin
       .from('user_profiles')
       .select('id, name, title, company, photo_url, location, questionnaire_completed')
@@ -97,7 +103,7 @@ async function getUserFromSupabase(userId: string): Promise<PublicUser | null> {
     }
   }
   
-  if (error || !data) return null;
+  if (!data) return null;
   
   // Type assertion for Supabase response
   const row = data as {

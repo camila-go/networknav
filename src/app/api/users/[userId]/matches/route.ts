@@ -4,6 +4,7 @@ import { userMatches, users } from "@/lib/stores";
 import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
 import { isLiveDatabaseMode } from "@/lib/supabase/data-mode";
 import { ensureMatchesLoaded } from "@/lib/network/ensure-matches-loaded";
+import { lookupUserProfileByIdentifier } from "@/lib/profile/lookup-user-profile";
 import { cookies } from "next/headers";
 
 interface UserMatchSummary {
@@ -70,59 +71,14 @@ export async function GET(
       supabaseAdmin
     ) {
       try {
+        const resolved = await lookupUserProfileByIdentifier(targetUserId);
+        const effectiveId = resolved?.id ?? targetUserId;
         let targetEmail: string | undefined =
-          session?.userId === targetUserId ? session.email : undefined;
-        if (!targetEmail) {
-          // Try by ID first, then by name, then by email prefix
-          let { data: row } = await supabaseAdmin
-            .from("user_profiles")
-            .select("email, id")
-            .eq("id", targetUserId)
-            .maybeSingle();
-          
-          // If not found by ID, try by name
-          if (!row) {
-            const nameResult = await supabaseAdmin
-              .from("user_profiles")
-              .select("email, id")
-              .ilike("name", targetUserId)
-              .maybeSingle();
-            if (nameResult.data) {
-              row = nameResult.data;
-            }
-          }
-          
-          // If not found by name, try with spaces instead of periods
-          if (!row && targetUserId.includes('.')) {
-            const nameWithSpaces = targetUserId.replace(/\./g, ' ');
-            const nameResult = await supabaseAdmin
-              .from("user_profiles")
-              .select("email, id")
-              .ilike("name", nameWithSpaces)
-              .maybeSingle();
-            if (nameResult.data) {
-              row = nameResult.data;
-            }
-          }
-          
-          // If still not found, try by email prefix
-          if (!row) {
-            const emailResult = await supabaseAdmin
-              .from("user_profiles")
-              .select("email, id")
-              .ilike("email", `${targetUserId}@%`)
-              .maybeSingle();
-            if (emailResult.data) {
-              row = emailResult.data;
-            }
-          }
-          
-          const em = (row as { email?: string } | null)?.email;
-          if (typeof em === "string" && em.trim()) {
-            targetEmail = em.trim();
-          }
+          session?.userId === effectiveId ? session.email : undefined;
+        if (!targetEmail && resolved?.email) {
+          targetEmail = resolved.email.trim();
         }
-        const loaded = await ensureMatchesLoaded(targetUserId, targetEmail);
+        const loaded = await ensureMatchesLoaded(effectiveId, targetEmail);
         publicMatches = loaded
           .filter((m) => !m.passed)
           .map((match) => ({
