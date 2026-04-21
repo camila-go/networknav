@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Eye, EyeOff, Loader2, Check, X } from "lucide-react";
+import { Eye, EyeOff, Loader2, Check, X, Shield } from "lucide-react";
 import { registerSchema, type RegisterInput } from "@/lib/validations";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -92,7 +92,23 @@ export function RegisterForm() {
   const inputStyles = "bg-white/5 border-white/20 text-white placeholder:text-white/40 focus:border-cyan-500/50 focus:ring-cyan-500/20";
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <div className="space-y-4">
+      <Button asChild className="w-full" size="lg">
+        <a href="/api/auth/sso/login">
+          <Shield className="mr-2 h-5 w-5" aria-hidden />
+          Sign in with Corporate SSO
+        </a>
+      </Button>
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center">
+          <span className="w-full border-t border-white/10" />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-[#0a1628] px-2 text-white/40">or</span>
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="name" className="text-white/80">Full Name</Label>
         <Input
@@ -248,7 +264,8 @@ export function RegisterForm() {
           Privacy Policy
         </a>
       </p>
-    </form>
+      </form>
+    </div>
   );
 }
 
