@@ -347,6 +347,8 @@ export interface NetworkNode {
   matchType: MatchType | "neutral" | "discoverable";
   commonalityCount: number;
   commonalities: string[];
+  /** Real user id for synthesized "discoverable" bubbles whose node id is synthetic */
+  realUserId?: string;
 }
 
 export interface NetworkEdge {

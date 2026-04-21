@@ -171,6 +171,38 @@ export function NetworkContainer() {
         strength: 0.5,
         commonalities: [contact.reason],
       }));
+
+      // Fallback: when the API returned no extendedNetwork entries for this
+      // node (common in dev when the user_profiles pool is sparse), synthesize
+      // purple "via" bubbles from other network members so the overlay always
+      // renders. Use synthetic ids to avoid colliding with real nodes in the
+      // force simulation; realUserId preserves the target for profile routing.
+      if (newNodes.length < 3) {
+        const usedRealIds = new Set<string>([selectedNode.id, ...contacts.map(c => c.id)]);
+        const firstName = selectedNode.name.split(" ")[0];
+        const fallbackPool = networkData.nodes.filter(
+          n => !usedRealIds.has(n.id) && n.matchType !== "neutral" && n.matchType !== "discoverable"
+        );
+        for (const real of fallbackPool) {
+          if (newNodes.length >= 3) break;
+          newNodes.push({
+            id: `discover-${real.id}-via-${selectedNode.id}`,
+            name: real.name,
+            title: real.title,
+            company: real.company,
+            matchType: "discoverable" as MatchType,
+            commonalityCount: 0,
+            commonalities: [`Also connected via ${firstName}`],
+            realUserId: real.id,
+          });
+          newEdges.push({
+            source: selectedNode.id,
+            target: `discover-${real.id}-via-${selectedNode.id}`,
+            strength: 0.5,
+            commonalities: [`Also connected via ${firstName}`],
+          });
+        }
+      }
     } else {
       // When no node selected, show a few discoverable nodes by default
       const sampleNodes = networkData.nodes
@@ -246,7 +278,7 @@ export function NetworkContainer() {
     if (node.matchType === "neutral") return;
 
     if (node.matchType === "discoverable") {
-      router.push(`/user/${node.id}`);
+      router.push(`/user/${node.realUserId ?? node.id}`);
       return;
     }
 
@@ -448,7 +480,7 @@ export function NetworkContainer() {
             data={enhancedNetworkData}
             filter={filter}
             onNodeClick={handleNodeClick}
-            onNodeDoubleClick={(node) => router.push(`/user/${node.id}`)}
+            onNodeDoubleClick={(node) => router.push(`/user/${node.realUserId ?? node.id}`)}
             selectedNodeId={selectedNode?.id}
           />
 
