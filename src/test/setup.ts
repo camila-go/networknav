@@ -40,7 +40,31 @@ if (typeof window !== "undefined") {
     disconnect() {}
   } as unknown as typeof globalThis.IntersectionObserver;
 
-  // Mock scrollIntoView (not implemented in jsdom)
+  // Mock scrollIntoView and scrollTo (not implemented in jsdom)
   Element.prototype.scrollIntoView = vi.fn();
+  Element.prototype.scrollTo = vi.fn();
+
+  // d3-zoom reads svg.width.baseVal.value / svg.height.baseVal.value
+  Object.defineProperty(SVGElement.prototype, "width", {
+    get() {
+      return { baseVal: { value: 400 } };
+    },
+    configurable: true,
+  });
+  Object.defineProperty(SVGElement.prototype, "height", {
+    get() {
+      return { baseVal: { value: 400 } };
+    },
+    configurable: true,
+  });
+
+  // d3-interpolate parseSvg reads node.transform.baseVal.consolidate();
+  // returning null causes d3 to fall back to identity transform.
+  Object.defineProperty(SVGElement.prototype, "transform", {
+    get() {
+      return { baseVal: { consolidate: () => null } };
+    },
+    configurable: true,
+  });
 }
 

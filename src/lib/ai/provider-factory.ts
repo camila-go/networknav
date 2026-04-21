@@ -1,5 +1,5 @@
 import type { AIProviderType, EmbeddingProvider, GenerativeProvider } from './types';
-import { OpenAIEmbeddingProvider, OpenAIGenerativeProvider } from './openai-provider';
+import { OpenAIEmbeddingProvider } from './openai-provider';
 import { VertexAIProvider } from './vertex-provider';
 
 let _embeddingProvider: EmbeddingProvider | null = null;
@@ -34,10 +34,5 @@ export function getGenerativeProvider(): GenerativeProvider | null {
     return _generativeProvider;
   }
 
-  const openaiGen = new OpenAIGenerativeProvider();
-  if (openaiGen.isConfigured) {
-    _generativeProvider = openaiGen;
-    return _generativeProvider;
-  }
   return null;
 }

@@ -11,11 +11,13 @@ import { checkRateLimit } from "@/lib/security/rateLimit";
 import type { UserRole } from "@/types";
 import { applyAdminEmailEnvPromotion } from "@/lib/auth/admin-env";
 
-// Rate limit for login (prod: strict; dev: room to debug without locking yourself out)
-const LOGIN_RATE_LIMIT =
-  process.env.NODE_ENV === "production"
+// Rate limit for login (prod: strict; dev: room to debug without locking yourself out).
+// Read inside POST so tests can override NODE_ENV via vi.stubEnv().
+function getLoginRateLimit() {
+  return process.env.NODE_ENV === "production"
     ? { maxRequests: 5, windowMs: 15 * 60 * 1000 }
     : { maxRequests: 100, windowMs: 15 * 60 * 1000 };
+}
 
 const MSG_SSO_ONLY =
   "This account uses corporate SSO. Use “Sign in with Corporate SSO” instead of email and password.";
@@ -157,11 +159,12 @@ export async function POST(request: NextRequest) {
       || "unknown";
 
     // Check rate limit before processing
+    const loginLimit = getLoginRateLimit();
     const rateLimitResult = await checkRateLimit(
       `login:${ip}`,
       "login",
-      LOGIN_RATE_LIMIT.maxRequests,
-      LOGIN_RATE_LIMIT.windowMs
+      loginLimit.maxRequests,
+      loginLimit.windowMs
     );
 
     if (!rateLimitResult.allowed) {

@@ -105,6 +105,8 @@ describe("RegisterForm", () => {
   it("should redirect to onboarding on successful registration", async () => {
     const user = userEvent.setup();
     vi.mocked(global.fetch).mockResolvedValueOnce({
+      ok: true,
+      status: 200,
       json: async () => ({ success: true, data: { user: {} } }),
     } as Response);
 

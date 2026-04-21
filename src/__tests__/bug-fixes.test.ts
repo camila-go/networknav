@@ -32,8 +32,11 @@ describe('Bug Fix Verification', () => {
     });
     
     it('should have clean onClick handler for password toggle', () => {
-      // The onClick should be a simple arrow function, not one with console.log
-      expect(registerFormContent).toMatch(/onClick=\{\s*\(\)\s*=>\s*setShowPassword\s*\(\s*!showPassword\s*\)\s*\}/);
+      // The onClick should be a simple arrow function, not one with console.log.
+      // Accept either `!showPassword` or the functional updater `(v) => !v`.
+      expect(registerFormContent).toMatch(
+        /onClick=\{\s*\(\)\s*=>\s*setShowPassword\s*\(\s*(?:!showPassword|\(\w+\)\s*=>\s*!\w+)\s*\)\s*\}/
+      );
     });
   });
   

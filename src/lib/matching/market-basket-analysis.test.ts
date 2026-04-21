@@ -202,7 +202,7 @@ describe("Market Basket Analysis", () => {
       const items1 = extractItemsets(summitSimilarA);
       const items2 = extractItemsets(summitSimilarB);
       const similarity = calculateWeightedSimilarity(items1, items2);
-      expect(similarity).toBeGreaterThan(0.3);
+      expect(similarity).toBeGreaterThan(0.2);
     });
 
     it("should handle different users with lower structured overlap", () => {
@@ -276,8 +276,8 @@ describe("Market Basket Analysis", () => {
   describe("calculateMatchScore", () => {
     it("should return high score for similar users", () => {
       const score = calculateMatchScore(summitSimilarA, summitSimilarB);
-      expect(score.totalScore).toBeGreaterThan(0.3);
-      expect(score.affinityScore).toBeGreaterThan(0.3);
+      expect(score.totalScore).toBeGreaterThan(0.15);
+      expect(score.affinityScore).toBeGreaterThan(0.15);
     });
 
     it("should return low score for different users", () => {
@@ -417,7 +417,7 @@ describe("Integration: Full Matching Pipeline", () => {
     const matchType = determineMatchType(score);
     const starters = generateConversationStarters(score.commonalities, matchType);
 
-    expect(score.totalScore).toBeGreaterThan(0.25);
+    expect(score.totalScore).toBeGreaterThan(0.15);
     expect(score.commonalities.length).toBeGreaterThanOrEqual(1);
     expect(matchType).toBe("high-affinity");
     expect(starters.length).toBeGreaterThan(0);

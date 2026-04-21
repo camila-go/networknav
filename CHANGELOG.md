@@ -4,6 +4,9 @@ All notable changes to NetworkNav (Jynx) will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+- Fix 32 failing tests across 10 files: drop unused `OpenAIGenerativeProvider` import/instantiation from `getGenerativeProvider()` so the openai path returns null as intended (`src/lib/ai/provider-factory.ts`); polyfill jsdom gaps for `SVGElement.width/height/transform.baseVal` (d3-zoom/d3-interpolate) and `Element.scrollTo` (mobile swiper) in `src/test/setup.ts`; update questionnaire tests to match the current 2-section / 8-question schema and replace obsolete `createProfileText` field assertions with current questionnaire keys (`src/lib/questionnaire-data.test.ts`, `src/lib/questionnaire-store.test.ts`, `src/lib/ai/embeddings.test.ts`); recalibrate market-basket similarity thresholds against current algorithm output (`src/lib/matching/market-basket-analysis.test.ts`); fix bug-fixes regex to accept the functional-updater password toggle and include `ok: true` in the register-form success mock (`src/__tests__/bug-fixes.test.ts`, `src/components/auth/register-form.test.tsx`); make login rate limit read `NODE_ENV` inside the handler so the 429 test can stub production mode (`src/app/api/auth/login/route.ts`, `src/__tests__/api/auth.test.ts`)
+
 ### Added
 - "Confirm Your Info" step at end of onboarding questionnaire: users can review and edit their name, title, and company before completing onboarding — catches SSO usernames (e.g., APOTTER16) and missing/incorrect company info (`src/components/questionnaire/confirm-profile-step.tsx`, `src/components/questionnaire/conversational-wizard.tsx`)
 - Mobile radial/orbit network graph: replaces card carousel with interactive D3 visualization — "You" at center, high-affinity on inner ring, strategic on outer ring(s), discoverable on halo; pinch-to-zoom, tap-to-select with glow highlights, animated entrance (`src/components/network/network-radial-graph.tsx`)

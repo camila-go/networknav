@@ -102,18 +102,25 @@ describe("Auth API Routes", () => {
     });
 
     it("should return 429 when rate limited", async () => {
-      // Exhaust login rate limit (5 attempts)
-      for (let i = 0; i < 5; i++) {
-        const req = createRequest({ email: `nobody${i}@test.com`, password: "Pass1234" });
-        await loginHandler(req);
-      }
+      // Login route uses a 100-req limit in non-production to avoid lockouts during dev,
+      // so we temporarily pose as production to exercise the strict 5-req limit.
+      vi.stubEnv("NODE_ENV", "production");
+      try {
+        // Exhaust login rate limit (5 attempts)
+        for (let i = 0; i < 5; i++) {
+          const req = createRequest({ email: `nobody${i}@test.com`, password: "Pass1234" });
+          await loginHandler(req);
+        }
 
-      const req = createRequest({ email: "nobody@test.com", password: "Pass1234" });
-      const res = await loginHandler(req);
-      expect(res.status).toBe(429);
-      const body = await res.json();
-      expect(body.success).toBe(false);
-      expect(body.error).toContain("Too many");
+        const req = createRequest({ email: "nobody@test.com", password: "Pass1234" });
+        const res = await loginHandler(req);
+        expect(res.status).toBe(429);
+        const body = await res.json();
+        expect(body.success).toBe(false);
+        expect(body.error).toContain("Too many");
+      } finally {
+        vi.unstubAllEnvs();
+      }
     });
   });
 

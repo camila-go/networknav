@@ -9,12 +9,12 @@ import {
 } from "./questionnaire-data";
 
 describe("QUESTIONNAIRE_SECTIONS", () => {
-  it("should have exactly 3 sections", () => {
-    expect(QUESTIONNAIRE_SECTIONS).toHaveLength(3);
+  it("should have exactly 2 sections", () => {
+    expect(QUESTIONNAIRE_SECTIONS).toHaveLength(2);
   });
 
-  it("should have 10 base questions (conditional refinedInterest added in wizard only)", () => {
-    expect(getTotalQuestions()).toBe(10);
+  it("should have 8 base questions (conditional refinedInterest added in wizard only)", () => {
+    expect(getTotalQuestions()).toBe(8);
   });
 
   it("should have unique section IDs", () => {
@@ -39,14 +39,9 @@ describe("QUESTIONNAIRE_SECTIONS", () => {
     expect(ids).toContain("talkTopic");
   });
 
-  it("section 2 includes personality tags", () => {
+  it("section 2 includes personality tags and fun fact", () => {
     const ids = QUESTIONNAIRE_SECTIONS[1].questions.map((q) => q.id);
     expect(ids).toContain("personalityTags");
-  });
-
-  it("section 3 includes threeWords and fun fact", () => {
-    const ids = QUESTIONNAIRE_SECTIONS[2].questions.map((q) => q.id);
-    expect(ids).toContain("threeWords");
     expect(ids).toContain("funFact");
   });
 });

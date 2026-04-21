@@ -87,58 +87,43 @@ describe("Embeddings", () => {
       expect(text).toContain("Interests: hiking, reading, cooking");
     });
 
-    it("should include questionnaire leadership context", () => {
+    it("should include questionnaire role and archetype", () => {
       const text = createProfileText({
         questionnaireData: {
-          leadershipLevel: "senior-director",
-          organizationSize: "1000-5000",
-          yearsExperience: "10-15",
+          roleSummary: "I ship AI products",
+          archetype: "builder",
+          teamQualities: ["energy", "ideas"],
         },
       });
-      expect(text).toContain("Leadership Level: senior-director");
-      expect(text).toContain("Organization Size: 1000-5000");
-      expect(text).toContain("Years Experience: 10-15");
+      expect(text).toContain("Role: I ship AI products");
+      expect(text).toContain("Archetype: builder");
+      expect(text).toContain("Team qualities: energy, ideas");
     });
 
-    it("should include questionnaire priorities and challenges", () => {
+    it("should include questionnaire growth and talk topic", () => {
       const text = createProfileText({
         questionnaireData: {
-          leadershipPriorities: ["innovation", "growth"],
-          leadershipChallenges: ["scaling-teams"],
-          growthAreas: ["strategic-thinking"],
-          networkingGoals: ["mentorship"],
+          growthArea: "strategic thinking",
+          talkTopic: "distributed systems",
+          refinedInterest: "leading ML teams",
         },
       });
-      expect(text).toContain("Leadership Priorities: innovation, growth");
-      expect(text).toContain("Leadership Challenges: scaling-teams");
-      expect(text).toContain("Growth Areas: strategic-thinking");
-      expect(text).toContain("Networking Goals: mentorship");
+      expect(text).toContain("Learning: strategic thinking");
+      expect(text).toContain("Talk topic: distributed systems");
+      expect(text).toContain("Focus: leading ML teams");
     });
 
     it("should include personal interests from questionnaire", () => {
       const text = createProfileText({
         questionnaireData: {
-          rechargeActivities: ["hiking", "reading"],
-          customInterests: ["board games"],
-          fitnessActivities: ["yoga"],
+          personalInterest: "hiking and reading",
+          personalityTags: ["early-bird", "planner"],
+          funFact: "I once baked 100 croissants",
         },
       });
-      expect(text).toContain("Recharge Activities: hiking, reading");
-      expect(text).toContain("Custom Interests: board games");
-      expect(text).toContain("Fitness Activities: yoga");
-    });
-
-    it("should include leadership style fields", () => {
-      const text = createProfileText({
-        questionnaireData: {
-          leadershipPhilosophy: ["servant-leadership"],
-          decisionMakingStyle: "data-driven",
-          communicationStyle: "direct",
-        },
-      });
-      expect(text).toContain("Leadership Philosophy: servant-leadership");
-      expect(text).toContain("Decision Making: data-driven");
-      expect(text).toContain("Communication Style: direct");
+      expect(text).toContain("Outside work: hiking and reading");
+      expect(text).toContain("Style: early-bird, planner");
+      expect(text).toContain("Fun fact: I once baked 100 croissants");
     });
 
     it("should handle empty/missing fields gracefully", () => {
