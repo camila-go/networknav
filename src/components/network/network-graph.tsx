@@ -214,9 +214,6 @@ export function NetworkGraph({
 
     // Track whether a drag occurred to distinguish clicks from drags
     let didDrag = false;
-    // Click-timer pattern for reliable double-click detection despite drag behavior
-    let clickTimer: ReturnType<typeof setTimeout> | null = null;
-    let lastClickedNodeId: string | null = null;
 
     const g = svg.append("g");
 
@@ -348,33 +345,18 @@ export function NetworkGraph({
     node
       .on("click", function (event, d) {
         event.stopPropagation();
-        // Ignore clicks that were actually drags
         if (didDrag) { didDrag = false; return; }
-
-        if (lastClickedNodeId === d.id && clickTimer) {
-          // Second click within 300ms — double-click
-          clearTimeout(clickTimer);
-          clickTimer = null;
-          lastClickedNodeId = null;
-          if (d.matchType !== "neutral") {
-            onNodeDoubleClickRef.current?.(d);
-          }
+        if (selectedNodeIdRef.current === d.id) {
+          setInternalSelectedNodeId(null);
         } else {
-          // First click — wait 300ms to see if it's a double-click
-          if (clickTimer) clearTimeout(clickTimer);
-          lastClickedNodeId = d.id;
-          clickTimer = setTimeout(() => {
-            clickTimer = null;
-            lastClickedNodeId = null;
-            // Single click — toggle selection
-            if (selectedNodeIdRef.current === d.id) {
-              setInternalSelectedNodeId(null);
-            } else {
-              setInternalSelectedNodeId(d.id);
-            }
-            onNodeClickRef.current?.(d);
-          }, 300);
+          setInternalSelectedNodeId(d.id);
         }
+        onNodeClickRef.current?.(d);
+      })
+      .on("dblclick", function (event, d) {
+        event.stopPropagation();
+        if (d.matchType === "neutral") return;
+        onNodeDoubleClickRef.current?.(d);
       });
 
     // Click on background to deselect
@@ -426,7 +408,6 @@ export function NetworkGraph({
 
     return () => {
       simulation.stop();
-      if (clickTimer) clearTimeout(clickTimer);
       linkSelectionRef.current = null;
       circleSelectionRef.current = null;
       nameLabelRef.current = null;

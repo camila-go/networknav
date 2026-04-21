@@ -244,15 +244,13 @@ export function NetworkContainer() {
 
   function handleNodeClick(node: NetworkNode) {
     if (node.matchType === "neutral") return;
-    
-    // Navigate directly to profile for discoverable nodes
+
     if (node.matchType === "discoverable") {
       router.push(`/user/${node.id}`);
       return;
     }
-    
-    setSelectedNode(node);
-    setShowMobileDetail(true);
+
+    setSelectedNode(prev => (prev?.id === node.id ? null : node));
   }
 
   function handleMobileNodeSelect(node: NetworkNode) {
