@@ -34,8 +34,15 @@ const TEAM_DEFINITIONS: Array<{
   {
     name: "Lisa Lucas",
     title: "Senior Designer",
+    envUserIdKey: "NEXT_PUBLIC_TEAM_LISA_USER_ID",
+    lookupKeys: [
+      "Lisa Lucas",
+      "Lisa.Lucas",
+      "lisa.lucas",
+      "lisa lucas",
+    ],
+    /** Fallback when no matching `user_profiles` row (About copy + profile stub). */
     placeholderId: "team-lisa-lucas",
-    lookupKeys: [],
   },
 ];
 

@@ -143,7 +143,7 @@ export function AboutJynxModal({ open, onOpenChange }: AboutJynxModalProps) {
                 <DialogPrimitive.Title className="text-3xl md:text-5xl font-bold text-white">
                   About Jynx
                 </DialogPrimitive.Title>
-                <div className="space-y-6 text-white/80 text-base md:text-xl leading-relaxed">
+                <div className="space-y-6 text-white/80 text-base md:text-sm leading-relaxed">
                   <p>
                     It started as a seed of an idea: a way to help leaders build
                     meaningful connections tailored to their interests. So we
@@ -157,10 +157,13 @@ export function AboutJynxModal({ open, onOpenChange }: AboutJynxModalProps) {
                     This work began as a pie-in-the-sky idea for the CAPS team
                     working on Global Summit 2026; the application took shape
                     through a combination of product design and AI, with a stretch
-                    assignment providing coding support, validation and refinement.
-                    Special thanks to Camila Gonzalez, Austin Potter and Lisa
-                    Lucas, whose creativity and drive helped turn the idea into
-                    reality.
+                    assignment providing coding support, validation and
+                    refinement. Special thanks to Camila Gonzalez, Austin Potter and
+                    Lisa Lucas, whose creativity and drive helped turn the idea
+                    into reality. We&apos;re also grateful to our leadership team
+                    &ndash; Alison D&apos;Agostino, Rebecca Pratt, Koren Henderson
+                    and Krissy Ott &ndash; for encouraging us to dream big and
+                    innovate.
                   </p>
                 </div>
               </section>
