@@ -120,6 +120,11 @@ export function MatchesGrid({ onMatchesLoaded }: MatchesGridProps = {}) {
     }
   }, []);
 
+  const viewerFirstNameRef = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    viewerFirstNameRef.current = viewerFirstName;
+  }, [viewerFirstName]);
+
   const fetchMatches = useCallback(async () => {
     try {
       const response = await fetch("/api/matches");
@@ -128,6 +133,7 @@ export function MatchesGrid({ onMatchesLoaded }: MatchesGridProps = {}) {
       if (result.success && result.data.matches) {
         const fetchedMatches = result.data.matches;
         setMatches(fetchedMatches);
+        void enrichStartersProgressively(fetchedMatches, setMatches, () => viewerFirstNameRef.current);
 
         // Notify parent of match count
         if (onMatchesLoaded) {
@@ -600,5 +606,67 @@ function MatchGrid({
       </div>
     </>
   );
+}
+
+// Bounded concurrency matches the old server-side cap so total free-tier AI
+// spend stays flat; the only thing that changes is when the user sees results.
+const STARTER_ENRICH_CONCURRENCY = 3;
+
+async function enrichStartersProgressively(
+  matches: MatchWithUser[],
+  setMatches: React.Dispatch<React.SetStateAction<MatchWithUser[]>>,
+  getViewerFirstName: () => string | undefined,
+) {
+  for (let i = 0; i < matches.length; i += STARTER_ENRICH_CONCURRENCY) {
+    const batch = matches.slice(i, i + STARTER_ENRICH_CONCURRENCY);
+    await Promise.all(
+      batch.map(async (m) => {
+        try {
+          const res = await fetch(`/api/matches/${encodeURIComponent(m.id)}/starters`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              userName: getViewerFirstName() || "there",
+              matchName: m.matchedUser.profile.name.split(" ")[0] || "them",
+              matchType: m.type,
+              commonalities: m.commonalities.map((c) => c.description),
+              matchPosition: m.matchedUser.profile.title,
+              matchCompany: m.matchedUser.profile.company,
+              matchedUserId: m.matchedUserId,
+            }),
+          });
+          const data = await res.json();
+          const aiStarters: string[] =
+            data?.success && Array.isArray(data?.data?.starters) ? data.data.starters : [];
+          if (aiStarters.length === 0) return;
+          setMatches((prev) =>
+            prev.map((existing) =>
+              existing.id !== m.id
+                ? existing
+                : {
+                    ...existing,
+                    conversationStarters: mergeStarters(aiStarters, existing.conversationStarters),
+                  },
+            ),
+          );
+        } catch {
+          // Network/provider errors: leave template starters in place.
+        }
+      }),
+    );
+  }
+}
+
+function mergeStarters(ai: string[], base: string[]): string[] {
+  const merged = [...ai.slice(0, 2), ...base];
+  return merged
+    .filter(
+      (s, idx, arr) =>
+        s &&
+        arr.findIndex(
+          (x) => x.toLowerCase().slice(0, 40) === s.toLowerCase().slice(0, 40),
+        ) === idx,
+    )
+    .slice(0, 3);
 }
 
