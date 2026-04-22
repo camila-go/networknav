@@ -17,8 +17,6 @@ const COMPANY_CODE_MAP: Record<string, string> = {
   SU01: "Strayer University",
 };
 
-export const COMPANY_CODES = Object.keys(COMPANY_CODE_MAP);
-
 export function normalizeCompany<T extends string | null | undefined>(
   raw: T
 ): T {
