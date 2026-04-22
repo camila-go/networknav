@@ -112,6 +112,21 @@ describe('OpenRouterGenerativeProvider', () => {
     ]);
   });
 
+  it('caps OPENROUTER_MODELS to 3 entries (OpenRouter hard limit)', async () => {
+    process.env.OPENROUTER_API_KEY = 'sk-or-test';
+    process.env.OPENROUTER_MODELS = 'a:free,b:free,c:free,d:free,e:free';
+    chatCreateMock.mockResolvedValue({ choices: [{ message: { content: 'ok' } }] });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { OpenRouterGenerativeProvider } = await loadProvider();
+    const provider = new OpenRouterGenerativeProvider();
+    await provider.generateText('prompt');
+    const sent = chatCreateMock.mock.calls[0][0] as Record<string, unknown>;
+    expect(sent.model).toBe('a:free');
+    expect(sent.models).toEqual(['a:free', 'b:free', 'c:free']);
+    expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
   it('OPENROUTER_MODELS takes precedence over OPENROUTER_MODEL', async () => {
     process.env.OPENROUTER_API_KEY = 'sk-or-test';
     process.env.OPENROUTER_MODEL = 'fallback/model:free';

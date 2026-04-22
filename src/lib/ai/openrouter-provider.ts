@@ -5,6 +5,8 @@ import { markCooldown } from './cooldown';
 const DEFAULT_MODEL = 'google/gemma-4-31b-it:free';
 const BASE_URL = 'https://openrouter.ai/api/v1';
 const TIMEOUT_MS = 10_000;
+// OpenRouter hard-limits the fallback `models` array to 3 entries.
+const MAX_MODELS = 3;
 
 function isRateLimitError(err: unknown): boolean {
   if (!err || typeof err !== 'object') return false;
@@ -19,6 +21,12 @@ function parseModelList(): string[] {
       .split(',')
       .map((m) => m.trim())
       .filter((m) => m.length > 0);
+    if (parsed.length > MAX_MODELS) {
+      console.warn(
+        `[AI] OPENROUTER_MODELS has ${parsed.length} entries but OpenRouter caps the fallback chain at ${MAX_MODELS}; using: ${parsed.slice(0, MAX_MODELS).join(', ')}`,
+      );
+      return parsed.slice(0, MAX_MODELS);
+    }
     if (parsed.length > 0) return parsed;
   }
   const single = process.env.OPENROUTER_MODEL;
