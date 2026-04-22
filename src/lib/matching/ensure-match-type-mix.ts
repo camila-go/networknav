@@ -1,6 +1,13 @@
 import type { Match } from "@/types";
 import { generateConversationStarters } from "./market-basket-analysis";
 
+/**
+ * Must stay in sync with HIGH_AFFINITY_MIN in market-basket-analysis.ts.
+ * A row below this affinity threshold is too thin to earn the "high-affinity"
+ * label via the force-mix relabel, even if the mix would otherwise demand it.
+ */
+const MIX_HIGH_AFFINITY_MIN = 0.15;
+
 export type MatchBuildRow = {
   match: Match;
   affinityScore: number;
@@ -40,8 +47,14 @@ export function ensureMatchTypeMix(
 
   const haCount = Math.ceil(sorted.length / 2);
   sorted.forEach((row, i) => {
+    const desired: Match["type"] = i < haCount ? "high-affinity" : "strategic";
+    // Never promote a row into "high-affinity" unless its affinity signal
+    // actually clears the threshold; otherwise we'd hand out the warmer
+    // badge on ~3% matches and the mix becomes a lie.
     const newType: Match["type"] =
-      i < haCount ? "high-affinity" : "strategic";
+      desired === "high-affinity" && row.affinityScore < MIX_HIGH_AFFINITY_MIN
+        ? "strategic"
+        : desired;
     if (row.match.type === newType) return;
     row.match.type = newType;
     row.match.conversationStarters = generateConversationStarters(

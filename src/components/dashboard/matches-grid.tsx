@@ -608,9 +608,11 @@ function MatchGrid({
   );
 }
 
-// Bounded concurrency matches the old server-side cap so total free-tier AI
-// spend stays flat; the only thing that changes is when the user sees results.
-const STARTER_ENRICH_CONCURRENCY = 3;
+// Bounded concurrency keeps us under OpenRouter's free-tier rate limit.
+// 3 concurrent requests was tripping 429s on Gemma which then silently
+// knocked out the rest of the page via the shared cooldown in cooldown.ts;
+// 2 is slower but leaves more matches with real AI starters.
+const STARTER_ENRICH_CONCURRENCY = 2;
 
 async function enrichStartersProgressively(
   matches: MatchWithUser[],

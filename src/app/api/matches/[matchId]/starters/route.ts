@@ -32,7 +32,7 @@ export async function POST(
       );
     }
 
-    const starters = await generateConversationStartersAI({
+    const outcome = await generateConversationStartersAI({
       ...parsed.data,
       matchCompany: normalizeCompany(parsed.data.matchCompany),
       viewerId: session?.userId,
@@ -41,7 +41,7 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
-      data: { starters: starters ?? [] },
+      data: { starters: outcome.starters ?? [], reason: outcome.reason },
     });
   } catch (error) {
     console.error("Starter generation error:", error);

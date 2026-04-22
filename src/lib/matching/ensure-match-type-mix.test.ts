@@ -65,4 +65,17 @@ describe("ensureMatchTypeMix", () => {
     expect(out).toHaveLength(1);
     expect(out[0].type).toBe("strategic");
   });
+
+  it("does not promote thin rows into high-affinity when forcing a mix", () => {
+    // All rows have sub-threshold affinity. The force-mix would normally
+    // relabel the top half as "high-affinity" to guarantee variety — but
+    // that lies about how strong the match is. Stay strategic instead.
+    const rows = [
+      row("strategic", 0.08, 0.05, 0.07, "a"),
+      row("strategic", 0.06, 0.05, 0.06, "b"),
+      row("strategic", 0.05, 0.04, 0.05, "c"),
+    ];
+    const out = ensureMatchTypeMix(rows, "Viewer");
+    expect(out.every((m) => m.type === "strategic")).toBe(true);
+  });
 });

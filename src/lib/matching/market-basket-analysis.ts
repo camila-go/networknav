@@ -354,8 +354,19 @@ export function calculateMatchScore(
 }
 
 /**
+ * Affinity must clear this floor to earn the "high-affinity" label. Without it,
+ * two users with near-zero overlap could still land in "high-affinity" whenever
+ * affinity happened to edge out strategic in noise — producing cards labeled
+ * HIGH AFFINITY at ~3% match strength, which reads as a bug to users.
+ */
+const HIGH_AFFINITY_MIN = 0.15;
+
+/**
  * Determine if a match is high-affinity or strategic.
- * Strategic wins only when complementarity clearly exceeds similarity; ties favor high-affinity.
+ * Strategic wins only when complementarity clearly exceeds similarity; ties
+ * favor high-affinity — but only when affinity is above a minimum threshold.
+ * Below that threshold, the match defaults to strategic so the warmer badge
+ * is reserved for pairs with real overlap.
  */
 export function determineMatchType(
   matchScore: Pick<MatchScore, "affinityScore" | "strategicScore">
@@ -364,6 +375,9 @@ export function determineMatchType(
   const s = matchScore.strategicScore;
 
   if (s > a * 1.25) {
+    return "strategic";
+  }
+  if (a < HIGH_AFFINITY_MIN) {
     return "strategic";
   }
   if (a > s * 1.25) {

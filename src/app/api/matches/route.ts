@@ -359,7 +359,15 @@ async function generateMatchesFromSupabase(currentUserId: string, currentUserEma
       };
     });
 
-    const matches = ensureMatchTypeMix(buildRows, currentViewerFirstName);
+    // Drop matches so thin they'd render as ~3% match-strength noise. Keep
+    // the page populated though: if the floor would leave the viewer with
+    // fewer than MIN_MATCH_FLOOR matches, fall back to the full list.
+    const MIN_MATCH_SCORE = 0.10;
+    const MIN_MATCH_FLOOR = 3;
+    const strongRows = buildRows.filter((r) => r.match.score >= MIN_MATCH_SCORE);
+    const gatedRows = strongRows.length >= MIN_MATCH_FLOOR ? strongRows : buildRows;
+
+    const matches = ensureMatchTypeMix(gatedRows, currentViewerFirstName);
 
     // AI starter enrichment is handled progressively by the client via
     // POST /api/matches/[matchId]/starters so the grid renders instantly.

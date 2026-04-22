@@ -335,6 +335,29 @@ describe("Market Basket Analysis", () => {
       expect(type).toBe("high-affinity");
     });
 
+    it("should not award high-affinity when both scores are near zero", () => {
+      // Regression: the Koren card shipped with affinity=0.08 / strategic=0.05
+      // and still landed in "high-affinity" because a > s in noise. With the
+      // HIGH_AFFINITY_MIN floor in place, a thin match defaults to strategic.
+      const matchScore = {
+        totalScore: 0.068,
+        commonalities: [],
+        affinityScore: 0.08,
+        strategicScore: 0.05,
+      };
+      expect(determineMatchType(matchScore)).toBe("strategic");
+    });
+
+    it("should award high-affinity once affinity clears the minimum threshold", () => {
+      const matchScore = {
+        totalScore: 0.18,
+        commonalities: [],
+        affinityScore: 0.20,
+        strategicScore: 0.15,
+      };
+      expect(determineMatchType(matchScore)).toBe("high-affinity");
+    });
+
     it("should label builder + strategist as strategic when complement wins", () => {
       const builder: Partial<QuestionnaireData> = {
         archetype: "builder",

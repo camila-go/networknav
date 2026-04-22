@@ -10,10 +10,15 @@ function hashInput(input: string): string {
   return createHash('sha1').update(input).digest('hex').slice(0, 16);
 }
 
+export type ConversationStarterOutcome =
+  | { starters: string[]; reason: 'ai_success' | 'cache_hit' | 'persisted_cache_hit' }
+  | { starters: null; reason: 'cooldown' | 'no_provider' | 'empty' | 'error' };
+
 /**
  * Generate AI-powered conversation starters for a match.
- * Returns null if no generative provider is available,
- * allowing callers to fall back to their algorithmic approach.
+ * Returns `{ starters: null, reason }` when generation didn't produce starters,
+ * so callers can distinguish cooldown/provider-missing/error cases from
+ * genuinely empty AI output.
  *
  * When `viewerId` and `matchId` are provided and Supabase is configured, the
  * result is cached in `ai_conversation_starters` so it survives cold starts
@@ -28,13 +33,17 @@ export async function generateConversationStartersAI(context: {
   matchCompany?: string;
   viewerId?: string;
   matchId?: string;
-}): Promise<string[] | null> {
+}): Promise<ConversationStarterOutcome> {
+  const matchTag = context.matchId ? ` matchId=${context.matchId}` : '';
   const cacheKey = `ai:convstart:${hashInput(
     `${context.userName}|${context.matchName}|${context.matchType}|${context.commonalities.join(',')}|${context.matchPosition ?? ''}|${context.matchCompany ?? ''}`,
   )}`;
 
   const cached = cache.get<string[]>(cacheKey);
-  if (cached) return cached;
+  if (cached) {
+    console.log(`[AI] starters cache_hit${matchTag}`);
+    return { starters: cached, reason: 'cache_hit' };
+  }
 
   const cacheVersion = buildCacheVersion({
     matchType: context.matchType,
@@ -47,14 +56,21 @@ export async function generateConversationStartersAI(context: {
     const persisted = await readStarterCache(context.viewerId, context.matchId, cacheVersion);
     if (persisted) {
       cache.set(cacheKey, persisted, AI_CACHE_TTL_MS);
-      return persisted;
+      console.log(`[AI] starters persisted_cache_hit${matchTag}`);
+      return { starters: persisted, reason: 'persisted_cache_hit' };
     }
   }
 
-  if (isInCooldown()) return null;
+  if (isInCooldown()) {
+    console.log(`[AI] starters cooldown_skip${matchTag}`);
+    return { starters: null, reason: 'cooldown' };
+  }
 
   const provider = getGenerativeProvider();
-  if (!provider) return null;
+  if (!provider) {
+    console.log(`[AI] starters no_provider${matchTag}`);
+    return { starters: null, reason: 'no_provider' };
+  }
 
   const systemInstruction = `You are a professional networking assistant for a leadership conference app.
 Generate exactly 3 conversation starters for ${context.userName} to send when meeting ${context.matchName}.
@@ -76,16 +92,21 @@ Shared context: ${context.commonalities.length ? context.commonalities.join(" | 
       .split('\n')
       .map((s) => s.trim())
       .filter((s) => s.length > 10 && s.length < 200);
-    if (starters.length === 0) return null;
+    if (starters.length === 0) {
+      console.log(`[AI] starters ai_empty${matchTag}`);
+      return { starters: null, reason: 'empty' };
+    }
     const result = starters.slice(0, 3);
     cache.set(cacheKey, result, AI_CACHE_TTL_MS);
     if (context.viewerId && context.matchId) {
       void writeStarterCache(context.viewerId, context.matchId, cacheVersion, result);
     }
-    return result;
+    console.log(`[AI] starters ai_success${matchTag} count=${result.length}`);
+    return { starters: result, reason: 'ai_success' };
   } catch (error) {
-    console.warn('AI conversation starter generation failed, falling back:', error);
-    return null;
+    const msg = error instanceof Error ? error.message : String(error);
+    console.warn(`[AI] starters ai_error${matchTag}: ${msg}`);
+    return { starters: null, reason: 'error' };
   }
 }
 
