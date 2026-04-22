@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import Image from "next/image";
 import { NetworkGraph } from "./network-graph";
 import { NetworkRadialGraph } from "./network-radial-graph";
@@ -88,11 +88,7 @@ export function NetworkContainer() {
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
   const [showMobileDetail, setShowMobileDetail] = useState(false);
 
-  useEffect(() => {
-    fetchNetworkData();
-  }, []);
-
-  async function fetchNetworkData() {
+  const fetchNetworkData = useCallback(async () => {
     setIsLoading(true);
     try {
       const response = await fetch("/api/network");
@@ -119,12 +115,16 @@ export function NetworkContainer() {
     } finally {
       setIsLoading(false);
     }
-  }
+  }, [toast]);
+
+  useEffect(() => {
+    fetchNetworkData();
+  }, [fetchNetworkData]);
 
   // Get discoverable contacts through a selected node
-  function getDiscoverableContacts(nodeId: string): ExtendedContact[] {
+  const getDiscoverableContacts = useCallback((nodeId: string): ExtendedContact[] => {
     return extendedNetwork[nodeId] || [];
-  }
+  }, [extendedNetwork]);
 
   // Get the current user's node (neutral/center node)
   const currentUserNode = useMemo(() => {
@@ -267,7 +267,7 @@ export function NetworkContainer() {
       nodes: [...networkData.nodes, ...uniqueNewNodes],
       edges: [...networkData.edges, ...uniqueNewEdges],
     };
-  }, [networkData, selectedNode, extendedNetwork]);
+  }, [networkData, selectedNode, extendedNetwork, getDiscoverableContacts]);
 
   // Filter nodes for mobile list view
   const filteredNodes = useMemo(() => {

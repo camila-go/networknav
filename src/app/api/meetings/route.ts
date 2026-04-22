@@ -233,7 +233,7 @@ export async function GET(request: NextRequest) {
     const filter = searchParams.get("filter") || "all"; // "all", "upcoming", "past", "requests"
 
     // Load meetings from Supabase first, then fallback to in-memory
-    let allMeetings: Meeting[] = await loadMeetingsFromSupabase(currentUserId);
+    const allMeetings: Meeting[] = await loadMeetingsFromSupabase(currentUserId);
     
     // Also include in-memory meetings (merge)
     for (const [, meeting] of meetings.entries()) {
@@ -250,8 +250,8 @@ export async function GET(request: NextRequest) {
 
     for (const meeting of allMeetings) {
       // Get user details - try Supabase first, then in-memory, then demo
-      let requester = getUserById(meeting.requesterId) || await getUserFromSupabase(meeting.requesterId);
-      let recipient = getUserById(meeting.recipientId) || await getUserFromSupabase(meeting.recipientId);
+      const requester = getUserById(meeting.requesterId) || await getUserFromSupabase(meeting.requesterId);
+      const recipient = getUserById(meeting.recipientId) || await getUserFromSupabase(meeting.recipientId);
 
       if (!requester || !recipient) {
         console.log("[Meetings API] Skipping meeting - missing user data:", {

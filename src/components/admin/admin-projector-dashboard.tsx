@@ -295,7 +295,7 @@ export function AdminProjectorDashboard() {
   const [photoIndex, setPhotoIndex] = useState(0);
   const hasLoadedOnceRef = useRef(false);
 
-  const themes = data?.cohort.themes ?? [];
+  const themes = useMemo(() => data?.cohort.themes ?? [], [data?.cohort.themes]);
 
   const load = useCallback(async (opts?: { silent?: boolean }) => {
     const silent = opts?.silent ?? false;

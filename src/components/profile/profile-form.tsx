@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Save, Camera, X } from "lucide-react";
@@ -45,11 +45,7 @@ export function ProfileForm() {
     };
   }, [avatarPreview]);
 
-  useEffect(() => {
-    fetchProfile();
-  }, []);
-
-  async function fetchProfile() {
+  const fetchProfile = useCallback(async () => {
     try {
       const response = await fetch("/api/auth/me");
       const result = await response.json();
@@ -68,7 +64,11 @@ export function ProfileForm() {
     } finally {
       setIsLoading(false);
     }
-  }
+  }, [reset]);
+
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
 
   function handleAvatarSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];

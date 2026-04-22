@@ -705,7 +705,7 @@ export function ConversationalWizard() {
     if (!currentQuestion) return;
     setInputLocked(true);
 
-    let flow = flowStepsRef.current;
+    const flow = flowStepsRef.current;
     const nextIndex = activeQuestionIndex + 1;
     const isLast = nextIndex >= flow.length;
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import Image from "next/image";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +19,7 @@ import {
   Trash2,
   AlertTriangle,
   MessageSquare,
-  Image,
+  Image as ImageIcon,
   User,
   FileText,
   Reply,
@@ -31,7 +32,7 @@ const CONTENT_TYPE_ICONS: Record<ModerationContentType, typeof FileText> = {
   reply: Reply,
   message: MessageSquare,
   profile: User,
-  photo: Image,
+  photo: ImageIcon,
 };
 
 const CONTENT_TYPE_COLORS: Record<ModerationContentType, string> = {
@@ -306,10 +307,13 @@ export function ModerationQueue() {
                       </p>
                       {item.imageUrl && (
                         <div className="mt-2">
-                          <img
+                          <Image
                             src={item.imageUrl}
                             alt="Flagged content"
-                            className="max-h-48 rounded border border-white/10"
+                            width={800}
+                            height={600}
+                            sizes="(max-width: 768px) 100vw, 400px"
+                            className="max-h-48 w-auto rounded border border-white/10"
                           />
                         </div>
                       )}

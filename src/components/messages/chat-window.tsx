@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -146,20 +146,7 @@ export function ChatWindow({
     };
   }, [socket, connectionId, otherUser?.id]);
 
-  useEffect(() => {
-    if (connectionId) {
-      fetchMessages();
-    } else {
-      setIsLoading(false);
-      setMessages([]);
-    }
-  }, [connectionId]);
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  async function fetchMessages() {
+  const fetchMessages = useCallback(async () => {
     setIsLoading(true);
     try {
       const response = await fetch(`/api/messages?connectionId=${connectionId}`);
@@ -173,7 +160,20 @@ export function ChatWindow({
     } finally {
       setIsLoading(false);
     }
-  }
+  }, [connectionId]);
+
+  useEffect(() => {
+    if (connectionId) {
+      fetchMessages();
+    } else {
+      setIsLoading(false);
+      setMessages([]);
+    }
+  }, [connectionId, fetchMessages]);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();

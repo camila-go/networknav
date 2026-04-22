@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
 import type { NetworkGraphData, NetworkNode } from "@/types";
 
@@ -79,6 +79,7 @@ export function NetworkRadialGraph({
   const discoverLinesGroupRef = useRef<d3.Selection<SVGGElement, unknown, null, undefined> | null>(null);
   const fitTransformRef = useRef<d3.ZoomTransform | null>(null);
   const hadSelectionRef = useRef(false);
+  const applyHighlightRef = useRef<((selId: string | null) => void) | null>(null);
 
   useEffect(() => { selectedNodeIdRef.current = selectedNodeId ?? null; }, [selectedNodeId]);
 
@@ -421,7 +422,7 @@ export function NetworkRadialGraph({
 
     // Re-apply highlight if a node was already selected
     if (selectedNodeIdRef.current) {
-      applyHighlight(selectedNodeIdRef.current);
+      applyHighlightRef.current?.(selectedNodeIdRef.current);
     }
 
     return () => {
@@ -437,10 +438,14 @@ export function NetworkRadialGraph({
       discoverGroupRef.current = null;
       discoverLinesGroupRef.current = null;
     };
+    // applyHighlight intentionally omitted: it's invoked via applyHighlightRef
+    // so that an updated dimensions/extendedNetwork closure doesn't tear down
+    // and rebuild the entire D3 simulation.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, dimensions, filter]);
 
   // ── Highlight + zoom-to-center + discoverable contacts helper ──
-  function applyHighlight(selId: string | null) {
+  const applyHighlight = useCallback((selId: string | null) => {
     const linkSel = linkSelRef.current;
     const circleSel = circleSelRef.current;
     const nameLabels = nameLabelSelRef.current;
@@ -647,12 +652,16 @@ export function NetworkRadialGraph({
       svgSel.transition().duration(500).ease(d3.easeCubicInOut)
         .call(zoom.transform, transform);
     }
-  }
+  }, [dimensions, extendedNetwork]);
+
+  useEffect(() => {
+    applyHighlightRef.current = applyHighlight;
+  }, [applyHighlight]);
 
   // Highlight effect on selection change
   useEffect(() => {
     applyHighlight(selectedNodeId ?? null);
-  }, [selectedNodeId]);
+  }, [selectedNodeId, applyHighlight]);
 
   return (
     <div

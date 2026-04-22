@@ -231,7 +231,7 @@ export async function calculateStreakStatus(userId: string): Promise<StreakStatu
   const expectedPoints = Math.floor((weeklyGoal / DAYS_IN_WEEK) * daysIntoWeek);
   const isOnTrack = pointsThisWeek >= expectedPoints || pointsThisWeek >= weeklyGoal;
 
-  let weeklyStatus: StreakStatus["weekly"] = {
+  const weeklyStatus: StreakStatus["weekly"] = {
     current: weekly?.currentStreak || 0,
     longest: weekly?.longestStreak || 0,
     pointsThisWeek,

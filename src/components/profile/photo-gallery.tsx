@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { ChevronLeft, ChevronRight, Plus, Trash2, Pencil, Check, X, ChevronUp, ChevronDown, Loader2, Image } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Trash2, Pencil, Check, X, ChevronUp, ChevronDown, Loader2, Image as ImageIcon } from "lucide-react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -361,7 +362,7 @@ export function PhotoGallery({ userId, isOwner, withContainer = false, container
         </div>
       ) : photos.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-10 text-white/30">
-          <Image className="h-10 w-10 mb-2" />
+          <ImageIcon className="h-10 w-10 mb-2" />
           <p className="text-sm">No photos yet</p>
           {isOwner && <p className="text-xs mt-1">Add photos to share your journey</p>}
         </div>
@@ -377,10 +378,12 @@ export function PhotoGallery({ userId, isOwner, withContainer = false, container
                 onClick={() => setLightboxIndex(index)}
                 className="relative w-full h-full rounded-lg overflow-hidden focus:outline-none focus:ring-2 focus:ring-cyan-500"
               >
-                <img
+                <Image
                   src={photo.url}
                   alt={photo.caption ?? `Photo ${index + 1}`}
-                  className="w-full h-full object-cover select-none transition-opacity group-hover:opacity-80"
+                  fill
+                  sizes="(max-width: 640px) 33vw, 25vw"
+                  className="object-cover select-none transition-opacity group-hover:opacity-80"
                 />
                 {chipLabel ? (
                   <span className="pointer-events-none absolute bottom-1 left-1 right-1 z-[2] flex justify-start">
@@ -580,10 +583,13 @@ export function PhotoGallery({ userId, isOwner, withContainer = false, container
               )}
 
               {/* Image */}
-              <img
+              <Image
                 src={photos[lightboxIndex].url}
                 alt={photos[lightboxIndex].caption ?? `Photo ${lightboxIndex + 1}`}
-                className="max-h-[80vh] max-w-full object-contain rounded-t-lg"
+                width={1600}
+                height={1200}
+                sizes="(max-width: 768px) 100vw, 896px"
+                className="max-h-[80vh] max-w-full w-auto h-auto object-contain rounded-t-lg"
               />
 
               {/* Caption + counter */}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -51,9 +51,26 @@ export function MeetingsContainer() {
   const [externalLoading, setExternalLoading] = useState(false);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
 
+  const fetchMeetings = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`/api/meetings?filter=${activeTab}`);
+      const result = await response.json();
+
+      if (result.success) {
+        setMeetings(result.data.meetings);
+        setStats(result.data.stats);
+      }
+    } catch (error) {
+      console.error("Failed to fetch meetings:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [activeTab]);
+
   useEffect(() => {
     fetchMeetings();
-  }, [activeTab]);
+  }, [fetchMeetings]);
 
   // Only load all meetings (needed for calendar dots) when the calendar view is opened
   useEffect(() => {
@@ -87,23 +104,6 @@ export function MeetingsContainer() {
     }
     fetchExternalEvents();
   }, [showExternalCalendar, calendarDate]);
-
-  async function fetchMeetings() {
-    setIsLoading(true);
-    try {
-      const response = await fetch(`/api/meetings?filter=${activeTab}`);
-      const result = await response.json();
-
-      if (result.success) {
-        setMeetings(result.data.meetings);
-        setStats(result.data.stats);
-      }
-    } catch (error) {
-      console.error("Failed to fetch meetings:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }
 
   async function fetchAllMeetings() {
     try {

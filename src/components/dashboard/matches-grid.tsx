@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { MatchCard } from "./match-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -52,6 +52,46 @@ interface MatchesGridProps {
   onMatchesLoaded?: (count: number, avgScore: number) => void;
 }
 
+function getEncouragementMessage(streakData: StreakStatus) {
+  const dailyStreak = streakData.daily?.current || 0;
+  const weeklyPoints = streakData.weekly?.pointsThisWeek || 0;
+  const weeklyGoal = streakData.weekly?.pointsRequired || 25;
+  const pointsToGoal = weeklyGoal - weeklyPoints;
+
+  // Priority order: Goal met > Close to goal > Active streak > Come back
+  if (weeklyPoints >= weeklyGoal) {
+    const messages = ENCOURAGEMENT_MESSAGES.goalMet;
+    return messages[Math.floor(Math.random() * messages.length)];
+  }
+
+  if (pointsToGoal <= 10 && pointsToGoal > 0) {
+    const messages = ENCOURAGEMENT_MESSAGES.goalClose;
+    const message = messages[Math.floor(Math.random() * messages.length)];
+    if (message.dynamic) {
+      return { ...message, text: `${pointsToGoal} ${message.text}` };
+    }
+    return message;
+  }
+
+  if (dailyStreak >= 3) {
+    const messages = ENCOURAGEMENT_MESSAGES.streakActive;
+    const message = messages[Math.floor(Math.random() * messages.length)];
+    if (message.dynamic) {
+      return { ...message, text: `${dailyStreak}-day ${message.text}` };
+    }
+    return message;
+  }
+
+  if (dailyStreak === 0 && weeklyPoints === 0) {
+    const messages = ENCOURAGEMENT_MESSAGES.comeBack;
+    return messages[Math.floor(Math.random() * messages.length)];
+  }
+
+  // Default to new user messages
+  const messages = ENCOURAGEMENT_MESSAGES.newUser;
+  return messages[Math.floor(Math.random() * messages.length)];
+}
+
 export function MatchesGrid({ onMatchesLoaded }: MatchesGridProps = {}) {
   const [matches, setMatches] = useState<MatchWithUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -59,29 +99,7 @@ export function MatchesGrid({ onMatchesLoaded }: MatchesGridProps = {}) {
   const [encouragement, setEncouragement] = useState<{ icon: React.ComponentType<{ className?: string }>; text: string; color: string } | null>(null);
   const [viewerFirstName, setViewerFirstName] = useState<string | undefined>();
 
-  useEffect(() => {
-    fetchMatches();
-    if (SHOW_GAMIFICATION_UI) {
-      void fetchStreakData();
-    } else {
-      setStreaks(null);
-      setEncouragement(null);
-    }
-    let cancelled = false;
-    fetch("/api/profile")
-      .then((r) => r.json())
-      .then((d) => {
-        if (cancelled || !d.success || !d.data?.user?.profile?.name) return;
-        const first = String(d.data.user.profile.name).trim().split(/\s+/)[0];
-        if (first) setViewerFirstName(first);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  async function fetchStreakData() {
+  const fetchStreakData = useCallback(async () => {
     try {
       const response = await fetch("/api/activity");
       const data = await response.json();
@@ -100,49 +118,9 @@ export function MatchesGrid({ onMatchesLoaded }: MatchesGridProps = {}) {
       const messages = ENCOURAGEMENT_MESSAGES.newUser;
       setEncouragement(messages[Math.floor(Math.random() * messages.length)]);
     }
-  }
+  }, []);
 
-  function getEncouragementMessage(streakData: StreakStatus) {
-    const dailyStreak = streakData.daily?.current || 0;
-    const weeklyPoints = streakData.weekly?.pointsThisWeek || 0;
-    const weeklyGoal = streakData.weekly?.pointsRequired || 25;
-    const pointsToGoal = weeklyGoal - weeklyPoints;
-
-    // Priority order: Goal met > Close to goal > Active streak > Come back
-    if (weeklyPoints >= weeklyGoal) {
-      const messages = ENCOURAGEMENT_MESSAGES.goalMet;
-      return messages[Math.floor(Math.random() * messages.length)];
-    }
-    
-    if (pointsToGoal <= 10 && pointsToGoal > 0) {
-      const messages = ENCOURAGEMENT_MESSAGES.goalClose;
-      const message = messages[Math.floor(Math.random() * messages.length)];
-      if (message.dynamic) {
-        return { ...message, text: `${pointsToGoal} ${message.text}` };
-      }
-      return message;
-    }
-    
-    if (dailyStreak >= 3) {
-      const messages = ENCOURAGEMENT_MESSAGES.streakActive;
-      const message = messages[Math.floor(Math.random() * messages.length)];
-      if (message.dynamic) {
-        return { ...message, text: `${dailyStreak}-day ${message.text}` };
-      }
-      return message;
-    }
-    
-    if (dailyStreak === 0 && weeklyPoints === 0) {
-      const messages = ENCOURAGEMENT_MESSAGES.comeBack;
-      return messages[Math.floor(Math.random() * messages.length)];
-    }
-    
-    // Default to new user messages
-    const messages = ENCOURAGEMENT_MESSAGES.newUser;
-    return messages[Math.floor(Math.random() * messages.length)];
-  }
-
-  async function fetchMatches() {
+  const fetchMatches = useCallback(async () => {
     try {
       const response = await fetch("/api/matches");
       const result = await response.json();
@@ -150,7 +128,7 @@ export function MatchesGrid({ onMatchesLoaded }: MatchesGridProps = {}) {
       if (result.success && result.data.matches) {
         const fetchedMatches = result.data.matches;
         setMatches(fetchedMatches);
-        
+
         // Notify parent of match count
         if (onMatchesLoaded) {
           const avgScore = fetchedMatches.length > 0
@@ -176,7 +154,29 @@ export function MatchesGrid({ onMatchesLoaded }: MatchesGridProps = {}) {
     } finally {
       setIsLoading(false);
     }
-  }
+  }, [onMatchesLoaded]);
+
+  useEffect(() => {
+    fetchMatches();
+    if (SHOW_GAMIFICATION_UI) {
+      void fetchStreakData();
+    } else {
+      setStreaks(null);
+      setEncouragement(null);
+    }
+    let cancelled = false;
+    fetch("/api/profile")
+      .then((r) => r.json())
+      .then((d) => {
+        if (cancelled || !d.success || !d.data?.user?.profile?.name) return;
+        const first = String(d.data.user.profile.name).trim().split(/\s+/)[0];
+        if (first) setViewerFirstName(first);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [fetchMatches, fetchStreakData]);
 
   const highAffinityMatches = matches.filter((m) => m.type === "high-affinity" && !m.passed);
   const strategicMatches = matches.filter((m) => m.type === "strategic" && !m.passed);
