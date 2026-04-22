@@ -3,6 +3,7 @@ import { getSaml, isSsoEnabled, ssoDisabledJsonBody } from "@/lib/saml/config";
 import { provisionSamlUser } from "@/lib/saml/provision";
 import { createAccessToken, createRefreshToken } from "@/lib/auth";
 import { checkRateLimit } from "@/lib/security/rateLimit";
+import { normalizeCompany } from "@/lib/company/normalize";
 import type { SamlUserAttributes } from "@/lib/saml/types";
 
 const APP_URL =
@@ -223,13 +224,6 @@ function extractAttributes(
       "urn:oid:2.5.4.12" // title OID
     ) ?? "";
 
-  // Map IdP company/org codes to display names
-  const COMPANY_CODE_MAP: Record<string, string> = {
-    CU01: "Capella",
-    SU01: "Strayer",
-    SS01: "Shared Services",
-  };
-
   const rawCompany = get(
     "company",
     "Company",
@@ -242,9 +236,7 @@ function extractAttributes(
     "urn:oid:2.5.4.10" // organizationName OID
   );
 
-  const company = rawCompany
-    ? COMPANY_CODE_MAP[rawCompany] ?? rawCompany
-    : undefined;
+  const company = normalizeCompany(rawCompany ?? undefined);
 
   return { email, name, title, company };
 }

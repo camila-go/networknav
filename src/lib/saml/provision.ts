@@ -13,6 +13,7 @@ import {
   shouldPromoteEmailToAdminViaEnv,
 } from "@/lib/auth/admin-env";
 import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
+import { normalizeCompany } from "@/lib/company/normalize";
 import type { SamlUserAttributes } from "./types";
 
 /**
@@ -28,6 +29,7 @@ export async function provisionSamlUser(
   attrs: SamlUserAttributes
 ): Promise<{ user: StoredUser; isNewUser: boolean }> {
   const email = attrs.email.toLowerCase();
+  const normalizedCompany = normalizeCompany(attrs.company);
 
   // 1. Check in-memory store
   let existing = users.get(email);
@@ -50,7 +52,7 @@ export async function provisionSamlUser(
           role: (data.role || "user") as UserRole,
           name: data.name,
           title: data.title || "",
-          company: data.company || undefined,
+          company: normalizeCompany(data.company) || undefined,
           photoUrl: data.photo_url || undefined,
           location: data.location || undefined,
           questionnaireCompleted: data.questionnaire_completed ?? false,
@@ -70,7 +72,7 @@ export async function provisionSamlUser(
       ...existing,
       name: attrs.name || existing.name,
       title: attrs.title || existing.title,
-      company: attrs.company ?? existing.company,
+      company: normalizedCompany ?? existing.company,
       updatedAt: new Date(),
     };
     applyAdminEmailEnvPromotion(updated);
@@ -118,7 +120,7 @@ export async function provisionSamlUser(
     role: initialRole,
     name: attrs.name,
     title: attrs.title,
-    company: attrs.company,
+    company: normalizedCompany,
     questionnaireCompleted: false,
     createdAt: now,
     updatedAt: now,

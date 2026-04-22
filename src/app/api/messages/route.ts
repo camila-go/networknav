@@ -7,6 +7,7 @@ import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
 import { isLiveDatabaseMode } from "@/lib/supabase/data-mode";
 import { updateStreaks } from "@/lib/gamification/streaks";
 import { applyGamificationUnlockNotifications } from "@/lib/gamification/unlock-notifications";
+import { normalizeCompany } from "@/lib/company/normalize";
 
 type SimpleUser = { id: string; name: string; title: string; company?: string };
 
@@ -18,7 +19,7 @@ function getUserById(userId: string): SimpleUser | null {
         id: user.id,
         name: user.name,
         title: user.title,
-        company: user.company,
+        company: normalizeCompany(user.company),
       };
     }
   }
@@ -102,7 +103,7 @@ async function getUserFromSupabase(userId: string): Promise<SimpleUser | null> {
     id: row.id,
     name: row.name,
     title: row.title || '',
-    company: row.company || undefined,
+    company: normalizeCompany(row.company) || undefined,
   };
 }
 

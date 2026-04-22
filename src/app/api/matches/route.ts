@@ -11,6 +11,7 @@ import { ensureMatchTypeMix, type MatchBuildRow } from "@/lib/matching/ensure-ma
 import { users, questionnaireResponses, userMatches } from "@/lib/stores";
 import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
 import { isLiveDatabaseMode } from "@/lib/supabase/data-mode";
+import { normalizeCompany } from "@/lib/company/normalize";
 import type { Match, QuestionnaireData } from "@/types";
 
 export async function GET(request: NextRequest) {
@@ -135,7 +136,7 @@ async function generateMatchesForUser(
       profile: {
         name: user.name,
         title: user.title,
-        company: user.company,
+        company: normalizeCompany(user.company),
         photoUrl: undefined,
       },
       responses: responses.responses as Record<string, unknown>,
@@ -154,7 +155,7 @@ async function generateMatchesForUser(
       profile: {
         name: currentUser.name,
         title: currentUser.title,
-        company: currentUser.company,
+        company: normalizeCompany(currentUser.company),
       },
       responses: currentUserResponses.responses as Record<string, unknown>,
     },
@@ -275,6 +276,7 @@ async function generateMatchesFromSupabase(currentUserId: string, currentUserEma
     const buildRows: MatchBuildRow[] = filteredProfiles.map((profile) => {
       const candidateHasQuestionnaire = hasUsableQuestionnaire(profile.questionnaire_data);
       const candidateResponses = (profile.questionnaire_data ?? {}) as Partial<QuestionnaireData>;
+      const profileCompany = normalizeCompany(profile.company);
 
       let score: number;
       let type: 'high-affinity' | 'strategic';
@@ -307,7 +309,7 @@ async function generateMatchesFromSupabase(currentUserId: string, currentUserEma
         commonalities = [{
           category: 'professional' as const,
           description: profile.title
-            ? `${profile.title} at ${profile.company || 'their organization'}`
+            ? `${profile.title} at ${profileCompany || 'their organization'}`
             : 'Fellow conference attendee',
           weight: 0.6,
         }];
@@ -325,7 +327,7 @@ async function generateMatchesFromSupabase(currentUserId: string, currentUserEma
           profile: {
             name: profile.name || 'Anonymous',
             title: profile.title || '',
-            company: profile.company,
+            company: profileCompany,
             photoUrl: profile.photo_url,
           },
           questionnaireCompleted: candidateHasQuestionnaire,
@@ -334,7 +336,7 @@ async function generateMatchesFromSupabase(currentUserId: string, currentUserEma
         commonalities,
         conversationStarters: generateConversationStarters(commonalities, type, firstName, {
           theirTitle: profile.title,
-          theirCompany: profile.company,
+          theirCompany: profileCompany,
           viewerFirstName: currentViewerFirstName,
           seed: `${currentUserId}-${profile.id}`,
         }),
@@ -351,7 +353,7 @@ async function generateMatchesFromSupabase(currentUserId: string, currentUserEma
         meta: {
           firstName,
           title: profile.title,
-          company: profile.company,
+          company: profileCompany,
           seed: `${currentUserId}-${profile.id}`,
         },
       };

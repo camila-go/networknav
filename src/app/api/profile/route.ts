@@ -5,6 +5,7 @@ import { users } from "@/lib/stores";
 import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
 import { lookupUserProfileByIdentifier } from "@/lib/profile/lookup-user-profile";
 import { cookies } from "next/headers";
+import { normalizeCompany } from "@/lib/company/normalize";
 import type { UserRole } from "@/types";
 
 export async function GET(request: NextRequest) {
@@ -64,7 +65,7 @@ export async function GET(request: NextRequest) {
               role: "user" as UserRole,
               name: row.name || "User",
               title: row.title || "",
-              company: row.company || "",
+              company: normalizeCompany(row.company) || "",
               location: row.location,
               photoUrl: row.photo_url,
               bio: row.bio,
@@ -105,7 +106,7 @@ export async function GET(request: NextRequest) {
               role: "user" as UserRole,
               name: row.name || "User",
               title: row.title || "",
-              company: row.company || "",
+              company: normalizeCompany(row.company) || "",
               location: row.location,
               photoUrl: row.photo_url,
               bio: row.bio,
@@ -135,7 +136,7 @@ export async function GET(request: NextRequest) {
             profile: {
               name: currentUser.name,
               title: currentUser.title,
-              company: currentUser.company,
+              company: normalizeCompany(currentUser.company),
               location: currentUser.location,
               photoUrl: currentUser.photoUrl,
               bio: currentUser.bio,
@@ -171,7 +172,7 @@ export async function GET(request: NextRequest) {
             email: supabaseUser.email,
             name: supabaseUser.name,
             title: supabaseUser.title || "",
-            company: supabaseUser.company,
+            company: normalizeCompany(supabaseUser.company),
             location: supabaseUser.location,
             photoUrl: supabaseUser.photo_url,
             bio: supabaseUser.bio,
@@ -227,7 +228,7 @@ export async function GET(request: NextRequest) {
           profile: {
             name: targetUser.name,
             title: targetUser.title,
-            company: targetUser.company,
+            company: normalizeCompany(targetUser.company),
             location: targetUser.location,
             photoUrl: targetUser.photoUrl,
             bio: targetUser.bio,
@@ -271,6 +272,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const { name, title, company, location, photoUrl } = result.data;
+    const normalizedCompany = normalizeCompany(company);
 
     // Find and update user
     const user = users.get(session.email);
@@ -283,7 +285,7 @@ export async function PATCH(request: NextRequest) {
 
     user.name = name;
     user.title = title;
-    user.company = company ?? "";
+    user.company = normalizedCompany ?? "";
     if (location !== undefined) user.location = location;
     if (photoUrl !== undefined) user.photoUrl = photoUrl;
     user.updatedAt = new Date();
@@ -298,7 +300,7 @@ export async function PATCH(request: NextRequest) {
           .update({
             name,
             title,
-            company,
+            company: normalizedCompany,
             location: location ?? null,
             photo_url: photoUrl ?? undefined,
             updated_at: user.updatedAt.toISOString(),

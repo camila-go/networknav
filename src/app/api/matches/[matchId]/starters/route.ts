@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getSession } from "@/lib/auth";
 import { generateConversationStartersAI } from "@/lib/ai/generative";
+import { normalizeCompany } from "@/lib/company/normalize";
 
 const schema = z.object({
   userName: z.string().min(1),
@@ -33,6 +34,7 @@ export async function POST(
 
     const starters = await generateConversationStartersAI({
       ...parsed.data,
+      matchCompany: normalizeCompany(parsed.data.matchCompany),
       viewerId: session?.userId,
       matchId: parsed.data.matchedUserId,
     });

@@ -15,6 +15,7 @@ import {
   type EnrichmentQuestionnaire,
 } from "@/lib/gallery/build-theme-enrichment";
 import type { ProjectorThemeRow } from "@/types/gallery";
+import { normalizeCompany } from "@/lib/company/normalize";
 
 const PRIVATE_CACHE = { "Cache-Control": "private, no-store, max-age=0" };
 
@@ -143,7 +144,7 @@ export async function GET() {
         id: row.id,
         name: row.name,
         title: row.title,
-        company: row.company,
+        company: normalizeCompany(row.company),
         location: row.location,
       });
       const q = row.questionnaire_data;

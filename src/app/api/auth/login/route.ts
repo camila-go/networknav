@@ -10,6 +10,7 @@ import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
 import { checkRateLimit } from "@/lib/security/rateLimit";
 import type { UserRole } from "@/types";
 import { applyAdminEmailEnvPromotion } from "@/lib/auth/admin-env";
+import { normalizeCompany } from "@/lib/company/normalize";
 
 // Rate limit for login (prod: strict; dev: room to debug without locking yourself out).
 // Read inside POST so tests can override NODE_ENV via vi.stubEnv().
@@ -141,7 +142,7 @@ async function findUserFromSupabase(email: string): Promise<{
       role: (typedProfile.role as UserRole) || 'user',
       name: typedProfile.name || 'User',
       title: typedProfile.title || '',
-      company: typedProfile.company || '',
+      company: normalizeCompany(typedProfile.company) || '',
       questionnaireCompleted: typedProfile.questionnaire_completed || false,
       questionnaireData: typedProfile.questionnaire_data,
     };
@@ -308,7 +309,7 @@ export async function POST(request: NextRequest) {
           profile: {
             name: user.name,
             title: user.title,
-            company: user.company,
+            company: normalizeCompany(user.company),
           },
           questionnaireCompleted: user.questionnaireCompleted,
         },

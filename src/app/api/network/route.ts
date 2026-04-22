@@ -7,6 +7,7 @@ import { isLiveDatabaseMode } from "@/lib/supabase/data-mode";
 import { cache, CACHE_KEYS, CACHE_TTLS } from "@/lib/cache";
 import { fetchProfileBasics } from "@/lib/network/fetch-profile-basics";
 import { ensureMatchesLoaded } from "@/lib/network/ensure-matches-loaded";
+import { normalizeCompany } from "@/lib/company/normalize";
 import type { NetworkGraphData, NetworkNode, NetworkEdge, NetworkCluster, MatchType, Match } from "@/types";
 
 async function fetchEmailsByIds(ids: string[]): Promise<Map<string, string | null>> {
@@ -35,7 +36,7 @@ function buildNetworkFromMatches(userId: string): NetworkGraphData {
       id: userId,
       name: currentUser.name,
       title: currentUser.title,
-      company: currentUser.company,
+      company: normalizeCompany(currentUser.company),
       matchType: "neutral",
       commonalityCount: 0,
       commonalities: [],
@@ -66,7 +67,7 @@ function buildNetworkFromMatches(userId: string): NetworkGraphData {
       id: match.matchedUserId,
       name: match.matchedUser.profile.name,
       title: match.matchedUser.profile.title || "Member",
-      company: match.matchedUser.profile.company,
+      company: normalizeCompany(match.matchedUser.profile.company),
       photoUrl: match.matchedUser.profile.photoUrl,
       matchType,
       commonalityCount: match.commonalities.length,
@@ -175,7 +176,7 @@ export async function GET(_request: NextRequest) {
       if (center) {
         center.name = profile.name;
         center.title = profile.title;
-        center.company = profile.company;
+        center.company = normalizeCompany(profile.company);
         center.email = profile.email ?? undefined;
         center.photoUrl = profile.photoUrl;
       }
@@ -252,7 +253,7 @@ export async function GET(_request: NextRequest) {
               id: u.id,
               name: u.name,
               title: u.title || "Professional",
-              company: u.company || "",
+              company: normalizeCompany(u.company) || "",
             }));
         }
       } catch (e) {

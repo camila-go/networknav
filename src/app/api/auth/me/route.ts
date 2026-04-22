@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { users } from "@/lib/stores";
 import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
+import { normalizeCompany } from "@/lib/company/normalize";
 import type { UserRole } from "@/types";
 
 export async function GET() {
@@ -44,7 +45,7 @@ export async function GET() {
             role: (p.role as UserRole) || 'user',
             name: p.name || 'User',
             title: p.title || '',
-            company: p.company || '',
+            company: normalizeCompany(p.company) || '',
             location: p.location,
             photoUrl: p.photo_url,
             bio: p.bio,
@@ -80,7 +81,7 @@ export async function GET() {
           profile: {
             name: user.name,
             title: user.title,
-            company: user.company,
+            company: normalizeCompany(user.company),
             location: user.location ?? "",
             photoUrl: user.photoUrl ?? "",
             bio: user.bio ?? "",

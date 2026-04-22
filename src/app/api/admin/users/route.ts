@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth/rbac";
 import { users } from "@/lib/stores";
 import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
+import { normalizeCompany } from "@/lib/company/normalize";
 import type { UserRole } from "@/types";
 import { z } from "zod";
 
@@ -53,7 +54,7 @@ export async function GET(request: NextRequest) {
             email: u.email,
             name: u.name,
             title: u.title,
-            company: u.company,
+            company: normalizeCompany(u.company),
             role: u.role || "user",
             photoUrl: u.photo_url,
             questionnaireCompleted: u.questionnaire_completed,
@@ -74,7 +75,7 @@ export async function GET(request: NextRequest) {
       email: u.email,
       name: u.name,
       title: u.title,
-      company: u.company,
+      company: normalizeCompany(u.company),
       role: (u.role || "user") as UserRole,
       photoUrl: u.photoUrl,
       questionnaireCompleted: u.questionnaireCompleted,

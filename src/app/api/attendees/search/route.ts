@@ -6,6 +6,7 @@ import type { SearchFilters, AttendeeSearchResult, Commonality, PublicUser } fro
 import { QUESTIONNAIRE_SECTIONS } from "@/lib/questionnaire-data";
 import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
 import { isLiveDatabaseMode } from "@/lib/supabase/data-mode";
+import { normalizeCompany } from "@/lib/company/normalize";
 import type { UserProfileRow } from "@/types/database";
 
 // Get label for a value from questionnaire options
@@ -272,7 +273,7 @@ function fullSearchBlob(
   const parts: string[] = [
     userProfile.name,
     userProfile.title,
-    userProfile.company || "",
+    normalizeCompany(userProfile.company) || "",
     ...profileInterestTags,
     ...galleryActivityTags,
     ...collectAllQuestionnaireStrings(responses),
@@ -679,13 +680,14 @@ export async function POST(request: NextRequest) {
           }
         }
 
+        const userCompany = normalizeCompany(user.company);
         let searchMatchLabels: string[] | undefined;
         if (keywords && keywords.trim() !== "") {
           const { ok, labels } = keywordMatchResult(
             {
               name: user.name,
               title: user.title,
-              company: user.company,
+              company: userCompany,
             },
             candidateResponses.responses,
             keywords,
@@ -708,7 +710,7 @@ export async function POST(request: NextRequest) {
           profile: {
             name: user.name,
             title: user.title,
-            company: user.company,
+            company: userCompany,
             photoUrl: user.photoUrl,
             location: user.location,
           },
@@ -899,13 +901,14 @@ async function searchSupabaseUsers(
         }
       }
 
+      const profileCompany = normalizeCompany(profile.company) || undefined;
       let searchMatchLabels: string[] | undefined;
       if (keywords && keywords.trim() !== "") {
         const { ok, labels } = keywordMatchResult(
           {
             name: profile.name!,
             title: profile.title || "",
-            company: profile.company || undefined,
+            company: profileCompany,
           },
           candidateResponses,
           keywords,
@@ -930,7 +933,7 @@ async function searchSupabaseUsers(
           profile: {
             name: profile.name!,
             title: profile.title || '',
-            company: profile.company || undefined,
+            company: profileCompany,
             photoUrl: profile.photo_url || undefined,
             location: profile.location || undefined,
           },

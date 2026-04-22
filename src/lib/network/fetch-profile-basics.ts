@@ -1,4 +1,5 @@
 import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
+import { normalizeCompany } from "@/lib/company/normalize";
 
 export async function fetchProfileBasics(
   userId: string
@@ -21,7 +22,7 @@ export async function fetchProfileBasics(
     return {
       name: row.name,
       title: row.title || "Member",
-      company: row.company,
+      company: normalizeCompany(row.company),
       email: row.email ?? null,
       photoUrl: row.photo_url,
     };
