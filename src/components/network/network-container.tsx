@@ -5,7 +5,7 @@ import { NetworkGraph } from "./network-graph";
 import { NetworkRadialGraph } from "./network-radial-graph";
 import { Button, primaryActionClasses } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Select,
   SelectContent,
@@ -50,6 +50,29 @@ interface ExtendedContact {
   title: string;
   company: string;
   reason: string;
+}
+
+/** Matches graph bubbles: show `photoUrl` in sidebars, not just initials. */
+function NetworkMatchAvatar({
+  node,
+  className,
+  fallbackClassName,
+}: {
+  node: Pick<NetworkNode, "name" | "photoUrl">;
+  className?: string;
+  fallbackClassName: string;
+}) {
+  const initials = node.name
+    .split(" ")
+    .filter(Boolean)
+    .map((n) => n[0])
+    .join("");
+  return (
+    <Avatar className={className}>
+      {node.photoUrl ? <AvatarImage src={node.photoUrl} alt="" /> : null}
+      <AvatarFallback className={fallbackClassName}>{initials}</AvatarFallback>
+    </Avatar>
+  );
 }
 
 export function NetworkContainer() {
@@ -517,19 +540,19 @@ export function NetworkContainer() {
             <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-4">
               {/* Header */}
               <Link
-                href={`/user/${selectedNode.id}`}
+                href={`/user/${selectedNode.realUserId ?? selectedNode.id}`}
                 className="flex items-start gap-3 rounded-xl hover:bg-white/5 -m-1 p-1 transition-colors"
               >
-                <Avatar className="h-14 w-14 border-2 border-white/20 shrink-0">
-                  <AvatarFallback className={cn(
+                <NetworkMatchAvatar
+                  node={selectedNode}
+                  className="h-14 w-14 border-2 border-white/20 shrink-0"
+                  fallbackClassName={cn(
                     "text-black font-semibold text-lg",
                     selectedNode.matchType === "high-affinity"
                       ? "bg-gradient-to-br from-teal-500 to-teal-400"
                       : "bg-gradient-to-br from-amber-500 to-amber-400"
-                  )}>
-                    {selectedNode.name.split(" ").map(n => n[0]).join("")}
-                  </AvatarFallback>
-                </Avatar>
+                  )}
+                />
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-lg text-white hover:text-cyan-300">{selectedNode.name}</p>
                   <p className="text-sm text-white/60">{selectedNode.title}</p>
@@ -617,16 +640,16 @@ export function NetworkContainer() {
                         onClick={() => setSelectedNode(conn)}
                         className="flex flex-col items-center gap-1.5 p-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors min-w-[80px]"
                       >
-                        <Avatar className="h-10 w-10 border border-white/20">
-                          <AvatarFallback className={cn(
+                        <NetworkMatchAvatar
+                          node={conn}
+                          className="h-10 w-10 border border-white/20"
+                          fallbackClassName={cn(
                             "text-black text-xs font-semibold",
                             conn.matchType === "high-affinity"
                               ? "bg-gradient-to-br from-teal-500 to-teal-400"
                               : "bg-gradient-to-br from-amber-500 to-amber-400"
-                          )}>
-                            {conn.name.split(" ").map(n => n[0]).join("")}
-                          </AvatarFallback>
-                        </Avatar>
+                          )}
+                        />
                         <span className="text-xs text-white/80 text-center truncate w-full">
                           {conn.name.split(" ")[0]}
                         </span>
@@ -640,14 +663,14 @@ export function NetworkContainer() {
             {/* Sticky action buttons at bottom */}
             <div className="shrink-0 border-t border-white/10 px-4 py-3 bg-gray-900">
               <div className="flex gap-2">
-                <Link href={`/user/${selectedNode.id}`} className="flex-1">
+                <Link href={`/user/${selectedNode.realUserId ?? selectedNode.id}`} className="flex-1">
                   <Button variant="outline" size="sm" className="w-full border-white/20 text-white hover:bg-white/10">
                     View Full Profile
                   </Button>
                 </Link>
                 <button
                   onClick={() => {
-                    window.location.href = `/messages?userId=${selectedNode.id}&name=${encodeURIComponent(selectedNode.name)}`;
+                    window.location.href = `/messages?userId=${encodeURIComponent(selectedNode.realUserId ?? selectedNode.id)}&name=${encodeURIComponent(selectedNode.name)}`;
                   }}
                   className="inline-flex items-center justify-center gap-1 px-3 py-2 rounded-full text-sm font-medium text-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20 transition-colors"
                 >
@@ -741,17 +764,17 @@ export function NetworkContainer() {
                   </Button>
                 </div>
                 <div className="space-y-4">
-                  <Link href={`/user/${selectedNode.id}`} className="flex items-center gap-3 rounded-full hover:bg-white/5 p-1 -m-1">
-                    <Avatar className="h-12 w-12 border-2 border-white/20">
-                      <AvatarFallback className={cn(
+                  <Link href={`/user/${selectedNode.realUserId ?? selectedNode.id}`} className="flex items-center gap-3 rounded-full hover:bg-white/5 p-1 -m-1">
+                    <NetworkMatchAvatar
+                      node={selectedNode}
+                      className="h-12 w-12 border-2 border-white/20"
+                      fallbackClassName={cn(
                         "text-black font-semibold",
                         selectedNode.matchType === "high-affinity"
                           ? "bg-gradient-to-br from-teal-500 to-teal-400"
                           : "bg-gradient-to-br from-amber-500 to-amber-400"
-                      )}>
-                        {selectedNode.name.split(" ").map(n => n[0]).join("")}
-                      </AvatarFallback>
-                    </Avatar>
+                      )}
+                    />
                     <div className="min-w-0 flex-1">
                       <p className="font-semibold text-white truncate hover:text-cyan-300">{selectedNode.name}</p>
                       <p className="text-sm text-white/60 truncate">{selectedNode.title}</p>
@@ -761,7 +784,7 @@ export function NetworkContainer() {
                     </div>
                   </Link>
                   <div className="flex gap-2">
-                    <Link href={`/user/${selectedNode.id}`} className="flex-1">
+                    <Link href={`/user/${selectedNode.realUserId ?? selectedNode.id}`} className="flex-1">
                       <Button variant="outline" size="sm" className="w-full border-white/20 text-white hover:bg-white/10">
                         View Profile
                       </Button>
@@ -849,16 +872,16 @@ export function NetworkContainer() {
             </div>
             <div className="space-y-4">
               <div className="flex items-center gap-3">
-                <Avatar className="h-12 w-12 border-2 border-white/20">
-                  <AvatarFallback className={cn(
+                <NetworkMatchAvatar
+                  node={selectedNode}
+                  className="h-12 w-12 border-2 border-white/20"
+                  fallbackClassName={cn(
                     "text-black font-semibold",
                     selectedNode.matchType === "high-affinity"
                       ? "bg-gradient-to-br from-teal-500 to-teal-400"
                       : "bg-gradient-to-br from-amber-500 to-amber-400"
-                  )}>
-                    {selectedNode.name.split(" ").map(n => n[0]).join("")}
-                  </AvatarFallback>
-                </Avatar>
+                  )}
+                />
                 <div>
                   <p className="font-semibold text-white">{selectedNode.name}</p>
                   <p className="text-sm text-white/60">{selectedNode.title}</p>
@@ -946,19 +969,19 @@ export function NetworkContainer() {
                     {getMutualConnections(selectedNode.id).map((conn) => (
                       <Link
                         key={conn.id}
-                        href={`/user/${conn.id}`}
+                        href={`/user/${conn.realUserId ?? conn.id}`}
                         className="flex items-center gap-2 p-2 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
                       >
-                        <Avatar className="h-8 w-8 border border-white/20">
-                          <AvatarFallback className={cn(
+                        <NetworkMatchAvatar
+                          node={conn}
+                          className="h-8 w-8 border border-white/20"
+                          fallbackClassName={cn(
                             "text-black text-xs font-semibold",
                             conn.matchType === "high-affinity"
                               ? "bg-gradient-to-br from-teal-500 to-teal-400"
                               : "bg-gradient-to-br from-amber-500 to-amber-400"
-                          )}>
-                            {conn.name.split(" ").map(n => n[0]).join("")}
-                          </AvatarFallback>
-                        </Avatar>
+                          )}
+                        />
                         <span className="text-xs text-white/80">
                           {conn.name.split(" ")[0]}
                         </span>
@@ -969,7 +992,7 @@ export function NetworkContainer() {
               )}
 
               <div className="flex gap-2">
-                <Link href={`/user/${selectedNode.id}`} className="flex-1">
+                <Link href={`/user/${selectedNode.realUserId ?? selectedNode.id}`} className="flex-1">
                   <Button variant="outline" size="sm" className="w-full border-white/20 text-white hover:bg-white/10">
                     View Profile
                   </Button>
@@ -1171,21 +1194,21 @@ function NetworkMobileCards({
               {/* Person details */}
               <div className="px-4 pt-4 pb-3 text-center">
                 <button onClick={() => onNodeSelect(node)} className="mx-auto">
-                  <Avatar className={cn(
-                    "h-16 w-16 border-2 mx-auto",
-                    node.matchType === "high-affinity" ? "border-teal-400/50" : "border-amber-400/50"
-                  )}>
-                    <AvatarFallback className={cn(
+                  <NetworkMatchAvatar
+                    node={node}
+                    className={cn(
+                      "h-16 w-16 border-2 mx-auto",
+                      node.matchType === "high-affinity" ? "border-teal-400/50" : "border-amber-400/50"
+                    )}
+                    fallbackClassName={cn(
                       "text-lg font-semibold",
                       node.matchType === "high-affinity"
                         ? "bg-gradient-to-br from-teal-500 to-teal-400 text-black"
                         : "bg-gradient-to-br from-amber-500 to-amber-400 text-black"
-                    )}>
-                      {node.name.split(" ").map(n => n[0]).join("")}
-                    </AvatarFallback>
-                  </Avatar>
+                    )}
+                  />
                 </button>
-                <Link href={`/user/${node.id}`}>
+                <Link href={`/user/${node.realUserId ?? node.id}`}>
                   <h3 className="font-semibold text-lg text-white cursor-pointer hover:text-cyan-300 transition-colors mt-2">
                     {node.name}
                   </h3>
@@ -1239,16 +1262,16 @@ function NetworkMobileCards({
                         onClick={() => onNodeSelect(conn)}
                         className="flex-1 flex flex-col items-center gap-1 p-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
                       >
-                        <Avatar className="h-8 w-8 border border-white/20">
-                          <AvatarFallback className={cn(
+                        <NetworkMatchAvatar
+                          node={conn}
+                          className="h-8 w-8 border border-white/20"
+                          fallbackClassName={cn(
                             "text-xs font-semibold text-black",
                             conn.matchType === "high-affinity"
                               ? "bg-gradient-to-br from-teal-500 to-teal-400"
                               : "bg-gradient-to-br from-amber-500 to-amber-400"
-                          )}>
-                            {conn.name.split(" ").map(n => n[0]).join("")}
-                          </AvatarFallback>
-                        </Avatar>
+                          )}
+                        />
                         <span className="text-xs text-white/80 font-medium">
                           {conn.name.split(" ")[0]}
                         </span>
@@ -1266,7 +1289,7 @@ function NetworkMobileCards({
                   : "border-amber-500/20 bg-amber-500/5"
               )}>
                 <Link
-                  href={`/user/${node.id}`}
+                  href={`/user/${node.realUserId ?? node.id}`}
                   className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-full text-sm font-medium bg-white/10 text-white hover:bg-white/20 transition-colors"
                 >
                   <Eye className="h-4 w-4" />
