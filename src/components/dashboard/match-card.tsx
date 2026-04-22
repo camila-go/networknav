@@ -43,11 +43,11 @@ export const matchCardPassChatClasses = {
   footer:
     "flex min-h-[72px] w-full min-w-0 flex-nowrap items-center gap-2 sm:gap-3 py-2.5",
   pass: cn(
-    "!h-10 min-h-10 flex-1 basis-0 min-w-[117px] rounded-[30px] !border !border-solid !border-[#343434] !bg-transparent px-3 text-base font-bold text-white hover:!border-[#343434] hover:!bg-white/5 hover:!text-white gap-1.5 !shadow-none"
+    "press !h-10 min-h-10 flex-1 basis-0 min-w-[117px] rounded-[30px] !border !border-solid !border-[#343434] !bg-transparent px-3 text-base font-bold text-white hover:!border-[#343434] hover:!bg-white/5 hover:!text-white gap-1.5 !shadow-none transition-colors"
   ),
   chat: cn(
-    "!h-10 min-h-10 min-w-0 flex-1 basis-0 rounded-[30px] !border-0 !bg-[#29606f] !px-2.5 sm:!px-3 text-sm sm:text-base font-bold text-white shadow-none",
-    "hover:!bg-[#34788a] hover:!border-0 hover:shadow-none",
+    "press group !h-10 min-h-10 min-w-0 flex-1 basis-0 rounded-[30px] !border-0 !bg-[#29606f] !px-2.5 sm:!px-3 text-sm sm:text-base font-bold text-white shadow-none transition-colors",
+    "hover:!bg-[#34788a] hover:!border-0 hover:shadow-none hover:shadow-[0_0_0_2px_rgba(98,208,234,0.18)]",
     "active:!bg-[#245560] focus-visible:!ring-2 focus-visible:!ring-white/40 focus-visible:!ring-offset-2 focus-visible:!ring-offset-[#191919]"
   ),
 };
@@ -130,8 +130,8 @@ export function MatchCard({
   return (
     <div
       className={cn(
-        "flex flex-col rounded-[20px] border border-[#262626] bg-[#0d0d0d] transition-colors duration-300",
-        "hover:border-[#333333]",
+        "group/matchcard hover-lift flex flex-col rounded-[20px] border border-[#262626] bg-[#0d0d0d]",
+        "hover:border-[#3a3a3a]",
         isCarousel
           ? "h-full min-h-0 flex-1 overflow-hidden"
           : "min-h-[420px] h-full flex-1"
@@ -143,7 +143,7 @@ export function MatchCard({
           <MatchTypeChip type={type} />
           <div className="flex w-full items-center gap-5">
             <Link href={profileUrl} className="shrink-0">
-              <Avatar className="h-[65px] w-[65px] border-0 shadow-none ring-0 cursor-pointer transition-opacity hover:opacity-95">
+              <Avatar className="h-[65px] w-[65px] border-0 shadow-none ring-0 cursor-pointer transition-transform duration-300 ease-out hover:scale-[1.04] group-hover/matchcard:ring-2 group-hover/matchcard:ring-white/10">
                 <AvatarImage src={matchedUser.profile.photoUrl} />
                 <AvatarFallback
                   className={cn(
@@ -253,7 +253,7 @@ export function MatchCard({
           <div className="flex min-w-0 flex-1 items-center gap-1.5">
             <div className="h-2 min-h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-white">
               <div
-                className="h-full rounded-full bg-[#4a9ba4] transition-all"
+                className="animate-score-fill h-full rounded-full bg-[#4a9ba4] transition-[width] duration-500 ease-out"
                 style={{ width: barWidth }}
               />
             </div>
@@ -294,11 +294,15 @@ export function MatchCard({
                 onPass(match.id);
               }}
               className={cn(
-                "inline-flex h-10 min-h-10 w-full min-w-[117px] flex-1 items-center justify-center gap-1.5 rounded-[30px] border border-solid border-[#343434] bg-transparent px-3 text-base font-bold text-white transition-colors hover:bg-white/5"
+                "press group inline-flex h-10 min-h-10 w-full min-w-[117px] flex-1 items-center justify-center gap-1.5 rounded-[30px] border border-solid border-[#343434] bg-transparent px-3 text-base font-bold text-white transition-colors hover:bg-white/5"
               )}
             >
               <span>Pass</span>
-              <X className="h-4 w-4 shrink-0 opacity-90" strokeWidth={2.5} aria-hidden />
+              <X
+                className="h-4 w-4 shrink-0 opacity-90 transition-transform duration-200 ease-out group-hover:rotate-90 group-hover:opacity-100"
+                strokeWidth={2.5}
+                aria-hidden
+              />
             </button>
           </div>
         )}

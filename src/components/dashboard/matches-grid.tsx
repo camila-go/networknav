@@ -210,9 +210,9 @@ export function MatchesGrid({ onMatchesLoaded }: MatchesGridProps = {}) {
             <div key={i} className="h-80 shimmer rounded-2xl" />
           ))}
         </div>
-        <div className="hidden min-h-[min(920px,88vh)] w-full grid-cols-3 grid-rows-2 gap-6 md:grid">
+        <div className="hidden w-full grid-cols-3 grid-rows-[480px_480px] gap-6 md:grid">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="min-h-[200px] rounded-2xl shimmer" />
+            <div key={i} className="h-full rounded-2xl shimmer" />
           ))}
         </div>
       </>
@@ -233,17 +233,17 @@ export function MatchesGrid({ onMatchesLoaded }: MatchesGridProps = {}) {
 
       <Tabs defaultValue="all" className="min-w-0 w-full">
         <TabsList className="mb-6 grid w-full grid-cols-3 border border-white/10 bg-white/5">
-        <TabsTrigger value="all" className="data-[state=active]:bg-white/10 data-[state=active]:text-white text-white/60 text-xs sm:text-sm px-2 sm:px-4">
+        <TabsTrigger value="all" className="press data-[state=active]:bg-white/10 data-[state=active]:text-white data-[state=active]:shadow-[inset_0_-2px_0_0_rgba(34,211,238,0.55)] text-white/60 text-xs sm:text-sm px-2 sm:px-4 transition-all duration-200 ease-out">
           <span className="hidden sm:inline">All Matches</span>
           <span className="sm:hidden">All</span>
           <span className="ml-1">({matches.filter(m => !m.passed).length})</span>
         </TabsTrigger>
-        <TabsTrigger value="high-affinity" className="data-[state=active]:bg-white/10 data-[state=active]:text-white text-white/60 text-xs sm:text-sm px-2 sm:px-4">
+        <TabsTrigger value="high-affinity" className="press data-[state=active]:bg-white/10 data-[state=active]:text-white data-[state=active]:shadow-[inset_0_-2px_0_0_rgba(34,211,238,0.55)] text-white/60 text-xs sm:text-sm px-2 sm:px-4 transition-all duration-200 ease-out">
           <span className="hidden sm:inline">High-Affinity</span>
           <span className="sm:hidden">High</span>
           <span className="ml-1">({highAffinityMatches.length})</span>
         </TabsTrigger>
-        <TabsTrigger value="strategic" className="data-[state=active]:bg-white/10 data-[state=active]:text-white text-white/60 text-xs sm:text-sm px-2 sm:px-4">
+        <TabsTrigger value="strategic" className="press data-[state=active]:bg-white/10 data-[state=active]:text-white data-[state=active]:shadow-[inset_0_-2px_0_0_rgba(237,126,53,0.6)] text-white/60 text-xs sm:text-sm px-2 sm:px-4 transition-all duration-200 ease-out">
           Strategic ({strategicMatches.length})
         </TabsTrigger>
       </TabsList>
@@ -348,19 +348,28 @@ function DesktopMatchPageGrid({
     <div
       data-desktop-match-page
       className={cn(
+        // Explicit row heights keep every card a uniform pixel size across pages
+        // regardless of content length (long bios, extra commonalities, etc.).
         "grid w-full min-w-full shrink-0 snap-center snap-always grid-cols-3 gap-6",
         multiRow
-          ? "min-h-[min(920px,88vh)] grid-rows-2"
-          : "min-h-[460px]"
+          ? "grid-rows-[480px_480px]"
+          : "grid-rows-[480px]"
       )}
     >
       {pageMatches.map((match, i) => (
         <div
           key={match.id}
-          className="animate-fade-in flex min-h-0 h-full flex-col"
+          className="animate-fade-in flex h-full min-h-0 flex-col overflow-hidden"
           style={{ animationDelay: `${pageIndex * 80 + i * 60}ms` }}
         >
-          <MatchCard match={match} onPass={onPass} viewerFirstName={viewerFirstName} />
+          {/* `variant="carousel"` gives the card a flex layout that clips to the
+              parent height and scrolls the middle region internally when needed. */}
+          <MatchCard
+            match={match}
+            onPass={onPass}
+            viewerFirstName={viewerFirstName}
+            variant="carousel"
+          />
         </div>
       ))}
     </div>
@@ -510,9 +519,10 @@ function MatchGrid({
         <div
           ref={scrollRef}
           onScroll={handleScroll}
-          className="flex min-w-0 touch-manipulation touch-pan-x items-stretch gap-4 overflow-x-auto overflow-y-hidden overscroll-x-contain snap-x snap-mandatory pb-0 scrollbar-hide"
+          className="flex min-w-0 touch-manipulation touch-pan-x items-start gap-3 overflow-x-auto overflow-y-hidden overscroll-x-contain scroll-smooth snap-x snap-proximity pb-1 pl-0.5 pr-0.5 pt-0.5 [-webkit-overflow-scrolling:touch] scrollbar-hide"
           style={{
-            scrollPaddingLeft: "0px",
+            scrollPaddingLeft: "max(0px,env(safe-area-inset-left))",
+            scrollPaddingRight: "max(0px,env(safe-area-inset-right))",
             WebkitOverflowScrolling: "touch",
             overscrollBehaviorX: "contain",
           }}
@@ -521,7 +531,7 @@ function MatchGrid({
             <div
               key={match.id}
               data-carousel-slide
-              className="flex h-[min(720px,calc(100svh-9.5rem))] w-[85vw] max-w-[340px] flex-shrink-0 snap-start flex-col"
+              className="flex h-[min(680px,calc(100dvh-12.5rem))] min-h-[20rem] w-[min(85vw,340px)] min-w-0 flex-shrink-0 snap-start flex-col overflow-hidden"
             >
               <MatchCard
                 match={match}
@@ -565,9 +575,9 @@ function MatchGrid({
                 size="sm"
                 onClick={() => goDesktopPage(desktopPageIndex - 1)}
                 disabled={desktopPageIndex === 0}
-                className="border-[#343434] text-white/70 hover:bg-white/5 hover:text-white disabled:opacity-50"
+                className="press group border-[#343434] text-white/70 transition-all duration-200 ease-out hover:-translate-y-[1px] hover:bg-white/5 hover:text-white disabled:opacity-50"
               >
-                <ChevronLeft className="mr-1 h-4 w-4" />
+                <ChevronLeft className="mr-1 h-4 w-4 transition-transform duration-200 ease-out group-hover:-translate-x-0.5" />
                 Previous
               </Button>
               <span className="text-sm text-white/50">
@@ -579,10 +589,10 @@ function MatchGrid({
                 size="sm"
                 onClick={() => goDesktopPage(desktopPageIndex + 1)}
                 disabled={desktopPageIndex >= desktopPages.length - 1}
-                className="border-[#343434] font-bold text-white hover:bg-white/5 disabled:opacity-50"
+                className="press group border-[#343434] font-bold text-white transition-all duration-200 ease-out hover:-translate-y-[1px] hover:bg-white/5 disabled:opacity-50"
               >
                 Next
-                <ChevronRight className="ml-1 h-4 w-4" />
+                <ChevronRight className="ml-1 h-4 w-4 transition-transform duration-200 ease-out group-hover:translate-x-0.5" />
               </Button>
             </div>
           ) : null}

@@ -32,14 +32,30 @@ export function MobileBottomNav() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex min-h-[56px] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-full px-0.5 py-2 transition-all",
+                "press group relative flex min-h-[56px] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-full px-0.5 py-2 transition-colors duration-200 ease-out",
                 isActive
                   ? "text-cyan-400"
                   : "text-white/60 active:text-white active:bg-white/10"
               )}
             >
-              <item.icon className={cn("h-[18px] w-[18px] shrink-0 sm:h-5 sm:w-5", isActive && "drop-shadow-[0_0_8px_rgba(34,211,238,0.5)]")} />
-              <span className="max-w-full truncate text-[9px] font-medium sm:text-[10px]">{item.label}</span>
+              <item.icon
+                className={cn(
+                  "h-[18px] w-[18px] shrink-0 transition-transform duration-300 ease-out sm:h-5 sm:w-5",
+                  isActive
+                    ? "scale-110 drop-shadow-[0_0_8px_rgba(34,211,238,0.5)]"
+                    : "group-hover:scale-105 group-active:scale-95"
+                )}
+              />
+              <span className="max-w-full truncate text-[9px] font-medium transition-opacity duration-200 sm:text-[10px]">
+                {item.label}
+              </span>
+              <span
+                aria-hidden
+                className={cn(
+                  "pointer-events-none absolute -top-px h-[2px] w-6 rounded-full bg-cyan-400 transition-all duration-300 ease-out",
+                  isActive ? "opacity-100 shadow-[0_0_8px_rgba(34,211,238,0.6)]" : "opacity-0 -translate-y-0.5"
+                )}
+              />
             </Link>
           );
         })}

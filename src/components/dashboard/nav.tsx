@@ -83,13 +83,18 @@ export function DashboardNav() {
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "inline-flex items-center justify-center gap-2 rounded-full px-3 py-2 text-sm font-medium transition-all",
+                    "press group inline-flex items-center justify-center gap-2 rounded-full px-3 py-2 text-sm font-medium transition-all duration-200 ease-out hover:-translate-y-[1px]",
                     isActive
-                      ? "bg-cyan-500/20 text-cyan-400"
+                      ? "bg-cyan-500/20 text-cyan-400 shadow-[inset_0_0_0_1px_rgba(34,211,238,0.25)]"
                       : "text-white/70 hover:bg-white/10 hover:text-white"
                   )}
                 >
-                  <item.icon className="h-4 w-4" />
+                  <item.icon
+                    className={cn(
+                      "h-4 w-4 transition-transform duration-200 ease-out group-hover:scale-110",
+                      isActive && "drop-shadow-[0_0_6px_rgba(34,211,238,0.45)]"
+                    )}
+                  />
                   <span>{item.label}</span>
                 </Link>
               );
@@ -98,13 +103,13 @@ export function DashboardNav() {
               <Link
                 href="/admin"
                 className={cn(
-                  "inline-flex items-center justify-center gap-2 rounded-full px-3 py-2 text-sm font-medium transition-all",
+                  "press group inline-flex items-center justify-center gap-2 rounded-full px-3 py-2 text-sm font-medium transition-all duration-200 ease-out hover:-translate-y-[1px]",
                   pathname.startsWith("/admin")
                     ? "bg-amber-500/20 text-amber-400"
                     : "text-amber-400/70 hover:bg-white/10 hover:text-amber-400"
                 )}
               >
-                <Shield className="h-4 w-4" />
+                <Shield className="h-4 w-4 transition-transform duration-200 ease-out group-hover:scale-110" />
                 <span>Admin</span>
               </Link>
             )}
@@ -116,9 +121,9 @@ export function DashboardNav() {
 
           <button
             onClick={handleLogout}
-            className="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-full text-sm font-medium text-white/60 hover:bg-white/10 hover:text-white transition-all ml-1"
+            className="press group ml-1 inline-flex items-center justify-center gap-2 rounded-full px-3 py-2 text-sm font-medium text-white/60 transition-all duration-200 ease-out hover:-translate-y-[1px] hover:bg-white/10 hover:text-white"
           >
-            <LogOut className="h-4 w-4" />
+            <LogOut className="h-4 w-4 transition-transform duration-200 ease-out group-hover:translate-x-[1px]" />
             <span className="hidden lg:inline">Log out</span>
           </button>
         </nav>

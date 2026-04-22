@@ -15,7 +15,7 @@ const ToastViewport = React.forwardRef<
   <ToastPrimitives.Viewport
     ref={ref}
     className={cn(
-      "fixed top-0 z-[100] flex max-h-screen w-full flex-col-reverse p-4 sm:bottom-0 sm:right-0 sm:top-auto sm:flex-col md:max-w-[420px]",
+      "fixed left-0 right-0 top-16 z-[100] flex max-h-screen w-full flex-col-reverse p-3 pt-2 sm:bottom-0 sm:left-auto sm:right-0 sm:top-auto sm:max-w-[420px] sm:pt-4 md:max-w-[420px]",
       className
     )}
     {...props}
@@ -28,11 +28,12 @@ const toastVariants = cva(
   {
     variants: {
       variant: {
-        default: "border-white/10 bg-[#0a1628] text-white",
+        // Opaque panels + neutral text: WCAG 2.1 AA for normal text (~4.5:1) on the dark fill
+        default: "border-slate-500/50 bg-[#0a1628] text-zinc-50",
         destructive:
-          "destructive group border-red-500/30 bg-red-500/10 text-red-400",
+          "destructive group border border-zinc-800 border-l-4 border-l-red-500 bg-zinc-950 text-zinc-50",
         success:
-          "border-teal-500/30 bg-teal-500/10 text-teal-400",
+          "border border-zinc-800 border-l-4 border-l-teal-500 bg-zinc-950 text-zinc-50",
       },
     },
     defaultVariants: {
@@ -63,7 +64,7 @@ const ToastAction = React.forwardRef<
   <ToastPrimitives.Action
     ref={ref}
     className={cn(
-      "inline-flex h-8 shrink-0 items-center justify-center rounded-full border bg-transparent px-3 text-sm font-medium ring-offset-background transition-colors hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 group-[.destructive]:border-muted/40 group-[.destructive]:hover:border-destructive/30 group-[.destructive]:hover:bg-destructive group-[.destructive]:hover:text-destructive-foreground group-[.destructive]:focus:ring-destructive",
+      "inline-flex h-8 shrink-0 items-center justify-center rounded-full border border-zinc-600 bg-zinc-900/80 px-3 text-sm font-medium text-zinc-100 ring-offset-zinc-950 transition-colors hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:ring-offset-2 focus:ring-offset-zinc-950 disabled:pointer-events-none disabled:opacity-50 group-[.destructive]:border-red-500/50 group-[.destructive]:hover:border-red-400 group-[.destructive]:hover:bg-red-950 group-[.destructive]:hover:text-zinc-50 group-[.destructive]:focus:ring-red-500",
       className
     )}
     {...props}
@@ -78,7 +79,7 @@ const ToastClose = React.forwardRef<
   <ToastPrimitives.Close
     ref={ref}
     className={cn(
-      "absolute right-2 top-2 rounded-full p-1 text-foreground/50 opacity-0 transition-opacity hover:text-foreground focus:opacity-100 focus:outline-none focus:ring-2 group-hover:opacity-100 group-[.destructive]:text-red-300 group-[.destructive]:hover:text-red-50 group-[.destructive]:focus:ring-red-400 group-[.destructive]:focus:ring-offset-red-600",
+      "absolute right-2 top-2 rounded-full p-1 text-zinc-400 opacity-0 transition-opacity hover:bg-zinc-800 hover:text-zinc-100 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-zinc-500 group-hover:opacity-100 group-[.destructive]:text-zinc-400 group-[.destructive]:hover:bg-red-950 group-[.destructive]:hover:text-zinc-100 group-[.destructive]:focus:ring-red-500",
       className
     )}
     toast-close=""
@@ -95,7 +96,7 @@ const ToastTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <ToastPrimitives.Title
     ref={ref}
-    className={cn("text-sm font-semibold", className)}
+    className={cn("text-sm font-semibold text-inherit", className)}
     {...props}
   />
 ));
@@ -107,7 +108,7 @@ const ToastDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <ToastPrimitives.Description
     ref={ref}
-    className={cn("text-sm opacity-90", className)}
+    className={cn("text-sm text-zinc-300", className)}
     {...props}
   />
 ));

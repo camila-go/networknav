@@ -250,7 +250,7 @@ export function StatsCards({ matchCount, matchScore }: StatsCardsProps = {}) {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Connection Points */}
         <div className={`
-          bg-gradient-to-br from-cyan-500/20 to-teal-500/10 border border-cyan-500/30 
+          hover-lift bg-gradient-to-br from-cyan-500/20 to-teal-500/10 border border-cyan-500/30 
           rounded-xl p-3 sm:p-4 transition-all duration-300
           ${isLoading ? 'animate-pulse' : ''}
         `}>
@@ -293,7 +293,7 @@ export function StatsCards({ matchCount, matchScore }: StatsCardsProps = {}) {
         <div 
           ref={goalPickerRef}
           className={`
-            relative rounded-xl p-3 sm:p-4 transition-all duration-300
+            hover-lift relative rounded-xl p-3 sm:p-4 transition-all duration-300
             ${goalMet 
               ? 'bg-gradient-to-br from-green-500/20 via-emerald-500/15 to-teal-500/10 border border-green-500/30 shadow-lg shadow-green-500/10' 
               : 'bg-white/5 border border-white/10'
@@ -379,7 +379,7 @@ export function StatsCards({ matchCount, matchScore }: StatsCardsProps = {}) {
 
         {/* Match Score / Total Matches */}
         <div className={`
-          bg-white/5 border border-white/10 rounded-xl p-3 sm:p-4 transition-all duration-300
+          hover-lift bg-white/5 border border-white/10 rounded-xl p-3 sm:p-4 transition-all duration-300
           ${isLoading ? 'animate-pulse' : ''}
         `}>
           <div className="flex items-center gap-3">
