@@ -2,6 +2,7 @@ import { createHash } from 'crypto';
 import { cache } from '@/lib/cache';
 import { getGenerativeProvider } from './provider-factory';
 import { isInCooldown } from './cooldown';
+import { buildCacheVersion, readStarterCache, writeStarterCache } from './starter-cache';
 
 const AI_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -13,6 +14,10 @@ function hashInput(input: string): string {
  * Generate AI-powered conversation starters for a match.
  * Returns null if no generative provider is available,
  * allowing callers to fall back to their algorithmic approach.
+ *
+ * When `viewerId` and `matchId` are provided and Supabase is configured, the
+ * result is cached in `ai_conversation_starters` so it survives cold starts
+ * and is shared across serverless instances.
  */
 export async function generateConversationStartersAI(context: {
   userName: string;
@@ -21,6 +26,8 @@ export async function generateConversationStartersAI(context: {
   commonalities: string[];
   matchPosition?: string;
   matchCompany?: string;
+  viewerId?: string;
+  matchId?: string;
 }): Promise<string[] | null> {
   const cacheKey = `ai:convstart:${hashInput(
     `${context.userName}|${context.matchName}|${context.matchType}|${context.commonalities.join(',')}|${context.matchPosition ?? ''}|${context.matchCompany ?? ''}`,
@@ -28,6 +35,21 @@ export async function generateConversationStartersAI(context: {
 
   const cached = cache.get<string[]>(cacheKey);
   if (cached) return cached;
+
+  const cacheVersion = buildCacheVersion({
+    matchType: context.matchType,
+    commonalities: context.commonalities,
+    matchPosition: context.matchPosition,
+    matchCompany: context.matchCompany,
+  });
+
+  if (context.viewerId && context.matchId) {
+    const persisted = await readStarterCache(context.viewerId, context.matchId, cacheVersion);
+    if (persisted) {
+      cache.set(cacheKey, persisted, AI_CACHE_TTL_MS);
+      return persisted;
+    }
+  }
 
   if (isInCooldown()) return null;
 
@@ -57,6 +79,9 @@ Shared context: ${context.commonalities.length ? context.commonalities.join(" | 
     if (starters.length === 0) return null;
     const result = starters.slice(0, 3);
     cache.set(cacheKey, result, AI_CACHE_TTL_MS);
+    if (context.viewerId && context.matchId) {
+      void writeStarterCache(context.viewerId, context.matchId, cacheVersion, result);
+    }
     return result;
   } catch (error) {
     console.warn('AI conversation starter generation failed, falling back:', error);

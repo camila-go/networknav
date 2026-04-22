@@ -27,15 +27,18 @@ async function loadProvider() {
 
 describe('OpenRouterGenerativeProvider', () => {
   const ORIGINAL_ENV = { ...process.env };
+  let logSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     chatCreateMock.mockReset();
     openAIConstructorCalls.length = 0;
     process.env = { ...ORIGINAL_ENV };
+    logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
   });
 
   afterEach(() => {
     process.env = { ...ORIGINAL_ENV };
+    logSpy.mockRestore();
   });
 
   it('is unconfigured when OPENROUTER_API_KEY is missing', async () => {
@@ -65,6 +68,7 @@ describe('OpenRouterGenerativeProvider', () => {
   it('uses OPENROUTER_MODEL when set, otherwise default Gemma model', async () => {
     process.env.OPENROUTER_API_KEY = 'sk-or-test';
     process.env.OPENROUTER_MODEL = 'some/other-model:free';
+    delete process.env.OPENROUTER_MODELS;
     chatCreateMock.mockResolvedValue({ choices: [{ message: { content: 'hi there' } }] });
     const { OpenRouterGenerativeProvider } = await loadProvider();
     const provider = new OpenRouterGenerativeProvider();
@@ -72,11 +76,15 @@ describe('OpenRouterGenerativeProvider', () => {
     expect(chatCreateMock).toHaveBeenCalledWith(
       expect.objectContaining({ model: 'some/other-model:free' }),
     );
+    // Single model → no `models` fallback array on the request
+    const sent = chatCreateMock.mock.calls[0][0] as Record<string, unknown>;
+    expect(sent.models).toBeUndefined();
   });
 
-  it('defaults to google/gemma-4-31b-it:free when OPENROUTER_MODEL is unset', async () => {
+  it('defaults to google/gemma-4-31b-it:free when OPENROUTER_MODEL/MODELS are unset', async () => {
     process.env.OPENROUTER_API_KEY = 'sk-or-test';
     delete process.env.OPENROUTER_MODEL;
+    delete process.env.OPENROUTER_MODELS;
     chatCreateMock.mockResolvedValue({ choices: [{ message: { content: 'ok' } }] });
     const { OpenRouterGenerativeProvider } = await loadProvider();
     const provider = new OpenRouterGenerativeProvider();
@@ -84,6 +92,51 @@ describe('OpenRouterGenerativeProvider', () => {
     expect(chatCreateMock).toHaveBeenCalledWith(
       expect.objectContaining({ model: 'google/gemma-4-31b-it:free' }),
     );
+  });
+
+  it('parses OPENROUTER_MODELS comma-separated list and sends server-side fallback chain', async () => {
+    process.env.OPENROUTER_API_KEY = 'sk-or-test';
+    process.env.OPENROUTER_MODELS =
+      'google/gemma-4-31b-it:free, openai/gpt-oss-120b:free ,z-ai/glm-4.5-air:free';
+    delete process.env.OPENROUTER_MODEL;
+    chatCreateMock.mockResolvedValue({ choices: [{ message: { content: 'ok' } }] });
+    const { OpenRouterGenerativeProvider } = await loadProvider();
+    const provider = new OpenRouterGenerativeProvider();
+    await provider.generateText('prompt');
+    const sent = chatCreateMock.mock.calls[0][0] as Record<string, unknown>;
+    expect(sent.model).toBe('google/gemma-4-31b-it:free');
+    expect(sent.models).toEqual([
+      'google/gemma-4-31b-it:free',
+      'openai/gpt-oss-120b:free',
+      'z-ai/glm-4.5-air:free',
+    ]);
+  });
+
+  it('OPENROUTER_MODELS takes precedence over OPENROUTER_MODEL', async () => {
+    process.env.OPENROUTER_API_KEY = 'sk-or-test';
+    process.env.OPENROUTER_MODEL = 'fallback/model:free';
+    process.env.OPENROUTER_MODELS = 'primary/model:free,backup/model:free';
+    chatCreateMock.mockResolvedValue({ choices: [{ message: { content: 'ok' } }] });
+    const { OpenRouterGenerativeProvider } = await loadProvider();
+    const provider = new OpenRouterGenerativeProvider();
+    await provider.generateText('prompt');
+    const sent = chatCreateMock.mock.calls[0][0] as Record<string, unknown>;
+    expect(sent.model).toBe('primary/model:free');
+    expect(sent.models).toEqual(['primary/model:free', 'backup/model:free']);
+  });
+
+  it('logs the served model from the response', async () => {
+    process.env.OPENROUTER_API_KEY = 'sk-or-test';
+    process.env.OPENROUTER_MODELS = 'primary/model:free,backup/model:free';
+    chatCreateMock.mockResolvedValue({
+      choices: [{ message: { content: 'ok' } }],
+      model: 'backup/model:free',
+    });
+    const { OpenRouterGenerativeProvider } = await loadProvider();
+    const provider = new OpenRouterGenerativeProvider();
+    await provider.generateText('prompt');
+    const logged = logSpy.mock.calls.map((c) => String(c[0])).join('\n');
+    expect(logged).toMatch(/\[AI\] served by backup\/model:free in \d+ms/);
   });
 
   it('returns trimmed content from chat completion', async () => {

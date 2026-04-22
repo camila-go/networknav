@@ -647,3 +647,24 @@ The `position` field has been removed from user profiles (consolidated into `tit
 ```sql
 ALTER TABLE user_profiles DROP COLUMN IF EXISTS position;
 ```
+
+## AI Conversation Starter Cache
+
+Persists OpenRouter-generated conversation starters keyed by (viewer, match) so they survive Vercel cold starts and are shared across serverless instances. `/api/matches` checks this table first and only calls the AI model on miss or when `cache_version` no longer matches the current inputs (ensuring stale starters regenerate when profiles change).
+
+Run once in the Supabase SQL editor:
+
+```sql
+CREATE TABLE IF NOT EXISTS public.ai_conversation_starters (
+  viewer_id uuid NOT NULL,
+  match_id uuid NOT NULL,
+  cache_version text NOT NULL,
+  starters jsonb NOT NULL,
+  generated_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (viewer_id, match_id)
+);
+
+-- RLS on. Accessed only via the service-role client in /api/matches;
+-- no user-facing policies are needed.
+ALTER TABLE public.ai_conversation_starters ENABLE ROW LEVEL SECURITY;
+```

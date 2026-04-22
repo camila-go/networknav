@@ -377,6 +377,8 @@ async function generateMatchesFromSupabase(currentUserId: string, currentUserEma
               commonalities: match.commonalities.map((c) => c.description),
               matchPosition: match.matchedUser.profile.title,
               matchCompany: match.matchedUser.profile.company,
+              viewerId: currentUserSupabaseId ?? undefined,
+              matchId: match.matchedUserId,
             })
           )
         );

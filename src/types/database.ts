@@ -108,6 +108,12 @@ export type Database = {
         Update: NetworkPulseVoteUpdate;
         Relationships: [];
       };
+      ai_conversation_starters: {
+        Row: AiConversationStarterRow;
+        Insert: AiConversationStarterInsert;
+        Update: AiConversationStarterUpdate;
+        Relationships: [];
+      };
     };
     Views: {};
     Functions: {
@@ -770,6 +776,32 @@ export type NetworkPulseVoteInsert = {
 export type NetworkPulseVoteUpdate = {
   option_id?: string;
   updated_at?: string;
+};
+
+// ============================================
+// AI Conversation Starter Cache
+// ============================================
+
+export type AiConversationStarterRow = {
+  viewer_id: string;
+  match_id: string;
+  cache_version: string;
+  starters: string[];
+  generated_at: string;
+};
+
+export type AiConversationStarterInsert = {
+  viewer_id: string;
+  match_id: string;
+  cache_version: string;
+  starters: string[];
+  generated_at?: string;
+};
+
+export type AiConversationStarterUpdate = {
+  cache_version?: string;
+  starters?: string[];
+  generated_at?: string;
 };
 
 // ============================================
