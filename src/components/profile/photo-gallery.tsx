@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, Plus, Trash2, Pencil, Check, X, ChevronUp, C
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { normalizeActivityTag } from "@/lib/profile/activity-tag";
 import type { UserPhoto } from "@/types";
 
 interface PhotoGalleryProps {
@@ -32,6 +33,7 @@ export function PhotoGallery({ userId, isOwner, withContainer = false, container
   } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [uploadActivityTag, setUploadActivityTag] = useState("");
+  const [editingTagError, setEditingTagError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   /** Latest activity label at confirm time (upload is async; avoids stale closure). */
   const uploadActivityTagRef = useRef("");
@@ -85,6 +87,14 @@ export function PhotoGallery({ userId, isOwner, withContainer = false, container
     if (!file) return;
     setUploadError(null);
 
+    if (!normalizeActivityTag(uploadActivityTag)) {
+      setUploadError(
+        "Add an activity label first. It’s required so your photo can appear in the community gallery and search (e.g. kayaking, cooking)."
+      );
+      e.target.value = "";
+      return;
+    }
+
     if (!ALLOWED_TYPES.includes(file.type)) {
       setUploadError("Invalid file type. Use JPG, PNG, WebP, or GIF.");
       e.target.value = "";
@@ -101,6 +111,12 @@ export function PhotoGallery({ userId, isOwner, withContainer = false, container
   }
 
   async function uploadPhoto(file: File) {
+    if (!normalizeActivityTag(uploadActivityTag)) {
+      setUploadError(
+        "Add a valid activity label (e.g. kayaking) before adding a photo. It’s required for the community gallery and search."
+      );
+      return;
+    }
     setUploading(true);
     try {
       // Step 1: Get signed upload URL from server
@@ -129,15 +145,14 @@ export function PhotoGallery({ userId, isOwner, withContainer = false, container
         return;
       }
 
-      // Step 3: Confirm upload and create DB record
-      const tagTrim = uploadActivityTag.trim();
+      // Step 3: Confirm upload and create DB record (API requires activity tag)
       const confirmResponse = await fetch("/api/profile/photos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           storageKey,
           photoId,
-          ...(tagTrim ? { activityTag: tagTrim } : {}),
+          activityTag: uploadActivityTag,
         }),
       });
       const confirmResult = await confirmResponse.json();
@@ -175,7 +190,13 @@ export function PhotoGallery({ userId, isOwner, withContainer = false, container
   }
 
   async function saveCaption(photoId: string, caption: string, activityTag: string) {
-    setEditingCaption(null);
+    if (!normalizeActivityTag(activityTag)) {
+      setEditingTagError(
+        "Activity label is required. Use a short label (e.g. kayaking) so this photo can appear in the community gallery and search."
+      );
+      return;
+    }
+    setEditingTagError(null);
 
     try {
       const res = await fetch(`/api/profile/photos/${photoId}`, {
@@ -188,14 +209,21 @@ export function PhotoGallery({ userId, isOwner, withContainer = false, container
       });
       const result = await res.json();
       if (result.success && result.data?.photo) {
+        setEditingCaption(null);
+        setEditingTagError(null);
         setPhotos((prev) =>
           prev.map((p) => (p.id === photoId ? result.data.photo : p))
         );
       } else {
-        fetchPhotos();
+        setEditingTagError(
+          typeof result.error === "string"
+            ? result.error
+            : "Could not save. Check the activity label."
+        );
       }
     } catch (error) {
       console.error("Caption save failed:", error);
+      setEditingTagError("Could not save. Try again.");
       fetchPhotos();
     }
   }
@@ -247,24 +275,30 @@ export function PhotoGallery({ userId, isOwner, withContainer = false, container
             <div className="min-w-0 flex-1 space-y-1">
               <label
                 htmlFor="gallery-upload-activity"
-                className="text-[11px] font-medium uppercase tracking-wide text-white/45"
+                className="text-[11px] font-medium uppercase tracking-wide text-amber-200/90"
               >
-                Activity for community gallery (optional)
+                Activity label <span className="text-red-400">*</span>{" "}
+                <span className="font-normal normal-case text-white/50">(required for each photo)</span>
               </label>
               <input
                 id="gallery-upload-activity"
                 type="text"
                 maxLength={48}
                 value={uploadActivityTag}
-                onChange={(e) => setUploadActivityTag(e.target.value)}
+                onChange={(e) => {
+                  setUploadActivityTag(e.target.value);
+                  setUploadError(null);
+                }}
+                required
+                autoComplete="off"
                 disabled={uploading || photos.length >= MAX_PHOTOS}
-                placeholder="e.g. kayaking, fishing"
-                className="w-full max-w-sm rounded-md border border-white/15 bg-zinc-950/80 px-3 py-2 text-sm text-white placeholder:text-white/35 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 disabled:opacity-50"
+                placeholder="e.g. kayaking, fishing, cooking"
+                className="w-full max-w-sm rounded-md border border-amber-500/30 bg-zinc-950/80 px-3 py-2 text-sm text-white placeholder:text-white/35 focus:outline-none focus:ring-2 focus:ring-amber-500/50 disabled:opacity-50"
               />
-              <p className="text-[11px] text-white/40">
-                Add a label so this photo can cluster with others who pick the same activity
-                on the community gallery. Your chip shows on your profile whenever a label
-                is saved.
+              <p className="text-[11px] text-white/50">
+                Every photo must have a label so you show up in the community gallery, activity search,
+                and on your profile as a clear chip. Add the label <span className="text-amber-200/90">before</span> you
+                click Add Photo.
               </p>
             </div>
             <div className="flex shrink-0 items-center gap-2">
@@ -272,7 +306,7 @@ export function PhotoGallery({ userId, isOwner, withContainer = false, container
                 {photos.length} / {MAX_PHOTOS} photos
               </span>
               {uploadError && (
-                <span className="text-xs text-red-400">{uploadError}</span>
+                <span className="text-xs text-red-400 max-w-[14rem] sm:max-w-xs">{uploadError}</span>
               )}
               <input
                 ref={fileInputRef}
@@ -285,11 +319,26 @@ export function PhotoGallery({ userId, isOwner, withContainer = false, container
                 type="button"
                 size="sm"
                 variant="outline"
-                disabled={uploading || photos.length >= MAX_PHOTOS}
+                disabled={
+                  uploading ||
+                  photos.length >= MAX_PHOTOS ||
+                  !normalizeActivityTag(uploadActivityTag)
+                }
                 onClick={() => {
                   setUploadError(null);
+                  if (!normalizeActivityTag(uploadActivityTag)) {
+                    setUploadError(
+                      "Type an activity label first. It’s required (e.g. hiking, design)."
+                    );
+                    return;
+                  }
                   fileInputRef.current?.click();
                 }}
+                title={
+                  !normalizeActivityTag(uploadActivityTag)
+                    ? "Add an activity label in the field above first"
+                    : undefined
+                }
                 className="border-white/20 text-white/80 hover:bg-white/10"
               >
                 {uploading ? (
@@ -414,7 +463,11 @@ export function PhotoGallery({ userId, isOwner, withContainer = false, container
 
       {/* Caption editing modal */}
       {editingCaption && (
-        <div className="space-y-2 rounded-lg border border-white/10 bg-white/5 p-3">
+        <div className="space-y-2 rounded-lg border border-amber-500/20 bg-white/5 p-3">
+          <p className="text-[11px] text-amber-200/80">
+            Photo activity label <span className="text-red-400">*</span> — required for the gallery; caption is
+            optional.
+          </p>
           <div className="flex items-center gap-2">
             <input
               autoFocus
@@ -433,9 +486,12 @@ export function PhotoGallery({ userId, isOwner, withContainer = false, container
                     editingCaption.value,
                     editingCaption.activityTag
                   );
-                if (e.key === "Escape") setEditingCaption(null);
+                if (e.key === "Escape") {
+                  setEditingCaption(null);
+                  setEditingTagError(null);
+                }
               }}
-              placeholder="Caption..."
+              placeholder="Caption (optional)..."
               className="min-w-0 flex-1 bg-transparent text-sm text-white placeholder:text-white/40 outline-none"
             />
             <button
@@ -454,25 +510,47 @@ export function PhotoGallery({ userId, isOwner, withContainer = false, container
             </button>
             <button
               type="button"
-              onClick={() => setEditingCaption(null)}
+              onClick={() => {
+                setEditingCaption(null);
+                setEditingTagError(null);
+              }}
               className="text-white/40 hover:text-white/70"
               aria-label="Cancel"
             >
               <X className="h-4 w-4" />
             </button>
           </div>
-          <input
-            type="text"
-            maxLength={48}
-            value={editingCaption.activityTag}
-            onChange={(e) =>
-              setEditingCaption((prev) =>
-                prev ? { ...prev, activityTag: e.target.value } : null
-              )
-            }
-            placeholder="Gallery activity (e.g. kayaking)"
-            className="w-full max-w-sm rounded-md border border-white/10 bg-zinc-950/60 px-3 py-1.5 text-xs text-white placeholder:text-white/35 outline-none focus:ring-2 focus:ring-cyan-500/40"
-          />
+          <div className="space-y-1">
+            <label className="text-[10px] font-medium uppercase tracking-wide text-amber-200/80">
+              Activity label <span className="text-red-400">*</span>
+            </label>
+            <input
+              type="text"
+              maxLength={48}
+              value={editingCaption.activityTag}
+              onChange={(e) => {
+                setEditingTagError(null);
+                setEditingCaption((prev) =>
+                  prev ? { ...prev, activityTag: e.target.value } : null
+                );
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter")
+                  saveCaption(
+                    editingCaption.id,
+                    editingCaption.value,
+                    editingCaption.activityTag
+                  );
+              }}
+              placeholder="e.g. kayaking, design, cooking"
+              className="w-full max-w-sm rounded-md border border-amber-500/30 bg-zinc-950/60 px-3 py-1.5 text-xs text-white placeholder:text-white/35 outline-none focus:ring-2 focus:ring-amber-500/40"
+            />
+            {editingTagError && (
+              <p className="text-xs text-red-400" role="alert">
+                {editingTagError}
+              </p>
+            )}
+          </div>
         </div>
       )}
 

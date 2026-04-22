@@ -7,7 +7,8 @@ export type NetworkActionSource =
   | "explore_search"
   | "explore_feed"
   | "dashboard_match"
-  | "user_profile";
+  | "user_profile"
+  | "network_map";
 
 async function postActivity(
   activityType: "message_sent" | "meeting_scheduled" | "explore_pass",

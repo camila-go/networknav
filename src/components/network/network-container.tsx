@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
+import Image from "next/image";
 import { NetworkGraph } from "./network-graph";
 import { NetworkRadialGraph } from "./network-radial-graph";
+import { TeamsActionButtons } from "./teams-action-buttons";
 import { Button, primaryActionClasses } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -14,7 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
-import { cn, teamsMeetingUrl } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import {
   Network,
   Sparkles,
@@ -23,7 +25,6 @@ import {
   TrendingUp,
   Lightbulb,
   X,
-  Calendar,
   Loader2,
   MessageCircle,
   Eye,
@@ -677,33 +678,41 @@ export function NetworkContainer() {
                   <MessageCircle className="h-4 w-4" />
                   Message
                 </button>
-                {selectedNode.email ? (
-                  <a
-                    href={teamsMeetingUrl(selectedNode.email, `Meet: ${selectedNode.name}`)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={cn(
-                      "inline-flex items-center justify-center gap-1 rounded-full px-4 py-2 text-sm font-medium transition-colors",
+                {selectedNode.email?.trim() ? (
+                  <TeamsActionButtons
+                    targetEmail={selectedNode.email.trim()}
+                    targetName={selectedNode.name}
+                    targetUserId={selectedNode.realUserId ?? selectedNode.id}
+                    source="network_map"
+                    className="flex-1 min-w-0"
+                    chatClassName={cn(
+                      "flex-1 w-full !h-8 !min-h-8 text-sm !py-0 rounded-full",
                       primaryActionClasses
                     )}
-                  >
-                    <Calendar className="h-4 w-4" />
-                    Meet
-                  </a>
+                  />
                 ) : (
-                  <button
+                  <Button
                     type="button"
+                    size="sm"
+                    variant="secondary"
+                    className="h-8 flex-1 gap-1.5 bg-white/10 text-white/70"
                     onClick={() =>
                       toast({
-                        title: "Meet on Teams",
-                        description: "Email isn’t available for this member yet. Open their profile to connect.",
+                        title: "Teams chat",
+                        description:
+                          "Email isn’t available for this member yet. Open their profile to connect.",
                       })
                     }
-                    className="inline-flex items-center justify-center gap-1 px-4 py-2 rounded-full text-sm font-medium bg-white/10 text-white/70"
                   >
-                    <Calendar className="h-4 w-4" />
-                    Meet
-                  </button>
+                    <Image
+                      src="/teams-icon.png"
+                      alt=""
+                      width={16}
+                      height={16}
+                      className="opacity-50 shrink-0"
+                    />
+                    Chat
+                  </Button>
                 )}
               </div>
             </div>
@@ -789,33 +798,39 @@ export function NetworkContainer() {
                         View Profile
                       </Button>
                     </Link>
-                    {selectedNode.email ? (
-                      <a
-                        href={teamsMeetingUrl(selectedNode.email, `Meet: ${selectedNode.name}`)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={cn(
-                          "flex-1 inline-flex items-center justify-center gap-1 rounded-full px-3 py-2 text-sm font-medium",
+                    {selectedNode.email?.trim() ? (
+                      <TeamsActionButtons
+                        targetEmail={selectedNode.email.trim()}
+                        targetName={selectedNode.name}
+                        targetUserId={selectedNode.realUserId ?? selectedNode.id}
+                        source="network_map"
+                        className="flex-1 min-w-0"
+                        chatClassName={cn(
+                          "flex-1 w-full !h-8 !min-h-8 text-sm !py-0 rounded-full",
                           primaryActionClasses
                         )}
-                      >
-                        <Calendar className="h-4 w-4" />
-                        Meet
-                      </a>
+                      />
                     ) : (
                       <Button
                         size="sm"
                         variant="secondary"
-                        className="flex-1 gap-1 bg-white/10 text-white/70"
+                        className="h-8 flex-1 gap-1.5 bg-white/10 text-white/70"
                         onClick={() =>
                           toast({
-                            title: "Meet on Teams",
-                            description: "Email isn’t available for this member yet.",
+                            title: "Teams chat",
+                            description:
+                              "Email isn’t available for this member yet.",
                           })
                         }
                       >
-                        <Calendar className="h-4 w-4" />
-                        Meet
+                        <Image
+                          src="/teams-icon.png"
+                          alt=""
+                          width={16}
+                          height={16}
+                          className="opacity-50 shrink-0"
+                        />
+                        Chat
                       </Button>
                     )}
                   </div>
@@ -997,33 +1012,39 @@ export function NetworkContainer() {
                     View Profile
                   </Button>
                 </Link>
-                {selectedNode.email ? (
-                  <a
-                    href={teamsMeetingUrl(selectedNode.email, `Meet: ${selectedNode.name}`)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={cn(
-                      "flex-1 inline-flex items-center justify-center gap-1 rounded-full px-3 py-2 text-sm font-medium",
+                {selectedNode.email?.trim() ? (
+                  <TeamsActionButtons
+                    targetEmail={selectedNode.email.trim()}
+                    targetName={selectedNode.name}
+                    targetUserId={selectedNode.realUserId ?? selectedNode.id}
+                    source="network_map"
+                    className="flex-1 min-w-0"
+                    chatClassName={cn(
+                      "flex-1 w-full !h-8 !min-h-8 text-sm !py-0 rounded-full",
                       primaryActionClasses
                     )}
-                  >
-                    <Calendar className="h-4 w-4" />
-                    Meet
-                  </a>
+                  />
                 ) : (
                   <Button
                     size="sm"
                     variant="secondary"
-                    className="flex-1 gap-1 bg-white/10 text-white/70"
+                    className="h-8 flex-1 gap-1.5 bg-white/10 text-white/70"
                     onClick={() =>
                       toast({
-                        title: "Meet on Teams",
-                        description: "Email isn’t available for this member yet. Open their profile to connect.",
+                        title: "Teams chat",
+                        description:
+                          "Email isn’t available for this member yet. Open their profile to connect.",
                       })
                     }
                   >
-                    <Calendar className="h-4 w-4" />
-                    Meet
+                    <Image
+                      src="/teams-icon.png"
+                      alt=""
+                      width={16}
+                      height={16}
+                      className="opacity-50 shrink-0"
+                    />
+                    Chat
                   </Button>
                 )}
               </div>

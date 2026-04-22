@@ -93,6 +93,7 @@ export async function POST(request: NextRequest) {
       storageKey: string;
       photoId: string;
       caption?: string;
+      /** Required — normalized and stored; drives gallery & search. */
       activityTag?: string;
     };
 
@@ -103,11 +104,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const rawTag =
-      typeof activityTag === "string" && activityTag.trim().length > 0
-        ? activityTag
-        : caption;
-    const normalizedTag = normalizeActivityTag(rawTag);
+    const normalizedTag = normalizeActivityTag(
+      typeof activityTag === "string" ? activityTag : null
+    );
+    if (!normalizedTag) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Activity label is required for each photo. Add a short label (e.g. kayaking) before saving.",
+        },
+        { status: 400 }
+      );
+    }
 
     // Validate storage key matches the authenticated user
     const expectedKey = `${session.userId}/gallery/${photoId}`;

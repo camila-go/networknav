@@ -57,7 +57,18 @@ export async function PATCH(
     if ("caption" in body) updates.caption = body.caption ?? null;
     if ("displayOrder" in body) updates.display_order = body.displayOrder;
     if ("activityTag" in body) {
-      updates.activity_tag = normalizeActivityTag(body.activityTag ?? null);
+      const n = normalizeActivityTag(body.activityTag ?? null);
+      if (n === null) {
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              "Activity label is required. Use a short label (e.g. kayaking) so your photo can be shared on the community gallery.",
+          },
+          { status: 400 }
+        );
+      }
+      updates.activity_tag = n;
     }
 
     if (Object.keys(updates).length === 0) {
