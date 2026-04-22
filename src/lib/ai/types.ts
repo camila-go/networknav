@@ -24,4 +24,4 @@ export interface GenerativeProvider {
   generateText(prompt: string, systemInstruction?: string): Promise<string>;
 }
 
-export type AIProviderType = 'openai' | 'vertex';
+export type AIProviderType = 'openai' | 'vertex' | 'openrouter';

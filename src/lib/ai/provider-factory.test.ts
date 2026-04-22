@@ -24,6 +24,14 @@ vi.mock("./vertex-provider", () => ({
   },
 }));
 
+// Default: configured OpenRouter provider. Individual tests override via vi.doMock.
+vi.mock("./openrouter-provider", () => ({
+  OpenRouterGenerativeProvider: class {
+    isConfigured = true;
+    generateText = vi.fn().mockResolvedValue("generated text");
+  },
+}));
+
 describe("Provider Factory", () => {
   it("should throw for invalid AI_PROVIDER value", async () => {
     vi.resetModules();
@@ -76,5 +84,39 @@ describe("Provider Factory - Vertex", () => {
     const { getGenerativeProvider } = await import("./provider-factory");
     expect(getGenerativeProvider()).not.toBeNull();
     delete process.env.AI_PROVIDER;
+  });
+});
+
+describe("Provider Factory - OpenRouter", () => {
+  it("should return a generative provider when AI_PROVIDER=openrouter and configured", async () => {
+    vi.resetModules();
+    process.env.AI_PROVIDER = "openrouter";
+    const { getGenerativeProvider } = await import("./provider-factory");
+    const provider = getGenerativeProvider();
+    expect(provider).not.toBeNull();
+    delete process.env.AI_PROVIDER;
+  });
+
+  it("should keep embeddings on OpenAI when AI_PROVIDER=openrouter", async () => {
+    vi.resetModules();
+    process.env.AI_PROVIDER = "openrouter";
+    const { getEmbeddingProvider } = await import("./provider-factory");
+    expect(getEmbeddingProvider().name).toBe("openai");
+    delete process.env.AI_PROVIDER;
+  });
+
+  it("should return null generative when OPENROUTER_API_KEY is missing", async () => {
+    vi.resetModules();
+    vi.doMock("./openrouter-provider", () => ({
+      OpenRouterGenerativeProvider: class {
+        isConfigured = false;
+        generateText = vi.fn();
+      },
+    }));
+    process.env.AI_PROVIDER = "openrouter";
+    const { getGenerativeProvider } = await import("./provider-factory");
+    expect(getGenerativeProvider()).toBeNull();
+    delete process.env.AI_PROVIDER;
+    vi.doUnmock("./openrouter-provider");
   });
 });

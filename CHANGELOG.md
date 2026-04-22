@@ -4,6 +4,12 @@ All notable changes to NetworkNav (Jynx) will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- OpenRouter generative provider (`AI_PROVIDER=openrouter`) using the OpenAI-compatible API with the free `google/gemma-4-31b-it:free` model by default; wires up conversation starters, questionnaire reactions, and profile summaries (previously dead fallbacks). Includes 24h in-memory response caching per input, bounded concurrency (3 parallel AI calls) on the matches endpoint, 10s per-call timeout, and a shared 60s cooldown on 429 responses so rate-limit spikes don't cascade (`src/lib/ai/openrouter-provider.ts`, `src/lib/ai/cooldown.ts`, `src/lib/ai/provider-factory.ts`, `src/lib/ai/generative.ts`, `src/lib/ai/types.ts`, `src/app/api/matches/route.ts`, `.env.example`)
+
+### Changed
+- Disable the Jynx in-app network-assistant chat generative path: `generateJynxNetworkReply` now always returns `null` so the existing canned-response fallback is used; out of scope for the current AI integration (`src/lib/ai/generative.ts`)
+
 ### Fixed
 - Fix 32 failing tests across 10 files: drop unused `OpenAIGenerativeProvider` import/instantiation from `getGenerativeProvider()` so the openai path returns null as intended (`src/lib/ai/provider-factory.ts`); polyfill jsdom gaps for `SVGElement.width/height/transform.baseVal` (d3-zoom/d3-interpolate) and `Element.scrollTo` (mobile swiper) in `src/test/setup.ts`; update questionnaire tests to match the current 2-section / 8-question schema and replace obsolete `createProfileText` field assertions with current questionnaire keys (`src/lib/questionnaire-data.test.ts`, `src/lib/questionnaire-store.test.ts`, `src/lib/ai/embeddings.test.ts`); recalibrate market-basket similarity thresholds against current algorithm output (`src/lib/matching/market-basket-analysis.test.ts`); fix bug-fixes regex to accept the functional-updater password toggle and include `ok: true` in the register-form success mock (`src/__tests__/bug-fixes.test.ts`, `src/components/auth/register-form.test.tsx`); make login rate limit read `NODE_ENV` inside the handler so the 429 test can stub production mode (`src/app/api/auth/login/route.ts`, `src/__tests__/api/auth.test.ts`)
 

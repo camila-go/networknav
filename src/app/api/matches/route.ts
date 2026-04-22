@@ -360,20 +360,30 @@ async function generateMatchesFromSupabase(currentUserId: string, currentUserEma
 
     const matches = ensureMatchTypeMix(buildRows, currentViewerFirstName);
 
-    // Optional AI layer: merge with template starters so lines stay varied even when AI is generic
+    // Optional AI layer: merge with template starters so lines stay varied even when AI is generic.
+    // Bounded concurrency (3 at a time) so a rate-limit spike doesn't burn the free-tier daily
+    // quota across every match card on a single page render.
     try {
-      const aiStarterResults = await Promise.all(
-        matches.map((match) =>
-          generateConversationStartersAI({
-            userName: currentViewerFirstName || "there",
-            matchName: match.matchedUser.profile.name.split(" ")[0] || "them",
-            matchType: match.type,
-            commonalities: match.commonalities.map((c) => c.description),
-            matchPosition: match.matchedUser.profile.title,
-            matchCompany: match.matchedUser.profile.company,
-          })
-        )
-      );
+      const aiStarterResults: (string[] | null)[] = new Array(matches.length).fill(null);
+      const CONCURRENCY = 3;
+      for (let i = 0; i < matches.length; i += CONCURRENCY) {
+        const batch = matches.slice(i, i + CONCURRENCY);
+        const results = await Promise.all(
+          batch.map((match) =>
+            generateConversationStartersAI({
+              userName: currentViewerFirstName || "there",
+              matchName: match.matchedUser.profile.name.split(" ")[0] || "them",
+              matchType: match.type,
+              commonalities: match.commonalities.map((c) => c.description),
+              matchPosition: match.matchedUser.profile.title,
+              matchCompany: match.matchedUser.profile.company,
+            })
+          )
+        );
+        for (let j = 0; j < results.length; j++) {
+          aiStarterResults[i + j] = results[j];
+        }
+      }
       for (let i = 0; i < matches.length; i++) {
         const aiStarters = aiStarterResults[i];
         const base = matches[i].conversationStarters;
