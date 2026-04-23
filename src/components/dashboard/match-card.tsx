@@ -72,6 +72,9 @@ export function MatchCard({
   const isHighAffinity = type === "high-affinity";
 
   const displayStarters = useMemo(() => {
+    if (match.conversationStarters?.length) {
+      return match.conversationStarters;
+    }
     const coms: Commonality[] =
       commonalities.length > 0
         ? commonalities
@@ -97,6 +100,7 @@ export function MatchCard({
       }
     );
   }, [
+    match.conversationStarters,
     commonalities,
     type,
     matchedUser.profile.name,

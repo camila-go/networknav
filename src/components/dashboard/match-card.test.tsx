@@ -98,8 +98,25 @@ describe("MatchCard", () => {
     expect(screen.getByText("Both enjoy hiking")).toBeInTheDocument();
   });
 
-  it("should render personalized conversation starters", () => {
+  it("should render conversation starters from match data when provided", () => {
     render(<MatchCard match={createMatch()} onPass={mockOnPass} viewerFirstName="Alex" />);
+    expect(screen.getByText(/conversation starter/i)).toBeInTheDocument();
+    expect(
+      screen.getByText("I'd love to hear how you scaled your engineering team")
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Would be great to swap notes on talent retention")
+    ).toBeInTheDocument();
+  });
+
+  it("should fall back to templates when match has no starters", () => {
+    render(
+      <MatchCard
+        match={createMatch({ conversationStarters: [] })}
+        onPass={mockOnPass}
+        viewerFirstName="Alex"
+      />
+    );
     expect(screen.getByText(/conversation starter/i)).toBeInTheDocument();
     const section = screen.getByText(/conversation starter/i).closest("div");
     expect(section?.textContent).toMatch(/Sarah|Technology|hiking|leadership|TechCorp|VP/i);
