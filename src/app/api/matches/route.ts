@@ -56,21 +56,6 @@ export async function GET(request: NextRequest) {
 
     const metrics = calculateMatchQualityMetrics(matches);
 
-    if (process.env.DEBUG_MATCH_SCORING === "1") {
-      console.log("[matches-debug/response]", JSON.stringify({
-        viewerId: userId,
-        branch: isLiveDatabaseMode() && supabaseAdmin ? "supabase" : "fallback",
-        isLiveDatabaseMode: isLiveDatabaseMode(),
-        hasSupabaseAdmin: !!supabaseAdmin,
-        matchCount: matches.length,
-        finalScores: matches.map((m) => ({
-          name: m.matchedUser.profile.name,
-          score: m.score,
-          type: m.type,
-        })),
-      }));
-    }
-
     return NextResponse.json({
       success: true,
       data: {
@@ -384,23 +369,10 @@ async function generateMatchesFromSupabase(currentUserId: string, currentUserEma
 
     // Cohort-relative rescaling: preserve ranking but spread the visible band
     // so the best match in a sparse pool doesn't render as "35%".
-    const DEBUG_MATCH_SCORING = process.env.DEBUG_MATCH_SCORING === "1";
-    const scoresBeforeRescale = DEBUG_MATCH_SCORING
-      ? gatedRows.map((r) => ({ name: r.match.matchedUser.profile.name, score: r.match.score }))
-      : null;
     const rescaled = rescaleCohortScores(gatedRows.map((r) => r.match.score));
     gatedRows.forEach((row, i) => {
       row.match.score = rescaled[i];
     });
-    if (DEBUG_MATCH_SCORING) {
-      console.log("[matches-debug/rescale]", JSON.stringify({
-        viewerId: currentUserId,
-        cohortSize: gatedRows.length,
-        before: scoresBeforeRescale,
-        rescaled,
-        after: gatedRows.map((r) => ({ name: r.match.matchedUser.profile.name, score: r.match.score })),
-      }));
-    }
 
     const matches = ensureMatchTypeMix(gatedRows, currentViewerFirstName);
 
