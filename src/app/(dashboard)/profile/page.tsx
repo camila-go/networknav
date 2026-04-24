@@ -23,8 +23,6 @@ import {
   ChevronDown,
   ChevronUp,
   Trophy,
-  MessageSquare,
-  Calendar,
   LogOut,
   HelpCircle,
   BookOpenCheck,
@@ -82,14 +80,9 @@ export default function ProfilePage() {
     showActivityStats: true,
     showConnections: true,
     showInterests: true,
-    allowMessages: true,
-    allowMeetingRequests: true,
   });
   const [notificationSettings, setNotificationSettings] = useState({
     newMatches: true,
-    messages: true,
-    meetingRequests: true,
-    weeklyDigest: true,
     streakReminders: true,
   });
   const [prefsHydrated, setPrefsHydrated] = useState(false);
@@ -511,32 +504,6 @@ export default function ProfilePage() {
                   onCheckedChange={(checked) => setPrivacySettings(s => ({ ...s, showInterests: checked }))}
                 />
               </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <MessageSquare className="h-4 w-4 text-white/50" />
-                  <div>
-                    <p className="text-sm font-medium text-white">Allow Messages</p>
-                    <p className="text-xs text-white/50">Let others send you messages</p>
-                  </div>
-                </div>
-                <Switch
-                  checked={privacySettings.allowMessages}
-                  onCheckedChange={(checked) => setPrivacySettings(s => ({ ...s, allowMessages: checked }))}
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Calendar className="h-4 w-4 text-white/50" />
-                  <div>
-                    <p className="text-sm font-medium text-white">Allow Meeting Requests</p>
-                    <p className="text-xs text-white/50">Let others request meetings with you</p>
-                  </div>
-                </div>
-                <Switch
-                  checked={privacySettings.allowMeetingRequests}
-                  onCheckedChange={(checked) => setPrivacySettings(s => ({ ...s, allowMeetingRequests: checked }))}
-                />
-              </div>
             </div>
           )}
         </div>
@@ -573,26 +540,6 @@ export default function ProfilePage() {
                 <Switch
                   checked={notificationSettings.newMatches}
                   onCheckedChange={(checked) => setNotificationSettings(s => ({ ...s, newMatches: checked }))}
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-white">Meeting Requests</p>
-                  <p className="text-xs text-white/50">Get notified for meeting requests</p>
-                </div>
-                <Switch
-                  checked={notificationSettings.meetingRequests}
-                  onCheckedChange={(checked) => setNotificationSettings(s => ({ ...s, meetingRequests: checked }))}
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-white">Weekly Digest</p>
-                  <p className="text-xs text-white/50">Receive a weekly summary of your activity</p>
-                </div>
-                <Switch
-                  checked={notificationSettings.weeklyDigest}
-                  onCheckedChange={(checked) => setNotificationSettings(s => ({ ...s, weeklyDigest: checked }))}
                 />
               </div>
               {SHOW_GAMIFICATION_UI && (

@@ -254,6 +254,31 @@ export function MatchesGrid({ onMatchesLoaded }: MatchesGridProps = {}) {
         </TabsTrigger>
       </TabsList>
 
+      <div className="mb-4 grid grid-cols-1 md:grid-cols-2 gap-2 rounded-lg border border-white/10 bg-white/5 p-3">
+        <div className="flex items-start gap-2">
+          <span
+            aria-hidden
+            className="mt-1 h-2 w-2 flex-shrink-0 rounded-full"
+            style={{ backgroundColor: "#1b8ea6" }}
+          />
+          <p className="text-xs leading-snug">
+            <span className="font-semibold text-white">High-Affinity</span>
+            <span className="text-white/60"> — Leaders who share your goals, challenges, and interests. Great for validating ideas and finding common ground.</span>
+          </p>
+        </div>
+        <div className="flex items-start gap-2">
+          <span
+            aria-hidden
+            className="mt-1 h-2 w-2 flex-shrink-0 rounded-full"
+            style={{ backgroundColor: "#ed7e35" }}
+          />
+          <p className="text-xs leading-snug">
+            <span className="font-semibold text-white">Strategic</span>
+            <span className="text-white/60"> — Leaders with complementary expertise. Great for learning, growth, and fresh perspectives.</span>
+          </p>
+        </div>
+      </div>
+
       <TabsContent value="all" className="min-w-0">
         <MatchGrid
           matches={allActiveMatchesInterleaved}
