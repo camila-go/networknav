@@ -32,19 +32,22 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Check for refresh parameter to force new matches
+    // Explicit refresh still bypasses any cache path below.
     const refresh = request.nextUrl.searchParams.get("refresh") === "true";
-    
-    // Check if user has existing matches
-    let matches = refresh ? undefined : userMatches.get(userId);
 
-    // If no matches or matches are stale, generate new ones
-    if (!matches || matches.length === 0) {
-      if (isLiveDatabaseMode() && supabaseAdmin) {
-        matches = await generateMatchesFromSupabase(userId, userEmail);
-        if (matches.length > 0) {
-          userMatches.set(userId, matches);
-        }
+    // Always recompute on the Supabase path — the `userMatches` Map is
+    // bound to globalThis and survives across invocations on warm Vercel
+    // instances, so caching here silently serves pre-deploy Match objects
+    // (old scores, old tags, old conversation starters) even after
+    // scoring logic changes ship. In-memory demo path keeps its cache
+    // since those Match objects are deterministic fixtures.
+    let matches: Match[];
+    if (isLiveDatabaseMode() && supabaseAdmin) {
+      matches = await generateMatchesFromSupabase(userId, userEmail);
+    } else {
+      const cached = refresh ? undefined : userMatches.get(userId);
+      if (cached && cached.length > 0) {
+        matches = cached;
       } else {
         matches = await generateMatchesForUser(userId, userEmail);
         userMatches.set(userId, matches);
