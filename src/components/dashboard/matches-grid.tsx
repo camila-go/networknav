@@ -390,7 +390,7 @@ function DesktopMatchPageGrid({
       {pageMatches.map((match, i) => (
         <div
           key={match.id}
-          className="animate-fade-in flex h-full min-h-0 flex-col overflow-hidden"
+          className="animate-fade-in flex h-full min-h-0 flex-col"
           style={{ animationDelay: `${pageIndex * 80 + i * 60}ms` }}
         >
           {/* `variant="carousel"` gives the card a flex layout that clips to the
@@ -585,7 +585,7 @@ function MatchGrid({
           <div
             ref={desktopPageScrollRef}
             onScroll={handleDesktopPageScroll}
-            className="flex snap-x snap-mandatory gap-0 overflow-x-auto overflow-y-visible pb-0 scrollbar-hide scroll-smooth"
+            className="flex snap-x snap-mandatory gap-0 overflow-x-auto overflow-y-visible pt-2 pb-0 scrollbar-hide scroll-smooth"
           >
             {desktopPages.map((pageMatches, pageIndex) => (
               <DesktopMatchPageGrid
