@@ -58,6 +58,7 @@ export function ExploreContainer() {
   const [totalResults, setTotalResults] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [viewerFirstName, setViewerFirstName] = useState<string | undefined>();
+  const viewerFirstNameRef = useRef<string | undefined>(undefined);
   const [emphasizeSearchField, setEmphasizeSearchField] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -66,6 +67,8 @@ export function ExploreContainer() {
   const exploreSearchScope = useMemo((): "all" | "interests" => {
     return searchParams.get("scope") === "interests" ? "interests" : "all";
   }, [searchParams]);
+
+  const searchTokenRef = useRef(0);
 
   const searchParamsKeyRef = useRef<string | null>(null);
   useEffect(() => {
@@ -163,6 +166,10 @@ export function ExploreContainer() {
     };
   }, []);
 
+  useEffect(() => {
+    viewerFirstNameRef.current = viewerFirstName;
+  }, [viewerFirstName]);
+
   // Debounce keywords
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -174,6 +181,7 @@ export function ExploreContainer() {
   // Search when filters or keywords change
   const performSearch = useCallback(async () => {
     setIsLoading(true);
+    const token = ++searchTokenRef.current;
     try {
       const response = await fetch("/api/attendees/search", {
         method: "POST",
@@ -190,9 +198,16 @@ export function ExploreContainer() {
 
       const result = await response.json();
       if (result.success) {
+        if (searchTokenRef.current !== token) return;
         setResults(result.data.results);
         setTotalResults(result.data.total);
         setHasMore(result.data.hasMore);
+        void enrichSearchStartersProgressively(
+          result.data.results as AttendeeSearchResult[],
+          setResults,
+          () => viewerFirstNameRef.current,
+          () => searchTokenRef.current === token,
+        );
       } else {
         toast({
           variant: "destructive",
@@ -764,4 +779,60 @@ function MobileCardSwiper({
       )}
     </div>
   );
+}
+
+// Matches the 2-at-a-time concurrency used on the dashboard; see
+// enrichStartersProgressively in matches-grid.tsx for rationale
+// (OpenRouter free-tier 429s trip the shared cooldown at 3).
+const STARTER_ENRICH_CONCURRENCY = 2;
+
+async function enrichSearchStartersProgressively(
+  attendees: AttendeeSearchResult[],
+  setResults: React.Dispatch<React.SetStateAction<AttendeeSearchResult[]>>,
+  getViewerFirstName: () => string | undefined,
+  isCurrent: () => boolean,
+) {
+  for (let i = 0; i < attendees.length; i += STARTER_ENRICH_CONCURRENCY) {
+    if (!isCurrent()) return;
+    const batch = attendees.slice(i, i + STARTER_ENRICH_CONCURRENCY);
+    await Promise.all(
+      batch.map(async (a) => {
+        try {
+          const res = await fetch(
+            `/api/matches/${encodeURIComponent(a.user.id)}/starters`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                userName: getViewerFirstName() || "there",
+                matchName: a.user.profile.name.split(/\s+/)[0] || "them",
+                matchType: a.matchType,
+                commonalities: a.topCommonalities.map((c) => c.description),
+                matchPosition: a.user.profile.title,
+                matchCompany: a.user.profile.company ?? undefined,
+                matchedUserId: a.user.id,
+              }),
+            },
+          );
+          const data = await res.json();
+          const aiStarters: string[] =
+            data?.success && Array.isArray(data?.data?.starters)
+              ? data.data.starters
+              : [];
+          if (aiStarters.length === 0) return;
+          if (!isCurrent()) return;
+          setResults((prev) => {
+            if (!isCurrent()) return prev;
+            return prev.map((existing) =>
+              existing.user.id !== a.user.id
+                ? existing
+                : { ...existing, conversationStarters: aiStarters.slice(0, 3) },
+            );
+          });
+        } catch {
+          // Network/provider errors: leave the template fallback in place.
+        }
+      }),
+    );
+  }
 }

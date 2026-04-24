@@ -336,6 +336,8 @@ export interface AttendeeSearchResult {
   questionnaire?: Partial<QuestionnaireData>;
   /** Human-readable interests that matched the search keywords (explore search) */
   searchMatchLabels?: string[];
+  /** AI-generated starters, populated client-side after initial render via /api/matches/[id]/starters */
+  conversationStarters?: string[];
 }
 
 // ============================================

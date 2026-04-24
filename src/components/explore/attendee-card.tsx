@@ -50,6 +50,9 @@ export function AttendeeCard({
     : topCommonalities.slice(0, 3);
 
   const displayStarters = useMemo(() => {
+    if (attendee.conversationStarters?.length) {
+      return attendee.conversationStarters;
+    }
     const coms: Commonality[] =
       topCommonalities.length > 0
         ? topCommonalities
@@ -77,6 +80,7 @@ export function AttendeeCard({
       }
     );
   }, [
+    attendee.conversationStarters,
     topCommonalities,
     matchType,
     user.profile.name,
