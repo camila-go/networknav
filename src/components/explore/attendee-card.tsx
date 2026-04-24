@@ -19,9 +19,6 @@ import {
   MATCH_TYPE_CHIP_STRATEGIC,
 } from "@/components/dashboard/match-card";
 
-/** Search cards use this for the teal “HIGH AFFINITY” cap (aligned with dashboard match semantics). */
-export const EXPLORE_HIGH_AFFINITY_MIN_PERCENT = 50;
-
 interface AttendeeCardProps {
   attendee: AttendeeSearchResult;
   onRequestMeeting?: (userId: string) => void;
@@ -37,12 +34,10 @@ export function AttendeeCard({
   variant = "grid",
 }: AttendeeCardProps) {
   const [showAllCommonalities, setShowAllCommonalities] = useState(false);
-  const { user, matchPercentage, topCommonalities, searchMatchLabels } =
+  const { user, matchPercentage, matchType, topCommonalities, searchMatchLabels } =
     attendee;
 
-  const isHighAffinity =
-    matchPercentage >= EXPLORE_HIGH_AFFINITY_MIN_PERCENT;
-  const matchType = isHighAffinity ? "high-affinity" : "strategic";
+  const isHighAffinity = matchType === "high-affinity";
 
   const initials = user.profile.name
     .split(" ")

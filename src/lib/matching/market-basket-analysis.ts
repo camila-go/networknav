@@ -8,6 +8,7 @@
 import type { QuestionnaireData, Commonality, CommonalityCategory } from "@/types";
 import type { ConversationStarterExtras } from "@/lib/conversation-starters";
 import { buildPersonalizedConversationStarters } from "@/lib/conversation-starters";
+import { cosineSimilarity } from "@/lib/ai/cosine";
 
 // ============================================
 // Types
@@ -48,7 +49,22 @@ const TEXT_OVERLAP_FIELDS: (keyof QuestionnaireData)[] = [
   "funFact",
 ];
 
-const TEXT_OVERLAP_WEIGHT = 0.42;
+const TEXT_OVERLAP_WEIGHT = 0.55;
+
+/**
+ * Weight applied to cosine similarity of the two profile embeddings.
+ * Sentence-embedding cosines cluster in [0.3, 0.9]; see normalizeCosine.
+ */
+const EMBEDDING_WEIGHT = 0.2;
+
+/**
+ * Sentence embeddings rarely land near 0 or 1 — typical pairs sit in [0.3, 0.9].
+ * Rescaling to [0, 1] keeps the additive term proportional to real variation
+ * instead of giving every pair a baseline 0.5 boost.
+ */
+function normalizeCosine(sim: number): number {
+  return Math.min(1, Math.max(0, (sim - 0.3) / 0.6));
+}
 
 function tokenizeForOverlap(text: string): Set<string> {
   return new Set(
@@ -98,7 +114,7 @@ export function calculateTextFieldOverlap(
 // Attribute Weights Configuration
 // ============================================
 
-const ATTRIBUTE_WEIGHTS: Record<keyof QuestionnaireData, { weight: number; category: CommonalityCategory }> = {
+const ATTRIBUTE_WEIGHTS: Partial<Record<keyof QuestionnaireData, { weight: number; category: CommonalityCategory }>> = {
   roleSummary: { weight: 0.55, category: "professional" },
   archetype: { weight: 0.9, category: "professional" },
   teamQualities: { weight: 0.88, category: "professional" },
@@ -106,7 +122,6 @@ const ATTRIBUTE_WEIGHTS: Record<keyof QuestionnaireData, { weight: number; categ
   talkTopic: { weight: 0.72, category: "hobby" },
   refinedInterest: { weight: 0.65, category: "professional" },
   personalInterest: { weight: 0.8, category: "hobby" },
-  personalInterestPhoto: { weight: 0, category: "hobby" },
   personalityTags: { weight: 0.78, category: "lifestyle" },
   joyTrigger: { weight: 0.5, category: "lifestyle" },
   threeWords: { weight: 0.45, category: "values" },
@@ -119,13 +134,46 @@ const ATTRIBUTE_WEIGHTS: Record<keyof QuestionnaireData, { weight: number; categ
 // ============================================
 
 const COMPLEMENTARY_PAIRS: Record<string, string[]> = {
+  // Archetype complements — different leadership styles that pair well
   "archetype:builder": ["archetype:strategist", "archetype:creative"],
   "archetype:strategist": ["archetype:operator", "archetype:analyst"],
   "archetype:analyst": ["archetype:creative", "archetype:connector"],
   "archetype:creative": ["archetype:operator", "archetype:builder"],
   "archetype:operator": ["archetype:strategist", "archetype:connector"],
   "archetype:connector": ["archetype:builder", "archetype:analyst"],
+
+  // Team quality complements — genuine opposite pairings (how vs what, drive vs reflection)
+  "teamQualities:problem-solving": ["teamQualities:ideas"],
+  "teamQualities:ideas": ["teamQualities:problem-solving"],
+  "teamQualities:collaboration": ["teamQualities:perspective"],
+  "teamQualities:perspective": ["teamQualities:collaboration", "teamQualities:energy"],
+  "teamQualities:energy": ["teamQualities:perspective"],
+
+  // Personality tag complements — opposing summit rhythms
+  "personalityTags:planner": ["personalityTags:go-with-the-flow"],
+  "personalityTags:go-with-the-flow": ["personalityTags:planner"],
+  "personalityTags:early-bird": ["personalityTags:night-owl"],
+  "personalityTags:night-owl": ["personalityTags:early-bird"],
+  "personalityTags:social": ["personalityTags:recharge-solo"],
+  "personalityTags:recharge-solo": ["personalityTags:social"],
 };
+
+/**
+ * Per-attribute strategic credit. Archetype complements are the strongest
+ * "you two actually fit together" signal; team-quality and personality
+ * complements are softer, so they earn less so similar-profile pairs don't
+ * get pushed into the STRATEGIC tag by one opposite team quality.
+ */
+const STRATEGIC_MULTIPLIER_DEFAULT = 0.8;
+const STRATEGIC_MULTIPLIER_BY_ATTRIBUTE: Record<string, number> = {
+  archetype: 0.8,
+  teamQualities: 0.45,
+  personalityTags: 0.45,
+};
+
+function strategicMultiplier(attribute: string): number {
+  return STRATEGIC_MULTIPLIER_BY_ATTRIBUTE[attribute] ?? STRATEGIC_MULTIPLIER_DEFAULT;
+}
 
 // ============================================
 // Core Matching Functions
@@ -269,7 +317,7 @@ export function findComplementaryAttributes(
         commonalities.push({
           category: item.category,
           description: generateStrategicDescription(item, attr, val),
-          weight: item.weight * 0.8, // Slightly lower weight for strategic matches
+          weight: item.weight * strategicMultiplier(item.attribute),
         });
       }
     }
@@ -295,13 +343,13 @@ export function calculateStrategicScore(
   for (const item of items1) {
     const key = `${item.attribute}:${item.value}`;
     const complements = COMPLEMENTARY_PAIRS[key] || [];
-    
+
     if (complements.length > 0) {
       possibleScore += item.weight;
-      
+
       for (const complement of complements) {
         if (set2.has(complement)) {
-          strategicScore += item.weight * 0.8;
+          strategicScore += item.weight * strategicMultiplier(item.attribute);
           break; // Count each attribute once
         }
       }
@@ -313,11 +361,22 @@ export function calculateStrategicScore(
 }
 
 /**
+ * Optional pgvector profile embeddings for semantic affinity boost.
+ * When both sides are present and same-length, a weighted cosine term is added
+ * to affinityScore; when either is missing, the score falls through to MBA only.
+ */
+export interface EmbeddingPair {
+  v1: number[] | null | undefined;
+  v2: number[] | null | undefined;
+}
+
+/**
  * Calculate complete match score between two users
  */
 export function calculateMatchScore(
   responses1: Partial<QuestionnaireData>,
-  responses2: Partial<QuestionnaireData>
+  responses2: Partial<QuestionnaireData>,
+  embeddings?: EmbeddingPair
 ): MatchScore {
   const items1 = extractItemsets(responses1);
   const items2 = extractItemsets(responses2);
@@ -325,9 +384,20 @@ export function calculateMatchScore(
   // Affinity: structured overlap + soft similarity on free-text answers (Summit questionnaire)
   const baseAffinity = calculateWeightedSimilarity(items1, items2);
   const textOverlap = calculateTextFieldOverlap(responses1, responses2);
+
+  // Semantic boost from sentence embeddings — catches paraphrases and synonym
+  // overlap that token-Jaccard misses (e.g. "ML engineering" ≈ "machine learning").
+  let semanticBoost = 0;
+  const v1 = embeddings?.v1;
+  const v2 = embeddings?.v2;
+  if (Array.isArray(v1) && Array.isArray(v2) && v1.length > 0 && v1.length === v2.length) {
+    const raw = cosineSimilarity(v1, v2);
+    semanticBoost = normalizeCosine(raw) * EMBEDDING_WEIGHT;
+  }
+
   const affinityScore = Math.min(
     1,
-    baseAffinity + textOverlap * TEXT_OVERLAP_WEIGHT
+    baseAffinity + textOverlap * TEXT_OVERLAP_WEIGHT + semanticBoost
   );
 
   // Calculate strategic (complementary) score
@@ -384,6 +454,42 @@ export function determineMatchType(
     return "high-affinity";
   }
   return a >= s ? "high-affinity" : "strategic";
+}
+
+/** Displayed score band after percentile rescaling. */
+const RESCALE_FLOOR = 0.1;
+const RESCALE_CEILING = 0.95;
+
+/**
+ * Percentile-based rescale that preserves ordering but stretches the visible
+ * band so cohorts with compressed raw scores still feel dynamic. Ties in the
+ * input resolve to identical outputs (average rank), so pairs that truly score
+ * the same display the same.
+ *
+ * Mirrors ranking behavior so the best raw score maps to RESCALE_CEILING and
+ * the worst to RESCALE_FLOOR; a single-element cohort resolves to the midpoint.
+ */
+export function rescaleCohortScores(rawScores: number[]): number[] {
+  const n = rawScores.length;
+  if (n === 0) return [];
+  if (n === 1) return [(RESCALE_FLOOR + RESCALE_CEILING) / 2];
+
+  const indexed = rawScores.map((s, i) => ({ s, i }));
+  indexed.sort((a, b) => a.s - b.s);
+
+  // Assign average rank to ties so identical raw scores produce identical output.
+  const ranks = new Array<number>(n);
+  let k = 0;
+  while (k < n) {
+    let j = k;
+    while (j + 1 < n && indexed[j + 1].s === indexed[k].s) j++;
+    const avgRank = (k + j) / 2;
+    for (let m = k; m <= j; m++) ranks[indexed[m].i] = avgRank;
+    k = j + 1;
+  }
+
+  const span = RESCALE_CEILING - RESCALE_FLOOR;
+  return ranks.map((r) => RESCALE_FLOOR + span * (r / (n - 1)));
 }
 
 // ============================================

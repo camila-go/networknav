@@ -11,6 +11,7 @@ import {
   calculateMatchScore,
   determineMatchType,
   generateConversationStarters,
+  rescaleCohortScores,
 } from "./market-basket-analysis";
 
 // ============================================
@@ -127,6 +128,15 @@ export function generateMatches(
 
   // Ensure diversity (vary leadership context where possible)
   allSelected = ensureMatchDiversity(allSelected);
+
+  // Cohort-relative rescaling: stretch the visible band so the best shown
+  // match reads ~95% even when raw MBA scores cluster low on sparse pools.
+  if (allSelected.length > 0) {
+    const rescaled = rescaleCohortScores(allSelected.map((c) => c.score));
+    allSelected.forEach((candidate, i) => {
+      candidate.score = rescaled[i];
+    });
+  }
 
   // Convert to Match objects
   return allSelected.map((candidate) => createMatch(user.id, candidate));

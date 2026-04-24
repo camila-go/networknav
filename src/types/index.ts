@@ -330,6 +330,8 @@ export interface SavedSearch {
 export interface AttendeeSearchResult {
   user: PublicUser;
   matchPercentage: number;
+  /** High-affinity vs strategic — assigned by determineMatchType(), not derived from matchPercentage. */
+  matchType: MatchType;
   topCommonalities: Commonality[];
   questionnaire?: Partial<QuestionnaireData>;
   /** Human-readable interests that matched the search keywords (explore search) */

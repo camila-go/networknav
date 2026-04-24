@@ -10,10 +10,7 @@ import {
 } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FilterSidebar } from "./filter-sidebar";
-import {
-  AttendeeCard,
-  EXPLORE_HIGH_AFFINITY_MIN_PERCENT,
-} from "./attendee-card";
+import { AttendeeCard } from "./attendee-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -277,10 +274,7 @@ export function ExploreContainer() {
   const showActiveFiltersRow = activeTagsForDisplay.length > 0;
 
   const highAffinityOnPage = useMemo(
-    () =>
-      results.filter(
-        (r) => r.matchPercentage >= EXPLORE_HIGH_AFFINITY_MIN_PERCENT
-      ).length,
+    () => results.filter((r) => r.matchType === "high-affinity").length,
     [results]
   );
   const MAX_VISIBLE_TAGS = 6;

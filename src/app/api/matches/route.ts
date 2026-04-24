@@ -6,6 +6,7 @@ import {
   determineMatchType,
   generateConversationStarters,
   hasUsableQuestionnaire,
+  rescaleCohortScores,
 } from "@/lib/matching/market-basket-analysis";
 import { ensureMatchTypeMix, type MatchBuildRow } from "@/lib/matching/ensure-match-type-mix";
 import { users, questionnaireResponses, userMatches } from "@/lib/stores";
@@ -179,6 +180,7 @@ async function generateMatchesFromSupabase(currentUserId: string, currentUserEma
       photo_url?: string;
       questionnaire_data?: Record<string, unknown>;
       interests?: string[];
+      profile_embedding?: number[] | null;
     };
 
     // First, try to find the current user's Supabase profile by either ID or email
@@ -206,20 +208,25 @@ async function generateMatchesFromSupabase(currentUserId: string, currentUserEma
     
     // Fetch current user's questionnaire data for real MBA scoring
     let currentUserQuestionnaire: Partial<QuestionnaireData> | null = null;
+    let currentUserEmbedding: number[] | null = null;
     let currentViewerFirstName: string | undefined;
     if (currentUserSupabaseId) {
       const { data: currentProfile } = await supabaseAdmin
         .from('user_profiles')
-        .select('questionnaire_data, name')
+        .select('questionnaire_data, name, profile_embedding')
         .eq('id', currentUserSupabaseId)
         .single();
       if (currentProfile) {
         const row = currentProfile as {
           questionnaire_data?: Record<string, unknown>;
           name?: string;
+          profile_embedding?: number[] | null;
         };
         currentUserQuestionnaire =
           (row.questionnaire_data as Partial<QuestionnaireData>) ?? null;
+        currentUserEmbedding = Array.isArray(row.profile_embedding)
+          ? row.profile_embedding
+          : null;
         currentViewerFirstName = row.name?.trim().split(/\s+/)[0];
       }
     }
@@ -230,7 +237,7 @@ async function generateMatchesFromSupabase(currentUserId: string, currentUserEma
     // Fetch all users from Supabase
     const { data: profiles, error } = await supabaseAdmin
       .from('user_profiles')
-      .select('id, name, email, title, company, photo_url, questionnaire_data, interests')
+      .select('id, name, email, title, company, photo_url, questionnaire_data, interests, profile_embedding')
       .eq('is_active', true)
       .limit(30);
 
@@ -286,9 +293,13 @@ async function generateMatchesFromSupabase(currentUserId: string, currentUserEma
 
       if (viewerHasQuestionnaire && candidateHasQuestionnaire) {
         // Use real Market Basket Analysis algorithm (viewer questionnaire is non-null when usable)
+        const candidateEmbedding = Array.isArray(profile.profile_embedding)
+          ? profile.profile_embedding
+          : null;
         const matchScore = calculateMatchScore(
           currentUserQuestionnaire as Partial<QuestionnaireData>,
-          candidateResponses
+          candidateResponses,
+          { v1: currentUserEmbedding, v2: candidateEmbedding }
         );
         type = determineMatchType(matchScore);
         score = Math.min(0.95, matchScore.totalScore);
@@ -366,6 +377,13 @@ async function generateMatchesFromSupabase(currentUserId: string, currentUserEma
     const MIN_MATCH_FLOOR = 3;
     const strongRows = buildRows.filter((r) => r.match.score >= MIN_MATCH_SCORE);
     const gatedRows = strongRows.length >= MIN_MATCH_FLOOR ? strongRows : buildRows;
+
+    // Cohort-relative rescaling: preserve ranking but spread the visible band
+    // so the best match in a sparse pool doesn't render as "35%".
+    const rescaled = rescaleCohortScores(gatedRows.map((r) => r.match.score));
+    gatedRows.forEach((row, i) => {
+      row.match.score = rescaled[i];
+    });
 
     const matches = ensureMatchTypeMix(gatedRows, currentViewerFirstName);
 

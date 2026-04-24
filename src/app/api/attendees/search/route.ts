@@ -2,12 +2,25 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { users, questionnaireResponses } from "@/lib/stores";
 import { cookies } from "next/headers";
-import type { SearchFilters, AttendeeSearchResult, Commonality, PublicUser } from "@/types";
+import type {
+  SearchFilters,
+  AttendeeSearchResult,
+  Commonality,
+  PublicUser,
+  QuestionnaireData,
+  MatchType,
+} from "@/types";
 import { QUESTIONNAIRE_SECTIONS } from "@/lib/questionnaire-data";
 import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
 import { isLiveDatabaseMode } from "@/lib/supabase/data-mode";
 import { normalizeCompany } from "@/lib/company/normalize";
 import type { UserProfileRow } from "@/types/database";
+import {
+  calculateMatchScore,
+  determineMatchType,
+  rescaleCohortScores,
+  type EmbeddingPair,
+} from "@/lib/matching/market-basket-analysis";
 
 // Get label for a value from questionnaire options
 function getLabel(questionId: string, value: string): string {
@@ -21,128 +34,27 @@ function getLabel(questionId: string, value: string): string {
   return value;
 }
 
-// Calculate match percentage and commonalities between two users
-function calculateMatchData(
+/**
+ * Unified scoring: the explore page uses the same Market Basket Analysis path
+ * as the dashboard matches page, so the same user pair always produces the
+ * same score and tag across both surfaces. Optional embedding pair boosts
+ * affinity via cosine similarity when both vectors are available.
+ */
+function scoreCandidate(
   currentResponses: Record<string, unknown>,
-  candidateResponses: Record<string, unknown>
-): { percentage: number; commonalities: Commonality[] } {
-  const commonalities: Commonality[] = [];
-  let matchPoints = 0;
-  let totalPoints = 0;
-
-  if (currentResponses.archetype && candidateResponses.archetype) {
-    totalPoints += 12;
-    if (currentResponses.archetype === candidateResponses.archetype) {
-      matchPoints += 12;
-      commonalities.push({
-        category: "professional",
-        description: `Same vibe: ${getLabel("archetype", candidateResponses.archetype as string)}`,
-        weight: 0.9,
-      });
-    } else {
-      matchPoints += 4;
-    }
-  }
-
-  const currentTeam = (currentResponses.teamQualities as string[]) || [];
-  const candidateTeam = (candidateResponses.teamQualities as string[]) || [];
-  if (currentTeam.length > 0 && candidateTeam.length > 0) {
-    totalPoints += 14;
-    const sharedTeam = currentTeam.filter((t) => candidateTeam.includes(t));
-    matchPoints += Math.min(sharedTeam.length * 4, 14);
-    if (sharedTeam.length > 0) {
-      commonalities.push({
-        category: "professional",
-        description: `Shared team strengths: ${sharedTeam.slice(0, 2).map((t) => getLabel("teamQualities", t)).join(", ")}`,
-        weight: 0.88,
-      });
-    }
-  }
-
-  const currentTags = (currentResponses.personalityTags as string[]) || [];
-  const candidateTags = (candidateResponses.personalityTags as string[]) || [];
-  if (currentTags.length > 0 && candidateTags.length > 0) {
-    totalPoints += 14;
-    const sharedTags = currentTags.filter((t) => candidateTags.includes(t));
-    matchPoints += Math.min(sharedTags.length * 4, 14);
-    if (sharedTags.length > 0) {
-      commonalities.push({
-        category: "lifestyle",
-        description: `Similar rhythm: ${sharedTags.slice(0, 2).map((t) => getLabel("personalityTags", t)).join(", ")}`,
-        weight: 0.8,
-      });
-    }
-  }
-
-  const growthA = (currentResponses.growthArea as string)?.trim().toLowerCase() || "";
-  const growthB = (candidateResponses.growthArea as string)?.trim().toLowerCase() || "";
-  if (growthA.length > 4 && growthB.length > 4) {
-    totalPoints += 8;
-    if (growthA === growthB) {
-      matchPoints += 8;
-      commonalities.push({
-        category: "professional",
-        description: "Both leveling up in a similar area",
-        weight: 0.82,
-      });
-    } else {
-      const wordsA = new Set(growthA.split(/\W+/).filter((w) => w.length > 3));
-      const overlap = growthB.split(/\W+/).filter((w) => w.length > 3 && wordsA.has(w));
-      if (overlap.length > 0) {
-        matchPoints += 5;
-        commonalities.push({
-          category: "professional",
-          description: "Overlapping learning interests",
-          weight: 0.7,
-        });
-      }
-    }
-  }
-
-  const talkA = (currentResponses.talkTopic as string)?.toLowerCase() || "";
-  const talkB = (candidateResponses.talkTopic as string)?.toLowerCase() || "";
-  if (talkA.length > 5 && talkB.length > 5) {
-    totalPoints += 10;
-    const terms = talkA.split(/\s+/).filter((t) => t.length > 3);
-    const hits = terms.filter((t) => talkB.includes(t));
-    if (hits.length >= 2) {
-      matchPoints += 10;
-      commonalities.push({
-        category: "hobby",
-        description: "Could go deep on similar topics",
-        weight: 0.78,
-      });
-    } else if (hits.length === 1) {
-      matchPoints += 4;
-    }
-  }
-
-  if (
-    typeof currentResponses.personalInterest === "string" &&
-    typeof candidateResponses.personalInterest === "string"
-  ) {
-    const a = currentResponses.personalInterest.toLowerCase();
-    const b = candidateResponses.personalInterest.toLowerCase();
-    if (a.length > 5 && b.length > 5) {
-      totalPoints += 8;
-      const words = a.split(/\W+/).filter((w) => w.length > 4);
-      if (words.some((w) => b.includes(w))) {
-        matchPoints += 8;
-        commonalities.push({
-          category: "hobby",
-          description: "Life-outside-work overlap",
-          weight: 0.75,
-        });
-      }
-    }
-  }
-
-  const percentage = totalPoints > 0 ? Math.round((matchPoints / totalPoints) * 100) : 0;
-  
-  // Sort commonalities by weight and limit to top 5
-  commonalities.sort((a, b) => b.weight - a.weight);
-  
-  return { percentage, commonalities: commonalities.slice(0, 5) };
+  candidateResponses: Record<string, unknown>,
+  embeddings?: EmbeddingPair
+): { rawTotal: number; matchType: MatchType; commonalities: Commonality[] } {
+  const matchScore = calculateMatchScore(
+    currentResponses as Partial<QuestionnaireData>,
+    candidateResponses as Partial<QuestionnaireData>,
+    embeddings
+  );
+  return {
+    rawTotal: matchScore.totalScore,
+    matchType: determineMatchType(matchScore),
+    commonalities: matchScore.commonalities,
+  };
 }
 
 /** Archetype option values (must stay aligned with questionnaire `archetype` question). */
@@ -539,8 +451,8 @@ function getDemoUsers(currentResponses: Record<string, unknown>): AttendeeSearch
   ];
 
   return demoProfiles.map((demo) => {
-    const { percentage, commonalities } = calculateMatchData(currentResponses, demo.responses);
-    
+    const { rawTotal, matchType, commonalities } = scoreCandidate(currentResponses, demo.responses);
+
     return {
       user: {
         id: demo.id,
@@ -552,7 +464,8 @@ function getDemoUsers(currentResponses: Record<string, unknown>): AttendeeSearch
         },
         questionnaireCompleted: true,
       },
-      matchPercentage: percentage || Math.floor(Math.random() * 30) + 40,
+      matchPercentage: Math.round(rawTotal * 100),
+      matchType,
       topCommonalities: commonalities.length > 0 ? commonalities : [
         { category: "professional", description: "Summit networking profile", weight: 0.8 },
       ],
@@ -608,18 +521,22 @@ export async function POST(request: NextRequest) {
 
     // Get current user's responses for match calculation
     let currentResponses: Record<string, unknown> = {};
-    
-    // Try Supabase first for current user's questionnaire data
+    let currentUserEmbedding: number[] | null = null;
+
+    // Try Supabase first for current user's questionnaire data + embedding
     if (isSupabaseConfigured && supabaseAdmin) {
       const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
         currentUserId
       );
-      type MaybeProfile = { questionnaire_data?: Record<string, unknown> } | null;
+      type MaybeProfile = {
+        questionnaire_data?: Record<string, unknown>;
+        profile_embedding?: number[] | null;
+      } | null;
       let currentProfile: MaybeProfile = null;
       if (isUuid) {
         const byId = await supabaseAdmin
           .from("user_profiles")
-          .select("questionnaire_data")
+          .select("questionnaire_data, profile_embedding")
           .eq("id", currentUserId)
           .maybeSingle();
         currentProfile = (byId.data ?? null) as MaybeProfile;
@@ -629,7 +546,7 @@ export async function POST(request: NextRequest) {
       if (needsAuthLookup) {
         const byAuth = await supabaseAdmin
           .from("user_profiles")
-          .select("questionnaire_data")
+          .select("questionnaire_data, profile_embedding")
           .eq("user_id", currentUserId)
           .maybeSingle();
         currentProfile = (byAuth.data ?? null) as MaybeProfile;
@@ -637,6 +554,9 @@ export async function POST(request: NextRequest) {
       const qData = currentProfile?.questionnaire_data;
       if (qData) {
         currentResponses = qData;
+      }
+      if (Array.isArray(currentProfile?.profile_embedding)) {
+        currentUserEmbedding = currentProfile!.profile_embedding as number[];
       }
     }
     
@@ -654,6 +574,7 @@ export async function POST(request: NextRequest) {
         currentUserId,
         currentUserEmail,
         currentResponses,
+        currentUserEmbedding,
         filters,
         keywords,
         searchScope
@@ -698,8 +619,8 @@ export async function POST(request: NextRequest) {
           if (labels.length > 0) searchMatchLabels = labels;
         }
 
-        // Calculate match data
-        const { percentage, commonalities } = calculateMatchData(
+        // Calculate match data (unified MBA path; in-memory store has no embeddings)
+        const { rawTotal, matchType, commonalities } = scoreCandidate(
           currentResponses,
           candidateResponses.responses
         );
@@ -719,7 +640,8 @@ export async function POST(request: NextRequest) {
 
         results.push({
           user: publicUser,
-          matchPercentage: percentage,
+          matchPercentage: Math.round(rawTotal * 100),
+          matchType,
           topCommonalities: commonalities,
           searchMatchLabels,
           questionnaire: {
@@ -740,6 +662,16 @@ export async function POST(request: NextRequest) {
     ) {
       const demoUsers = getDemoUsers(currentResponses);
       results.push(...demoUsers);
+    }
+
+    // Cohort-relative rescaling: stretch raw MBA scores across the visible band
+    // so the best match in the result set reads ~95% even when raw overlap is thin.
+    if (results.length > 0) {
+      const rawFractions = results.map((r) => r.matchPercentage / 100);
+      const rescaled = rescaleCohortScores(rawFractions);
+      results.forEach((r, i) => {
+        r.matchPercentage = Math.round(rescaled[i] * 100);
+      });
     }
 
     // Sort results
@@ -801,6 +733,7 @@ async function searchSupabaseUsers(
   currentUserId: string,
   currentUserEmail: string | undefined,
   currentResponses: Record<string, unknown>,
+  currentUserEmbedding: number[] | null,
   filters?: SearchFilters,
   keywords?: string,
   searchScope: SearchScope = "all"
@@ -812,7 +745,7 @@ async function searchSupabaseUsers(
     // many rows have null auth `user_id`, and in SQL `NULL <> x` drops those rows.
     let query = supabaseAdmin
       .from('user_profiles')
-      .select('id, user_id, name, email, title, company, photo_url, location, questionnaire_data, questionnaire_completed, interests')
+      .select('id, user_id, name, email, title, company, photo_url, location, questionnaire_data, questionnaire_completed, interests, profile_embedding')
       .eq('is_active', true)
       .not('name', 'is', null);
 
@@ -921,10 +854,15 @@ async function searchSupabaseUsers(
         if (labels.length > 0) searchMatchLabels = labels;
       }
 
-      // Calculate match data
-      const { percentage, commonalities } = calculateMatchData(
+      // Calculate match data via unified MBA + optional embedding boost
+      const candidateEmbedding =
+        Array.isArray((profile as { profile_embedding?: number[] | null }).profile_embedding)
+          ? ((profile as { profile_embedding?: number[] }).profile_embedding as number[])
+          : null;
+      const { rawTotal, matchType, commonalities } = scoreCandidate(
         currentResponses,
-        candidateResponses
+        candidateResponses,
+        { v1: currentUserEmbedding, v2: candidateEmbedding }
       );
 
       results.push({
@@ -940,7 +878,8 @@ async function searchSupabaseUsers(
           },
           questionnaireCompleted: profile.questionnaire_completed || false,
         },
-        matchPercentage: percentage,
+        matchPercentage: Math.round(rawTotal * 100),
+        matchType,
         topCommonalities: commonalities,
         searchMatchLabels,
         questionnaire: {

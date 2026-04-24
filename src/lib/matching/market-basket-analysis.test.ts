@@ -13,6 +13,7 @@ import {
   determineMatchType,
   generateConversationStarters,
   hasUsableQuestionnaire,
+  rescaleCohortScores,
 } from "./market-basket-analysis";
 import type { QuestionnaireData } from "@/types";
 
@@ -385,6 +386,111 @@ describe("Market Basket Analysis", () => {
       };
       const score = calculateMatchScore(builder, strategist);
       expect(determineMatchType(score)).toBe("strategic");
+    });
+  });
+
+  describe("embedding boost in calculateMatchScore", () => {
+    /** A simple deterministic vector generator for test fixtures. */
+    function vec(primary: number, length = 8): number[] {
+      const v = new Array<number>(length).fill(0.1);
+      v[0] = primary;
+      return v;
+    }
+
+    it("boosts affinityScore when embeddings are close", () => {
+      const base = calculateMatchScore(summitSimilarA, summitSimilarB);
+      const boosted = calculateMatchScore(summitSimilarA, summitSimilarB, {
+        v1: vec(0.95),
+        v2: vec(0.95),
+      });
+      expect(boosted.affinityScore).toBeGreaterThan(base.affinityScore);
+    });
+
+    it("does not boost when either embedding is missing", () => {
+      const base = calculateMatchScore(summitSimilarA, summitSimilarB);
+      const nullV1 = calculateMatchScore(summitSimilarA, summitSimilarB, {
+        v1: null,
+        v2: vec(0.9),
+      });
+      const nullV2 = calculateMatchScore(summitSimilarA, summitSimilarB, {
+        v1: vec(0.9),
+        v2: null,
+      });
+      expect(nullV1.affinityScore).toBe(base.affinityScore);
+      expect(nullV2.affinityScore).toBe(base.affinityScore);
+    });
+
+    it("does not boost when embedding lengths differ", () => {
+      const base = calculateMatchScore(summitSimilarA, summitSimilarB);
+      const mismatched = calculateMatchScore(summitSimilarA, summitSimilarB, {
+        v1: vec(0.9, 8),
+        v2: vec(0.9, 10),
+      });
+      expect(mismatched.affinityScore).toBe(base.affinityScore);
+    });
+
+    it("ignores cosine values below the noise floor", () => {
+      const base = calculateMatchScore(summitSimilarA, summitSimilarB);
+      // Vectors with low similarity (cosine < 0.3) should add zero boost.
+      const lowSim = calculateMatchScore(summitSimilarA, summitSimilarB, {
+        v1: [1, 0, 0, 0],
+        v2: [0, 1, 0, 0],
+      });
+      expect(lowSim.affinityScore).toBe(base.affinityScore);
+    });
+  });
+
+  describe("complementary team qualities and rhythms", () => {
+    it("produces a non-zero strategicScore when team qualities complement", () => {
+      const a: Partial<QuestionnaireData> = {
+        archetype: "builder",
+        teamQualities: ["problem-solving"],
+      };
+      const b: Partial<QuestionnaireData> = {
+        archetype: "builder",
+        teamQualities: ["ideas"],
+      };
+      const score = calculateMatchScore(a, b);
+      expect(score.strategicScore).toBeGreaterThan(0);
+    });
+
+    it("produces a non-zero strategicScore when personality rhythms oppose", () => {
+      const a: Partial<QuestionnaireData> = {
+        archetype: "builder",
+        personalityTags: ["planner", "early-bird"],
+      };
+      const b: Partial<QuestionnaireData> = {
+        archetype: "builder",
+        personalityTags: ["go-with-the-flow", "night-owl"],
+      };
+      const score = calculateMatchScore(a, b);
+      expect(score.strategicScore).toBeGreaterThan(0);
+    });
+  });
+
+  describe("rescaleCohortScores", () => {
+    it("returns empty array for empty input", () => {
+      expect(rescaleCohortScores([])).toEqual([]);
+    });
+
+    it("maps a single score to the midpoint of the display band", () => {
+      const [only] = rescaleCohortScores([0.42]);
+      expect(only).toBeCloseTo(0.525, 2);
+    });
+
+    it("stretches ranks across [0.10, 0.95] while preserving order", () => {
+      const result = rescaleCohortScores([0.30, 0.25, 0.20, 0.15]);
+      // Highest raw -> ceiling, lowest raw -> floor
+      expect(result[0]).toBeCloseTo(0.95, 2);
+      expect(result[3]).toBeCloseTo(0.10, 2);
+      // Middle entries interpolate monotonically
+      expect(result[1]).toBeGreaterThan(result[2]);
+      expect(result[2]).toBeGreaterThan(result[3]);
+    });
+
+    it("assigns identical rescaled values to ties", () => {
+      const result = rescaleCohortScores([0.4, 0.4, 0.1]);
+      expect(result[0]).toBeCloseTo(result[1], 5);
     });
   });
 

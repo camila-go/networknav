@@ -53,7 +53,6 @@ vi.mock("./filter-sidebar", () => ({
 
 // Mock AttendeeCard
 vi.mock("./attendee-card", () => ({
-  EXPLORE_HIGH_AFFINITY_MIN_PERCENT: 50,
   AttendeeCard: ({
     attendee,
     onRequestMeeting,
@@ -79,6 +78,7 @@ const mockResults: AttendeeSearchResult[] = [
       questionnaireCompleted: true,
     },
     matchPercentage: 92,
+    matchType: "high-affinity",
     topCommonalities: [{ category: "professional", description: "Both in Tech", weight: 0.9 }],
   },
   {
@@ -88,6 +88,7 @@ const mockResults: AttendeeSearchResult[] = [
       questionnaireCompleted: true,
     },
     matchPercentage: 78,
+    matchType: "strategic",
     topCommonalities: [{ category: "values", description: "Servant leadership", weight: 0.8 }],
   },
 ];
