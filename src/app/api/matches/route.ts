@@ -296,42 +296,28 @@ async function generateMatchesFromSupabase(currentUserId: string, currentUserEma
     console.log(`Filtered ${typedProfiles.length} profiles down to ${filteredProfiles.length}`);
 
     const now = new Date();
-    const viewerHasQuestionnaire = hasUsableQuestionnaire(currentUserQuestionnaire);
 
     const buildRows: MatchBuildRow[] = filteredProfiles.map((profile) => {
       const candidateHasQuestionnaire = hasUsableQuestionnaire(profile.questionnaire_data);
       const candidateResponses = (profile.questionnaire_data ?? {}) as Partial<QuestionnaireData>;
       const profileCompany = normalizeCompany(profile.company);
 
-      let score: number;
-      let type: 'high-affinity' | 'strategic';
-      let commonalities: Match['commonalities'];
-      let affinityScore = 0;
-      let strategicScore = 0;
-
-      if (viewerHasQuestionnaire && candidateHasQuestionnaire) {
-        // Use real Market Basket Analysis algorithm (viewer questionnaire is non-null when usable)
-        const candidateEmbedding = Array.isArray(profile.profile_embedding)
-          ? profile.profile_embedding
-          : null;
-        const matchScore = calculateMatchScore(
-          currentUserQuestionnaire as Partial<QuestionnaireData>,
-          candidateResponses,
-          { v1: currentUserEmbedding, v2: candidateEmbedding }
-        );
-        type = determineMatchType(matchScore);
-        score = Math.min(0.95, matchScore.totalScore);
-        commonalities = matchScore.commonalities;
-        affinityScore = matchScore.affinityScore;
-        strategicScore = matchScore.strategicScore;
-      } else {
-        // Fallback when questionnaire data unavailable for one or both users
-        score = candidateHasQuestionnaire ? 0.65 : 0.50;
-        type = 'strategic';
-        commonalities = [];
-        affinityScore = score;
-        strategicScore = 1 - score;
-      }
+      // Unified with /api/attendees/search: always score via MBA so sparse or
+      // empty questionnaires produce naturally low totals (0 for fully empty)
+      // that rescale to the cohort floor. The old 0.50/0.65 fallback outranked
+      // genuine MBA scores in sparse cohorts and crowded out real matches.
+      const candidateEmbedding = Array.isArray(profile.profile_embedding)
+        ? profile.profile_embedding
+        : null;
+      const matchScore = calculateMatchScore(
+        (currentUserQuestionnaire ?? {}) as Partial<QuestionnaireData>,
+        candidateResponses,
+        { v1: currentUserEmbedding, v2: candidateEmbedding }
+      );
+      const type = determineMatchType(matchScore);
+      const score = Math.min(0.95, matchScore.totalScore);
+      let commonalities = matchScore.commonalities;
+      const { affinityScore, strategicScore } = matchScore;
 
       // Ensure at least one commonality for display
       if (commonalities.length === 0) {
