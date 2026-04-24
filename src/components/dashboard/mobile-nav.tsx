@@ -1,9 +1,11 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Sparkles, Network, User, GalleryThumbnails } from "lucide-react";
+import { Sparkles, Network, User, GalleryThumbnails, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { UserRole } from "@/types";
 
 /** Search (/explore) is opened from the header magnifier on mobile, not the bottom bar. */
 const navItems = [
@@ -15,9 +17,24 @@ const navItems = [
 
 export function MobileBottomNav() {
   const pathname = usePathname();
+  const [userRole, setUserRole] = useState<UserRole>("user");
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.success && res.data?.user?.role) {
+          setUserRole(res.data.user.role);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const isAdminOrMod = userRole === "admin" || userRole === "moderator";
+  const isAdminActive = pathname.startsWith("/admin");
 
   return (
-    <nav 
+    <nav
       className="fixed bottom-0 left-0 right-0 z-50 lg:hidden border-t border-white/10 bg-black/95 backdrop-blur supports-[backdrop-filter]:bg-black/80"
       style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
     >
@@ -59,6 +76,37 @@ export function MobileBottomNav() {
             </Link>
           );
         })}
+
+        {isAdminOrMod && (
+          <Link
+            href="/admin"
+            className={cn(
+              "press group relative flex min-h-[56px] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-full px-0.5 py-2 transition-colors duration-200 ease-out",
+              isAdminActive
+                ? "text-amber-400"
+                : "text-amber-400/60 active:text-amber-400 active:bg-white/10"
+            )}
+          >
+            <Shield
+              className={cn(
+                "h-[18px] w-[18px] shrink-0 transition-transform duration-300 ease-out sm:h-5 sm:w-5",
+                isAdminActive
+                  ? "scale-110 drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]"
+                  : "group-hover:scale-105 group-active:scale-95"
+              )}
+            />
+            <span className="max-w-full truncate text-[9px] font-medium transition-opacity duration-200 sm:text-[10px]">
+              Admin
+            </span>
+            <span
+              aria-hidden
+              className={cn(
+                "pointer-events-none absolute -top-px h-[2px] w-6 rounded-full bg-amber-400 transition-all duration-300 ease-out",
+                isAdminActive ? "opacity-100 shadow-[0_0_8px_rgba(251,191,36,0.6)]" : "opacity-0 -translate-y-0.5"
+              )}
+            />
+          </Link>
+        )}
       </div>
     </nav>
   );
