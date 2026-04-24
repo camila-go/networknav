@@ -47,10 +47,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Verify reported user exists
+    // Verify reported user exists; also grab their avatar so the moderator
+    // can see it inline in the moderation queue.
     const { data: reportedProfile, error: reportedError } = await supabaseAdmin
       .from('user_profiles')
-      .select('id')
+      .select('id, photo_url')
       .eq('id', reportedUserId)
       .single();
 
@@ -103,12 +104,16 @@ export async function POST(req: NextRequest) {
       blocked_id: reportedUserId,
     } as never);
 
-    // Bridge report into moderation queue for admin review (non-blocking)
+    // Bridge report into moderation queue for admin review (non-blocking).
+    // Include the reported user's avatar URL so moderators can act on it directly.
+    const reportedPhotoUrl =
+      (reportedProfile as { photo_url?: string | null }).photo_url ?? undefined;
     addToModerationQueue({
       contentType: 'profile',
       contentId: reportedUserId,
       userId: reportedUserId,
       contentSnapshot: `Report reason: ${reason}${description ? ` — ${description}` : ''}`,
+      imageUrl: reportedPhotoUrl || undefined,
       reason: 'user_report',
       reportId: report?.id as string | undefined,
     }).catch((err) => console.error('Failed to add report to moderation queue:', err));

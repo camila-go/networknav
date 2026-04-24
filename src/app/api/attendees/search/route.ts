@@ -858,6 +858,7 @@ async function searchSupabaseUsers(
         .from("user_photos")
         .select("user_id, activity_tag")
         .in("user_id", profileIds)
+        .eq("status", "approved")
         .not("activity_tag", "is", null);
       if (!photoErr && photoRows?.length) {
         for (const row of photoRows) {

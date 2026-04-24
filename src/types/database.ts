@@ -625,6 +625,8 @@ export type UserStreakUpdate = {
 // User Photos Table
 // ============================================
 
+export type UserPhotoStatus = 'pending' | 'approved' | 'rejected';
+
 export type UserPhotoRow = {
   id: string;
   user_id: string;
@@ -633,6 +635,9 @@ export type UserPhotoRow = {
   caption: string | null;
   activity_tag: string | null;
   display_order: number;
+  status: UserPhotoStatus;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
   created_at: string;
 };
 
@@ -644,6 +649,9 @@ export type UserPhotoInsert = {
   caption?: string | null;
   activity_tag?: string | null;
   display_order?: number;
+  status?: UserPhotoStatus;
+  reviewed_by?: string | null;
+  reviewed_at?: string | null;
   created_at?: string;
 };
 
@@ -651,6 +659,9 @@ export type UserPhotoUpdate = {
   caption?: string | null;
   activity_tag?: string | null;
   display_order?: number;
+  status?: UserPhotoStatus;
+  reviewed_by?: string | null;
+  reviewed_at?: string | null;
 };
 
 // ============================================

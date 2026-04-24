@@ -94,6 +94,7 @@ export async function GET() {
       const { data: batch, error: photoError } = await supabaseAdmin
         .from("user_photos")
         .select("user_id, url, activity_tag")
+        .eq("status", "approved")
         .not("activity_tag", "is", null)
         .range(from, from + pageSize - 1);
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireModerator } from "@/lib/auth/rbac";
 import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
+import { applyModerationDecision } from "@/lib/moderation/actions";
 import { z } from "zod";
 import type { ModerationQueueRow } from "@/types/database";
 
@@ -8,6 +9,14 @@ const bulkSchema = z.object({
   itemIds: z.array(z.string().uuid()).min(1).max(50),
   status: z.enum(["approved", "rejected", "deleted"]),
 });
+
+const NOTIFICATION_LABEL: Record<string, string> = {
+  photo: "gallery photo",
+  profile: "profile photo",
+  post: "post",
+  reply: "reply",
+  message: "message",
+};
 
 // PATCH /api/admin/moderation/bulk — bulk update moderation items
 export async function PATCH(request: NextRequest) {
@@ -33,40 +42,54 @@ export async function PATCH(request: NextRequest) {
 
     const { itemIds, status } = result.data;
 
-    // For delete/reject actions, get items first so we can remove content
-    if (status === "deleted" || status === "rejected") {
-      const { data: rawItems } = await supabaseAdmin
-        .from("moderation_queue" as never)
-        .select("id, content_type, content_id, user_id")
-        .in("id", itemIds);
+    const { data: rawItems } = await supabaseAdmin
+      .from("moderation_queue" as never)
+      .select("id, content_type, content_id, user_id")
+      .in("id", itemIds);
 
-      const items = (rawItems || []) as unknown as Pick<ModerationQueueRow, "id" | "content_type" | "content_id" | "user_id">[];
+    const items = (rawItems || []) as unknown as Pick<
+      ModerationQueueRow,
+      "id" | "content_type" | "content_id" | "user_id"
+    >[];
 
-      const tableMap: Record<string, string> = {
-        post: "explore_posts",
-        reply: "explore_replies",
-        message: "messages",
-        photo: "user_photos",
-      };
+    // Apply decision + send per-item notifications (same semantics as single PATCH).
+    for (const item of items) {
+      await applyModerationDecision({
+        contentType: item.content_type,
+        contentId: item.content_id,
+        userId: item.user_id,
+        decision: status,
+        reviewerId: session.userId,
+      });
 
-      for (const item of items) {
-        const table = tableMap[item.content_type] as "messages" | "user_photos" | undefined;
-        if (table) {
-          await supabaseAdmin.from(table).delete().eq("id", item.content_id);
-        }
-
-        // Notify content authors
+      const label = NOTIFICATION_LABEL[item.content_type] ?? item.content_type;
+      if (status === "deleted") {
         await supabaseAdmin.from("notifications").insert({
           user_id: item.user_id,
-          type: status === "deleted" ? "content_removed" : "content_warning",
-          title: status === "deleted" ? "Content Removed" : "Content Warning",
-          body: `Your ${item.content_type} was removed for violating community guidelines.`,
+          type: "content_removed",
+          title: "Content Removed",
+          body: `Your ${label} was removed for violating community guidelines.`,
+          data: { contentType: item.content_type, contentId: item.content_id },
+        } as never);
+      } else if (status === "rejected") {
+        await supabaseAdmin.from("notifications").insert({
+          user_id: item.user_id,
+          type: "content_warning",
+          title: "Content Warning",
+          body: `Your ${label} was removed. Please ensure your content follows community guidelines.`,
+          data: { contentType: item.content_type, contentId: item.content_id },
+        } as never);
+      } else if (status === "approved" && item.content_type === "photo") {
+        await supabaseAdmin.from("notifications").insert({
+          user_id: item.user_id,
+          type: "content_approved",
+          title: "Photo Approved",
+          body: "Your gallery photo was approved and is now visible to the community.",
           data: { contentType: item.content_type, contentId: item.content_id },
         } as never);
       }
     }
 
-    // Update all items
     const { error } = await supabaseAdmin
       .from("moderation_queue" as never)
       .update({

@@ -30,6 +30,8 @@ export interface PublicUser {
   questionnaireCompleted: boolean;
 }
 
+export type UserPhotoStatus = "pending" | "approved" | "rejected";
+
 export interface UserPhoto {
   id: string;
   userId: string;
@@ -39,6 +41,8 @@ export interface UserPhoto {
   /** Normalized label for community gallery grouping (optional). */
   activityTag?: string;
   displayOrder: number;
+  /** Moderation state — gallery photos wait in `pending` until an admin approves. */
+  status: UserPhotoStatus;
   createdAt: Date;
 }
 

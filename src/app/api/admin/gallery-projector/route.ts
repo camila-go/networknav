@@ -64,6 +64,7 @@ async function fetchAllLabeledPhotos(): Promise<{
     const { data: batch, error } = await supabaseAdmin!
       .from("user_photos")
       .select("user_id, url, activity_tag, storage_key, caption")
+      .eq("status", "approved")
       .not("activity_tag", "is", null)
       .range(from, from + pageSize - 1);
 

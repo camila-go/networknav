@@ -409,6 +409,8 @@ export const reportsRelations = relations(reports, ({ one }) => ({
 // User Photos Table
 // ============================================
 
+export type UserPhotoStatus = "pending" | "approved" | "rejected";
+
 export const userPhotos = pgTable("user_photos", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id")
@@ -419,6 +421,12 @@ export const userPhotos = pgTable("user_photos", {
   caption: text("caption"),
   activityTag: text("activity_tag"),
   displayOrder: integer("display_order").default(0).notNull(),
+  status: varchar("status", { length: 20 })
+    .$type<UserPhotoStatus>()
+    .default("pending")
+    .notNull(),
+  reviewedBy: uuid("reviewed_by").references(() => users.id, { onDelete: "set null" }),
+  reviewedAt: timestamp("reviewed_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

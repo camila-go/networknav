@@ -29,6 +29,7 @@ import {
   UserCheck,
   Copy,
   ExternalLink,
+  ImageOff,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { UserRole } from "@/types";
@@ -66,6 +67,7 @@ export function UsersTable() {
   const [roleDialog, setRoleDialog] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState(false);
   const [resetDialog, setResetDialog] = useState(false);
+  const [avatarDialog, setAvatarDialog] = useState(false);
   const [newRole, setNewRole] = useState<UserRole>("user");
   const [tempPassword, setTempPassword] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
@@ -143,6 +145,27 @@ export function UsersTable() {
     }
   }
 
+  async function handleRemoveAvatar() {
+    if (!actionUser) return;
+    setActionLoading(true);
+    try {
+      const res = await fetch(`/api/admin/users/${actionUser.id}/avatar`, {
+        method: "DELETE",
+      });
+      const json = await res.json();
+      if (json.success) {
+        setUsers((prev) =>
+          prev.map((u) =>
+            u.id === actionUser.id ? { ...u, photoUrl: undefined } : u
+          )
+        );
+        setAvatarDialog(false);
+      }
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
   async function handleResetPassword() {
     if (!actionUser) return;
     setActionLoading(true);
@@ -159,7 +182,10 @@ export function UsersTable() {
     }
   }
 
-  function openAction(user: AdminUser, action: "role" | "delete" | "reset") {
+  function openAction(
+    user: AdminUser,
+    action: "role" | "delete" | "reset" | "avatar"
+  ) {
     setActionUser(user);
     setShowMenu(null);
     if (action === "role") {
@@ -167,6 +193,8 @@ export function UsersTable() {
       setRoleDialog(true);
     } else if (action === "delete") {
       setDeleteDialog(true);
+    } else if (action === "avatar") {
+      setAvatarDialog(true);
     } else {
       setTempPassword("");
       setResetDialog(true);
@@ -285,6 +313,15 @@ export function UsersTable() {
                             <ExternalLink className="h-4 w-4" />
                             View Profile
                           </a>
+                          {user.photoUrl && (
+                            <button
+                              className="flex items-center gap-2 w-full px-3 py-2 text-sm text-amber-400 hover:bg-white/5"
+                              onClick={() => openAction(user, "avatar")}
+                            >
+                              <ImageOff className="h-4 w-4" />
+                              Remove Avatar
+                            </button>
+                          )}
                           <button
                             className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-400 hover:bg-white/5"
                             onClick={() => openAction(user, "delete")}
@@ -401,6 +438,32 @@ export function UsersTable() {
               className="bg-red-600 hover:bg-red-700"
             >
               {actionLoading ? "Deleting..." : "Delete Account"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Remove Avatar Dialog */}
+      <Dialog open={avatarDialog} onOpenChange={setAvatarDialog}>
+        <DialogContent className="bg-zinc-900 border-white/10 text-white">
+          <DialogHeader>
+            <DialogTitle>Remove Profile Photo</DialogTitle>
+            <DialogDescription className="text-white/50">
+              Remove the profile photo for {actionUser?.name}? The image will be
+              deleted from storage and they&apos;ll be notified. They can upload a
+              new photo afterwards.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setAvatarDialog(false)} className="text-white/60">
+              Cancel
+            </Button>
+            <Button
+              onClick={handleRemoveAvatar}
+              disabled={actionLoading}
+              className="bg-amber-600 hover:bg-amber-700"
+            >
+              {actionLoading ? "Removing..." : "Remove Photo"}
             </Button>
           </DialogFooter>
         </DialogContent>

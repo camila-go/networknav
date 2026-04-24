@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase/client";
 import { normalizeActivityTag } from "@/lib/profile/activity-tag";
-import type { UserPhoto } from "@/types";
+import type { UserPhoto, UserPhotoStatus } from "@/types";
 
 function rowToUserPhoto(row: {
   id: string;
@@ -12,6 +12,7 @@ function rowToUserPhoto(row: {
   caption: string | null;
   activity_tag?: string | null;
   display_order: number;
+  status?: UserPhotoStatus | null;
   created_at: string;
 }): UserPhoto {
   return {
@@ -22,6 +23,7 @@ function rowToUserPhoto(row: {
     caption: row.caption ?? undefined,
     activityTag: row.activity_tag ?? undefined,
     displayOrder: row.display_order,
+    status: (row.status as UserPhotoStatus | undefined) ?? "approved",
     createdAt: new Date(row.created_at),
   };
 }

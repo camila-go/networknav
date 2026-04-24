@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase/client";
 import { normalizeActivityTag } from "@/lib/profile/activity-tag";
-import type { UserPhoto } from "@/types";
+import { addToModerationQueue } from "@/lib/moderation/queue";
+import type { UserPhoto, UserPhotoStatus } from "@/types";
 
 const MAX_PHOTOS = 12;
 
@@ -14,6 +15,7 @@ function rowToUserPhoto(row: {
   caption: string | null;
   activity_tag?: string | null;
   display_order: number;
+  status?: UserPhotoStatus | null;
   created_at: string;
 }): UserPhoto {
   return {
@@ -24,6 +26,7 @@ function rowToUserPhoto(row: {
     caption: row.caption ?? undefined,
     activityTag: row.activity_tag ?? undefined,
     displayOrder: row.display_order,
+    status: (row.status as UserPhotoStatus | undefined) ?? "approved",
     createdAt: new Date(row.created_at),
   };
 }
@@ -176,6 +179,7 @@ export async function POST(request: NextRequest) {
         caption: caption ?? null,
         activity_tag: normalizedTag,
         display_order: nextOrder,
+        status: "pending",
       })
       .select("*")
       .single();
@@ -196,6 +200,19 @@ export async function POST(request: NextRequest) {
       const status = code === "23503" || code === "42703" ? 400 : 500;
       return NextResponse.json({ success: false, error: hint }, { status });
     }
+
+    // Queue for admin review — gallery photos stay hidden from the community until approved.
+    // Non-blocking: the user still gets a successful response with their pending photo.
+    addToModerationQueue({
+      contentType: "photo",
+      contentId: newPhoto.id as string,
+      userId: session.userId,
+      contentSnapshot: caption?.trim() || normalizedTag,
+      imageUrl: publicUrl,
+      reason: "manual_review",
+    }).catch((err) =>
+      console.error("Failed to enqueue photo for moderation:", err)
+    );
 
     return NextResponse.json({
       success: true,

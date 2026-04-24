@@ -367,9 +367,17 @@ export function PhotoGallery({ userId, isOwner, withContainer = false, container
           {isOwner && <p className="text-xs mt-1">Add photos to share your journey</p>}
         </div>
       ) : (
+        <>
+        {isOwner && photos.some((p) => p.status === "pending") && (
+          <p className="text-[11px] text-amber-200/80">
+            Photos marked <span className="font-semibold">Pending</span> are waiting
+            for moderator approval before they&apos;re visible on the community gallery.
+          </p>
+        )}
         <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
           {photos.map((photo, index) => {
             const chipLabel = photo.activityTag?.trim();
+            const isPending = photo.status === "pending";
             return (
             <div key={photo.id} className="group relative aspect-square">
               {/* Thumbnail */}
@@ -383,8 +391,17 @@ export function PhotoGallery({ userId, isOwner, withContainer = false, container
                   alt={photo.caption ?? `Photo ${index + 1}`}
                   fill
                   sizes="(max-width: 640px) 33vw, 25vw"
-                  className="object-cover select-none transition-opacity group-hover:opacity-80"
+                  className={`object-cover select-none transition-opacity group-hover:opacity-80 ${
+                    isPending ? "opacity-70" : ""
+                  }`}
                 />
+                {isPending && isOwner && (
+                  <span className="pointer-events-none absolute top-1 left-1 z-[3]">
+                    <Badge className="rounded-md border-0 bg-amber-500/90 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-zinc-950 shadow-md">
+                      Pending
+                    </Badge>
+                  </span>
+                )}
                 {chipLabel ? (
                   <span className="pointer-events-none absolute bottom-1 left-1 right-1 z-[2] flex justify-start">
                     <Badge
@@ -462,6 +479,7 @@ export function PhotoGallery({ userId, isOwner, withContainer = false, container
             );
           })}
         </div>
+        </>
       )}
 
       {/* Caption editing modal */}
