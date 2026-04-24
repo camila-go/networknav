@@ -79,9 +79,6 @@ function ThemeFaceCard({
   isFocal: boolean;
 }) {
   const prefersReducedMotion = usePrefersReducedMotion();
-  const [activeSlide, setActiveSlide] = useState(0);
-  const [crossfadeActive, setCrossfadeActive] = useState(false);
-  const [paused, setPaused] = useState(false);
   const photos = useMemo(
     () => dedupePhotos(theme.samplePhotos),
     [theme.samplePhotos]
@@ -91,32 +88,45 @@ function ThemeFaceCard({
   const tagBg = useMemo(() => galleryTagBackground(theme.tag), [theme.tag]);
   const hasMultiple = len > 1;
 
-  const slideIdx = isFocal ? activeSlide : 0;
-  const safeIdx = len > 0 ? ((slideIdx % len) + len) % len : 0;
-  const nextIdx = len > 0 ? (safeIdx + 1) % len : 0;
-  const curr = len > 0 ? photos[safeIdx] : null;
+  const [baseIdx, setBaseIdx] = useState(0);
+  const [overlayIdx, setOverlayIdx] = useState(() => (len > 1 ? 1 : 0));
+  const [phase, setPhase] = useState<"idle" | "fadingIn">("idle");
+  const [paused, setPaused] = useState(false);
+
+  // Reset when the photo set changes (e.g., data refresh or theme swap).
+  useEffect(() => {
+    setBaseIdx(0);
+    setOverlayIdx(len > 1 ? 1 : 0);
+    setPhase("idle");
+  }, [len, theme.tag]);
+
+  const safeBaseIdx = len > 0 ? ((baseIdx % len) + len) % len : 0;
+  const safeOverlayIdx = len > 0 ? ((overlayIdx % len) + len) % len : 0;
+  const curr = len > 0 ? photos[safeBaseIdx] : null;
 
   useEffect(() => {
     if (!isFocal || !hasMultiple || paused) return;
     if (prefersReducedMotion) {
       const t = window.setInterval(() => {
-        setActiveSlide((i) => (i + 1) % len);
+        setBaseIdx((i) => (i + 1) % len);
       }, SLIDE_CYCLE_MS);
       return () => window.clearInterval(t);
     }
     const id = window.setInterval(() => {
-      setCrossfadeActive(true);
+      setPhase("fadingIn");
     }, SLIDE_CYCLE_MS);
     return () => window.clearInterval(id);
   }, [isFocal, hasMultiple, len, paused, prefersReducedMotion]);
 
   function handleCrossfadeEnd(e: React.TransitionEvent<HTMLDivElement>) {
     if (e.target !== e.currentTarget || e.propertyName !== "opacity") return;
-    setCrossfadeActive((fading) => {
-      if (!fading) return false;
-      setActiveSlide((prev) => (prev + 1) % len);
-      return false;
-    });
+    if (phase !== "fadingIn") return;
+    // Fade-in finished: promote overlay to base, preload the next photo,
+    // and return to idle. The overlay's opacity drops 1→0 with transition
+    // disabled, so the stale image vanishes instantly under the new base.
+    setBaseIdx(safeOverlayIdx);
+    setOverlayIdx((safeOverlayIdx + 1) % len);
+    setPhase("idle");
   }
 
   const cohortLine = (
@@ -172,7 +182,7 @@ function ThemeFaceCard({
       <>
         <div className={`absolute inset-0 z-0 overflow-hidden ${ken}`}>
           <Image
-            key={`base-${safeIdx}-${curr.url}`}
+            key="base"
             src={curr.url}
             alt=""
             fill
@@ -182,17 +192,20 @@ function ThemeFaceCard({
           />
         </div>
         <div
-          className="pointer-events-none absolute inset-0 z-[1] overflow-hidden transition-opacity ease-in-out motion-reduce:transition-none"
+          className="pointer-events-none absolute inset-0 z-[1] overflow-hidden motion-reduce:transition-none"
           style={{
-            opacity: crossfadeActive ? 1 : 0,
-            transitionDuration: `${CROSSFADE_MS}ms`,
+            opacity: phase === "fadingIn" ? 1 : 0,
+            transition:
+              phase === "fadingIn"
+                ? `opacity ${CROSSFADE_MS}ms ease-in-out`
+                : "none",
           }}
           onTransitionEnd={handleCrossfadeEnd}
         >
           <div className={`relative h-full w-full ${ken}`}>
             <Image
-              key={`over-${nextIdx}-${photos[nextIdx]?.url}`}
-              src={photos[nextIdx]!.url}
+              key="overlay"
+              src={photos[safeOverlayIdx]!.url}
               alt=""
               fill
               className="object-cover object-center"
@@ -204,7 +217,7 @@ function ThemeFaceCard({
     ) : (
       <div className={`absolute inset-0 z-0 overflow-hidden ${ken}`}>
         <Image
-          key={`single-${safeIdx}-${curr.url}`}
+          key="single"
           src={curr.url}
           alt=""
           fill
