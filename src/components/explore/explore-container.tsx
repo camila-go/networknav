@@ -786,6 +786,22 @@ function MobileCardSwiper({
 // (OpenRouter free-tier 429s trip the shared cooldown at 3).
 const STARTER_ENRICH_CONCURRENCY = 2;
 
+// Mirrors the fallback injected by /api/matches when MBA produces zero
+// commonalities (see src/app/api/matches/route.ts). Keeping the shape
+// identical across both callers means the starters-cache version hash
+// aligns, so explore cards hit the already-persisted row from the
+// dashboard instead of re-generating (and tripping the 429 cooldown).
+function fallbackCommonalityDescriptions(
+  title: string | undefined,
+  company: string | undefined,
+): string[] {
+  return [
+    title
+      ? `${title} at ${company || "their organization"}`
+      : "Fellow conference attendee",
+  ];
+}
+
 async function enrichSearchStartersProgressively(
   attendees: AttendeeSearchResult[],
   setResults: React.Dispatch<React.SetStateAction<AttendeeSearchResult[]>>,
@@ -798,6 +814,13 @@ async function enrichSearchStartersProgressively(
     await Promise.all(
       batch.map(async (a) => {
         try {
+          const commonalityDescriptions =
+            a.topCommonalities.length > 0
+              ? a.topCommonalities.map((c) => c.description)
+              : fallbackCommonalityDescriptions(
+                  a.user.profile.title || undefined,
+                  a.user.profile.company ?? undefined,
+                );
           const res = await fetch(
             `/api/matches/${encodeURIComponent(a.user.id)}/starters`,
             {
@@ -807,7 +830,7 @@ async function enrichSearchStartersProgressively(
                 userName: getViewerFirstName() || "there",
                 matchName: a.user.profile.name.split(/\s+/)[0] || "them",
                 matchType: a.matchType,
-                commonalities: a.topCommonalities.map((c) => c.description),
+                commonalities: commonalityDescriptions,
                 matchPosition: a.user.profile.title,
                 matchCompany: a.user.profile.company ?? undefined,
                 matchedUserId: a.user.id,
