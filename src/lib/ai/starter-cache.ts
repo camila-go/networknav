@@ -4,6 +4,8 @@ import { supabaseAdmin } from '@/lib/supabase/client';
 const TABLE = 'ai_conversation_starters';
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+export const STARTER_PROMPT_VERSION = 'v2-recipient-voice';
+
 function isUuid(value: string | undefined | null): value is string {
   return !!value && UUID_RE.test(value);
 }
@@ -21,6 +23,7 @@ export function buildCacheVersion(inputs: {
   matchCompany?: string;
 }): string {
   const payload = [
+    STARTER_PROMPT_VERSION,
     inputs.matchType,
     [...inputs.commonalities].sort().join('|'),
     inputs.matchPosition ?? '',

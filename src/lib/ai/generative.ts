@@ -2,7 +2,12 @@ import { createHash } from 'crypto';
 import { cache } from '@/lib/cache';
 import { getGenerativeProvider } from './provider-factory';
 import { isInCooldown } from './cooldown';
-import { buildCacheVersion, readStarterCache, writeStarterCache } from './starter-cache';
+import {
+  STARTER_PROMPT_VERSION,
+  buildCacheVersion,
+  readStarterCache,
+  writeStarterCache,
+} from './starter-cache';
 
 const AI_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -36,7 +41,7 @@ export async function generateConversationStartersAI(context: {
 }): Promise<ConversationStarterOutcome> {
   const matchTag = context.matchId ? ` matchId=${context.matchId}` : '';
   const cacheKey = `ai:convstart:${hashInput(
-    `${context.userName}|${context.matchName}|${context.matchType}|${context.commonalities.join(',')}|${context.matchPosition ?? ''}|${context.matchCompany ?? ''}`,
+    `${STARTER_PROMPT_VERSION}|${context.userName}|${context.matchName}|${context.matchType}|${context.commonalities.join(',')}|${context.matchPosition ?? ''}|${context.matchCompany ?? ''}`,
   )}`;
 
   const cached = cache.get<string[]>(cacheKey);
@@ -73,26 +78,37 @@ export async function generateConversationStartersAI(context: {
   }
 
   const systemInstruction = `You are a professional networking assistant for a leadership conference app.
-Generate exactly 3 conversation starters for ${context.userName} to send when meeting ${context.matchName}.
-Rules:
-- Each starter is ONE sentence, warm and specific (use their name, role, company, or shared topics where natural).
-- Vary the shape: mix questions, observations, and light invitations—do not start all three the same way.
-- Avoid generic phrases like "I'd love to connect" or "pick your brain" unless rephrased uniquely.
-- No numbering, bullets, or quote marks—one starter per line only.`;
+Write exactly 3 opening lines that ${context.userName} will send directly to ${context.matchName}.
+These are ${context.userName}'s words, spoken to ${context.matchName}.
 
-  const prompt = `${context.userName} is reaching out to ${context.matchName}.
+Rules:
+- Address ${context.matchName} by first name where it flows naturally (e.g. "${context.matchName}, …"). Never address or name ${context.userName}.
+- Write from ${context.userName}'s first-person perspective (use "I", "we", "our").
+- Each line is ONE sentence, warm and specific — reference ${context.matchName}'s role, company, or shared context where natural.
+- Vary the shape: mix a question, an observation, and a light invitation — do not start all three the same way.
+- Avoid generic phrases like "I'd love to connect" or "pick your brain" unless rephrased uniquely.
+- No numbering, bullets, or quote marks — one starter per line only.`;
+
+  const prompt = `Sender: ${context.userName} (do not name in output)
+Recipient: ${context.matchName}
 Match type: ${context.matchType}
-${context.matchPosition ? `Their role: ${context.matchPosition}` : ""}
-${context.matchCompany ? `Their company: ${context.matchCompany}` : ""}
+${context.matchPosition ? `Recipient's role: ${context.matchPosition}` : ""}
+${context.matchCompany ? `Recipient's company: ${context.matchCompany}` : ""}
 Shared context: ${context.commonalities.length ? context.commonalities.join(" | ") : "(infer from role/company)"}`;
 
   try {
     const text = await provider.generateText(prompt, systemInstruction);
+    const senderFirst = context.userName.trim().split(/\s+/)[0]?.toLowerCase() ?? '';
     const starters = text
       .split('\n')
       .map((s) => s.trim())
-      .filter((s) => s.length > 10 && s.length < 200);
-    if (starters.length === 0) {
+      .filter((s) => s.length > 10 && s.length < 200)
+      .filter((s) => {
+        if (!senderFirst) return true;
+        const leadToken = s.split(/[,:—\-…]/, 1)[0]?.trim().toLowerCase() ?? '';
+        return leadToken !== senderFirst;
+      });
+    if (starters.length < 2) {
       console.log(`[AI] starters ai_empty${matchTag}`);
       return { starters: null, reason: 'empty' };
     }
