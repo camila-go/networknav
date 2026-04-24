@@ -359,22 +359,19 @@ async function generateMatchesFromSupabase(currentUserId: string, currentUserEma
       };
     });
 
-    // Drop matches so thin they'd render as ~3% match-strength noise. Keep
-    // the page populated though: if the floor would leave the viewer with
-    // fewer than MIN_MATCH_FLOOR matches, fall back to the full list.
-    const MIN_MATCH_SCORE = 0.10;
-    const MIN_MATCH_FLOOR = 3;
-    const strongRows = buildRows.filter((r) => r.match.score >= MIN_MATCH_SCORE);
-    const gatedRows = strongRows.length >= MIN_MATCH_FLOOR ? strongRows : buildRows;
-
     // Cohort-relative rescaling: preserve ranking but spread the visible band
-    // so the best match in a sparse pool doesn't render as "35%".
-    const rescaled = rescaleCohortScores(gatedRows.map((r) => r.match.score));
-    gatedRows.forEach((row, i) => {
+    // so the best match in a sparse pool doesn't render as "35%". Rescale
+    // over the full candidate pool (matching /api/attendees/search) so both
+    // pages agree on the denominator — a prior pre-rescale floor dropped
+    // candidates with empty questionnaires and made this route rescale a
+    // smaller cohort than explore, giving the same user pair different
+    // percentages across the two pages.
+    const rescaled = rescaleCohortScores(buildRows.map((r) => r.match.score));
+    buildRows.forEach((row, i) => {
       row.match.score = rescaled[i];
     });
 
-    const matches = ensureMatchTypeMix(gatedRows, currentViewerFirstName);
+    const matches = ensureMatchTypeMix(buildRows, currentViewerFirstName);
 
     // AI starter enrichment is handled progressively by the client via
     // POST /api/matches/[matchId]/starters so the grid renders instantly.
