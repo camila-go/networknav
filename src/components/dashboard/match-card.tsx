@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import Link from "next/link";
 import type { MatchWithUser, Commonality } from "@/types";
 import { buildPersonalizedConversationStarters } from "@/lib/conversation-starters";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ChevronDown, ChevronUp, X } from "lucide-react";
+import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TeamsActionButtons } from "@/components/network/teams-action-buttons";
 import { logExplorePassClick } from "@/lib/log-network-action";
@@ -66,7 +66,6 @@ export function MatchCard({
   viewerFirstName,
   variant = "grid",
 }: MatchCardProps) {
-  const [showAllCommonalities, setShowAllCommonalities] = useState(false);
   const { matchedUser, type, commonalities, score } = match;
 
   const isHighAffinity = type === "high-affinity";
@@ -111,9 +110,7 @@ export function MatchCard({
     match.matchedUserId,
   ]);
 
-  const displayedCommonalities = showAllCommonalities
-    ? commonalities
-    : commonalities.slice(0, 3);
+  const topCommonality = commonalities[0];
 
   const initials = matchedUser.profile.name
     .split(" ")
@@ -189,39 +186,19 @@ export function MatchCard({
         style={isCarousel ? { WebkitOverflowScrolling: "touch" } : undefined}
       >
         {/* Why connect */}
-        <div>
-          <h4 className={cn(mutedLabelClass, "mb-0 w-[100px] max-w-full")}>
-            Why connect
-          </h4>
-          <ul className="mt-1 space-y-2">
-            {displayedCommonalities.map((commonality, index) => (
-              <li
-                key={index}
-                className="text-sm font-normal leading-normal text-white"
-              >
-                {commonality.description}
-              </li>
-            ))}
-          </ul>
-
-          {commonalities.length > 3 && (
-            <button
-              type="button"
-              onClick={() => setShowAllCommonalities(!showAllCommonalities)}
-              className="mt-2 flex items-center gap-1 text-xs font-medium text-[#62d0ea] transition-colors hover:text-[#7edcf0] hover:underline"
+        {topCommonality && (
+          <div>
+            <h4 className={cn(mutedLabelClass, "mb-0 w-[100px] max-w-full")}>
+              Why connect
+            </h4>
+            <p
+              className="mt-1 truncate text-sm font-normal leading-normal text-white"
+              title={topCommonality.description}
             >
-              {showAllCommonalities ? (
-                <>
-                  Show less <ChevronUp className="h-3 w-3" />
-                </>
-              ) : (
-                <>
-                  +{commonalities.length - 3} more <ChevronDown className="h-3 w-3" />
-                </>
-              )}
-            </button>
-          )}
-        </div>
+              {topCommonality.description}
+            </p>
+          </div>
+        )}
 
         {/* Conversation starters — Figma: stacked label above body, full width, 12px gap between blocks */}
         {displayStarters.length > 0 && (

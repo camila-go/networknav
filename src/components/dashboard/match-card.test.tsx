@@ -92,10 +92,22 @@ describe("MatchCard", () => {
     expect(screen.getByText("92%")).toBeInTheDocument();
   });
 
-  it("should render commonalities", () => {
+  it("should render only the top commonality", () => {
     render(<MatchCard match={createMatch()} onPass={mockOnPass} />);
     expect(screen.getByText("Both at VP / executive director level")).toBeInTheDocument();
-    expect(screen.getByText("Both enjoy hiking")).toBeInTheDocument();
+    // Only the highest-weighted commonality is shown; others are hidden
+    expect(screen.queryByText("Share servant leadership philosophy")).not.toBeInTheDocument();
+    expect(screen.queryByText("Both enjoy hiking")).not.toBeInTheDocument();
+  });
+
+  it("should hide the Why connect section when no commonalities are present", () => {
+    render(
+      <MatchCard
+        match={createMatch({ commonalities: [] })}
+        onPass={mockOnPass}
+      />
+    );
+    expect(screen.queryByText(/why connect/i)).not.toBeInTheDocument();
   });
 
   it("should render conversation starters from match data when provided", () => {
@@ -122,8 +134,7 @@ describe("MatchCard", () => {
     expect(section?.textContent).toMatch(/Sarah|Technology|hiking|leadership|TechCorp|VP/i);
   });
 
-  it("should show expand button when more than 3 commonalities", async () => {
-    const user = userEvent.setup();
+  it("should not render an expand button regardless of commonality count", () => {
     const match = createMatch({
       commonalities: [
         { category: "professional", description: "Industry match", weight: 0.9 },
@@ -135,15 +146,10 @@ describe("MatchCard", () => {
 
     render(<MatchCard match={match} onPass={mockOnPass} />);
 
-    // Should show "+1 more" button
-    expect(screen.getByText(/\+1 more/)).toBeInTheDocument();
-
-    // Initially the 4th commonality should not be visible
+    expect(screen.queryByText(/\+\d+ more/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/show less/i)).not.toBeInTheDocument();
+    expect(screen.getByText("Industry match")).toBeInTheDocument();
     expect(screen.queryByText("Lifestyle match")).not.toBeInTheDocument();
-
-    // Click to expand
-    await user.click(screen.getByText(/\+1 more/));
-    expect(screen.getByText("Lifestyle match")).toBeInTheDocument();
   });
 
   it("should call onPass when Pass button is clicked", async () => {
