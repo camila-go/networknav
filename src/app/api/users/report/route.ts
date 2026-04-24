@@ -108,15 +108,19 @@ export async function POST(req: NextRequest) {
     // Include the reported user's avatar URL so moderators can act on it directly.
     const reportedPhotoUrl =
       (reportedProfile as { photo_url?: string | null }).photo_url ?? undefined;
-    addToModerationQueue({
-      contentType: 'profile',
-      contentId: reportedUserId,
-      userId: reportedUserId,
-      contentSnapshot: `Report reason: ${reason}${description ? ` — ${description}` : ''}`,
-      imageUrl: reportedPhotoUrl || undefined,
-      reason: 'user_report',
-      reportId: report?.id as string | undefined,
-    }).catch((err) => console.error('Failed to add report to moderation queue:', err));
+    try {
+      await addToModerationQueue({
+        contentType: 'profile',
+        contentId: reportedUserId,
+        userId: reportedUserId,
+        contentSnapshot: `Report reason: ${reason}${description ? ` — ${description}` : ''}`,
+        imageUrl: reportedPhotoUrl || undefined,
+        reason: 'user_report',
+        reportId: report?.id as string | undefined,
+      });
+    } catch (err) {
+      console.error('Failed to add report to moderation queue:', err);
+    }
 
     return NextResponse.json({
       success: true,

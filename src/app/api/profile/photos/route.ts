@@ -202,17 +202,26 @@ export async function POST(request: NextRequest) {
     }
 
     // Queue for admin review — gallery photos stay hidden from the community until approved.
-    // Non-blocking: the user still gets a successful response with their pending photo.
-    addToModerationQueue({
-      contentType: "photo",
-      contentId: newPhoto.id as string,
-      userId: session.userId,
-      contentSnapshot: caption?.trim() || normalizedTag,
-      imageUrl: publicUrl,
-      reason: "manual_review",
-    }).catch((err) =>
-      console.error("Failed to enqueue photo for moderation:", err)
-    );
+    // Awaited so a lost queue insert (e.g. serverless runtime freeze) can't strand the photo
+    // as orphaned-pending forever. On failure, roll back user_photos + storage so the user retries.
+    try {
+      await addToModerationQueue({
+        contentType: "photo",
+        contentId: newPhoto.id as string,
+        userId: session.userId,
+        contentSnapshot: caption?.trim() || normalizedTag,
+        imageUrl: publicUrl,
+        reason: "manual_review",
+      });
+    } catch (err) {
+      console.error("Failed to enqueue photo for moderation:", err);
+      await supabaseAdmin.from("user_photos").delete().eq("id", newPhoto.id);
+      await supabaseAdmin.storage.from("profile-photos").remove([storageKey]);
+      return NextResponse.json(
+        { success: false, error: "Upload could not be queued for review. Please try again." },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,

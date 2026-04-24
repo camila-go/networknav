@@ -637,6 +637,19 @@ CREATE INDEX IF NOT EXISTS idx_moderation_queue_created ON moderation_queue(crea
 CREATE INDEX IF NOT EXISTS idx_moderation_queue_user ON moderation_queue(user_id);
 ```
 
+### One-time reconciliation: pending gallery photos missing a queue row
+
+Gallery uploads prior to the fire-and-forget fix could leave a `user_photos` row at `status='pending'` with no corresponding `moderation_queue` entry, which made the photo invisible to moderators (stuck in pending forever). Run once in the Supabase SQL editor to re-queue any strays:
+
+```sql
+INSERT INTO moderation_queue (content_type, content_id, user_id, content_snapshot, image_url, reason, status)
+SELECT 'photo', up.id, up.user_id, COALESCE(NULLIF(up.caption, ''), up.activity_tag), up.url, 'manual_review', 'pending'
+FROM user_photos up
+LEFT JOIN moderation_queue mq
+  ON mq.content_type = 'photo' AND mq.content_id = up.id
+WHERE up.status = 'pending' AND mq.id IS NULL;
+```
+
 
 ---
 

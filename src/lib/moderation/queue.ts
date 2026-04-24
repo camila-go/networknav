@@ -60,5 +60,6 @@ export async function addToModerationQueue(opts: {
 
   if (error) {
     console.error("Failed to add to moderation queue:", error);
+    throw new Error(`moderation_queue insert failed: ${error.message}`);
   }
 }
