@@ -89,22 +89,24 @@ function ringOffset(i: number, active: number, n: number): number {
   return d;
 }
 
+const SLIDESHOW_IMAGE_CLASS =
+  "object-cover object-[center_25%]";
+
 function ThemePhotoSlideshow({
   photos,
   isFocal,
   prioritizeImage,
   imageSizes,
-  kenClass,
 }: {
   photos: GalleryPhoto[];
   isFocal: boolean;
   prioritizeImage: boolean;
   imageSizes: string;
-  kenClass: string;
 }) {
   const reducedMotion = usePrefersReducedMotion();
   const [idx, setIdx] = useState(0);
   const [isFading, setIsFading] = useState(false);
+  const fadeEndCommittedRef = useRef(false);
 
   const n = photos.length;
   const nextIdx = n > 0 ? (idx + 1) % n : 0;
@@ -117,12 +119,14 @@ function ThemePhotoSlideshow({
   useEffect(() => {
     setIdx(0);
     setIsFading(false);
+    fadeEndCommittedRef.current = false;
   }, [photoKey]);
 
   useEffect(() => {
     if (!isFocal) {
       setIsFading(false);
       setIdx(0);
+      fadeEndCommittedRef.current = false;
     }
   }, [isFocal]);
 
@@ -143,26 +147,26 @@ function ThemePhotoSlideshow({
   }, [isFocal, n, reducedMotion]);
 
   const handleFadeEnd = useCallback(() => {
+    if (fadeEndCommittedRef.current) return;
+    fadeEndCommittedRef.current = true;
     setIdx((i) => (i + 1) % n);
     setIsFading(false);
   }, [n]);
 
   useEffect(() => {
-    if (!isFading) return;
-    const t = window.setTimeout(handleFadeEnd, SLIDESHOW_DISSOLVE_MS);
-    return () => window.clearTimeout(t);
-  }, [isFading, handleFadeEnd]);
+    if (!isFading) fadeEndCommittedRef.current = false;
+  }, [isFading]);
 
   if (n === 0) return null;
 
   if (n === 1) {
     return (
-      <div className={`absolute inset-0 z-0 overflow-hidden ${kenClass}`}>
+      <div className="absolute inset-0 z-0 overflow-hidden">
         <Image
           src={photos[0].url}
           alt=""
           fill
-          className="object-cover object-center"
+          className={SLIDESHOW_IMAGE_CLASS}
           sizes={imageSizes}
           priority={prioritizeImage}
         />
@@ -171,11 +175,12 @@ function ThemePhotoSlideshow({
   }
 
   const dissolveStyle = {
-    transition: `opacity ${SLIDESHOW_DISSOLVE_MS}ms ease-in-out`,
-  } as const;
+    transition: `opacity ${SLIDESHOW_DISSOLVE_MS}ms linear`,
+    ...(isFading ? { willChange: "opacity" as const } : {}),
+  };
 
   return (
-    <div className={`absolute inset-0 z-0 overflow-hidden ${isFocal && !isFading ? kenClass : ""}`}>
+    <div className="absolute inset-0 z-0 overflow-hidden">
       <div
         className="absolute inset-0"
         style={{
@@ -183,12 +188,17 @@ function ThemePhotoSlideshow({
           opacity: isFading ? 0 : 1,
           zIndex: isFading ? 1 : 2,
         }}
+        onTransitionEnd={(e) => {
+          if (e.target !== e.currentTarget) return;
+          if (e.propertyName !== "opacity" || !isFading) return;
+          handleFadeEnd();
+        }}
       >
         <Image
           src={photos[idx].url}
           alt=""
           fill
-          className="object-cover object-center"
+          className={SLIDESHOW_IMAGE_CLASS}
           sizes={imageSizes}
           priority={prioritizeImage && !isFading}
         />
@@ -205,7 +215,7 @@ function ThemePhotoSlideshow({
           src={photos[nextIdx].url}
           alt=""
           fill
-          className="object-cover object-center"
+          className={SLIDESHOW_IMAGE_CLASS}
           sizes={imageSizes}
           priority={false}
         />
@@ -235,24 +245,27 @@ function ThemeCarouselCardView({
     ? "(max-width: 640px) 92vw, 380px"
     : "(max-width: 640px) 50vw, 220px";
 
-  const ken = isFocal ? "motion-safe:animate-gallery-ken-burns" : "";
+  /** Inset photo + scrim from card stroke; inner radius tracks outer rounded corners. */
+  const photoFrameClass =
+    "absolute inset-2.5 z-0 overflow-hidden rounded-[14px] sm:inset-3 sm:rounded-[16px] md:rounded-[20px]";
 
   return (
     <div
       className={`relative aspect-[3/4] w-[min(92vw,380px)] overflow-hidden rounded-[1.5rem] border border-white/12 bg-zinc-900 shadow-[0_24px_55px_-12px_rgba(0,0,0,0.92)] sm:w-[min(90vw,320px)] sm:rounded-[1.75rem] md:w-[300px] md:rounded-[2rem] ${THEME_FLOW_EASE}`}
     >
-      <ThemePhotoSlideshow
-        photos={photos}
-        isFocal={isFocal}
-        prioritizeImage={prioritizeImage}
-        imageSizes={imageSizes}
-        kenClass={ken}
-      />
+      <div className={photoFrameClass}>
+        <ThemePhotoSlideshow
+          photos={photos}
+          isFocal={isFocal}
+          prioritizeImage={prioritizeImage}
+          imageSizes={imageSizes}
+        />
+      </div>
       <div
-        className="pointer-events-none absolute inset-0 z-[2] bg-gradient-to-t from-black via-black/92 via-black/35 to-transparent"
+        className={`pointer-events-none z-[2] bg-gradient-to-t from-black via-black/92 via-black/35 to-transparent ${photoFrameClass}`}
         aria-hidden
       />
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 px-[clamp(1rem,4.5vw,1.75rem)] pt-[max(1rem,calc(0.75rem+env(safe-area-inset-top,0px)))] sm:px-6 sm:pt-5 md:px-7">
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 px-[clamp(1.25rem,5vw,2rem)] pt-[max(1.125rem,calc(0.875rem+env(safe-area-inset-top,0px)))] sm:px-7 sm:pt-6 md:px-8 md:pt-7">
         <div className="flex justify-end">
           <span
             className="rounded-lg px-3 py-1.5 text-[11px] font-semibold lowercase tracking-wide text-white shadow-md sm:px-3.5 sm:py-1.5 sm:text-xs md:text-sm"
@@ -263,7 +276,7 @@ function ThemeCarouselCardView({
         </div>
       </div>
       <div
-        className="pointer-events-none absolute inset-x-0 bottom-0 z-[3] max-w-full px-[clamp(1rem,4.5vw,1.75rem)] pb-[max(1.25rem,calc(1rem+env(safe-area-inset-bottom,0px)))] pt-10 text-left sm:px-6 sm:pb-7 sm:pt-12 md:px-7 md:pb-8 md:pt-14"
+        className="pointer-events-none absolute inset-x-0 bottom-0 z-[3] max-w-full px-[clamp(1.25rem,5vw,2rem)] pb-[max(1.5rem,calc(1.125rem+env(safe-area-inset-bottom,0px)))] pt-11 text-left sm:px-7 sm:pb-8 sm:pt-14 md:px-8 md:pb-9 md:pt-16"
       >
         <p className="text-3xl font-bold leading-none tracking-tight text-white sm:text-4xl md:text-5xl">
           {percent}%

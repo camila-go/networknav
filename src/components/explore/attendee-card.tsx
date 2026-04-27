@@ -111,7 +111,10 @@ export function AttendeeCard({
       )}
     >
       <div
-        className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain touch-pan-y"
+        className={cn(
+          "flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain",
+          isCarousel ? "touch-auto" : "touch-pan-y"
+        )}
         style={{ WebkitOverflowScrolling: "touch" }}
       >
         <div className="shrink-0 px-4 pb-3 pt-[11px]">

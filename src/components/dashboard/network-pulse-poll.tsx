@@ -182,8 +182,8 @@ export function NetworkPulseSection() {
       >
         <div className="mt-2 flex min-w-0 flex-col gap-1 pt-2 sm:gap-2 sm:pt-3 lg:mt-3 lg:gap-[9px] lg:pt-3">
           {/*
-            Poll carousel: flex-0-0-100% slides + touch-pan-y on vote buttons so
-            horizontal swipes aren't eaten by iOS/Safari (buttons default to capturing pans).
+            Poll carousel: full-width slides. Inner card uses touch-auto (not touch-pan-y)
+            so horizontal swipes reach this row; vote buttons use touch-manipulation.
           */}
           <div className="relative min-w-0 w-full max-w-full">
             <div
@@ -329,7 +329,7 @@ function PulseQuestionCard({
                       : undefined
                   }
                   className={cn(
-                    "relative isolate flex min-h-[48px] w-full min-w-0 flex-1 items-center justify-center overflow-hidden rounded-xl px-3 py-2 text-base font-medium transition-[border-color,box-shadow,background-color] duration-200 sm:px-4 sm:text-[17px] lg:px-6 lg:text-lg xl:px-8",
+                    "relative isolate flex min-h-[48px] w-full min-w-0 flex-1 touch-manipulation items-center justify-center overflow-hidden rounded-xl px-3 py-2 text-base font-medium transition-[border-color,box-shadow,background-color] duration-200 sm:px-4 sm:text-[17px] lg:px-6 lg:text-lg xl:px-8",
                     showResults && "xl:px-6",
                     !showResults && "xl:px-[50px] xl:text-xl",
                     showResults
