@@ -35,18 +35,19 @@ const CONTENT_TYPE_ICONS: Record<ModerationContentType, typeof FileText> = {
   photo: ImageIcon,
 };
 
+/** Use `variant="secondary"` on Badge so default cyan gradient is not applied under these tokens. */
 const CONTENT_TYPE_COLORS: Record<ModerationContentType, string> = {
-  post: "bg-blue-500/10 text-blue-400",
-  reply: "bg-purple-500/10 text-purple-400",
-  message: "bg-green-500/10 text-green-400",
-  profile: "bg-cyan-500/10 text-cyan-400",
-  photo: "bg-pink-500/10 text-pink-400",
+  post: "border-sky-500/35 bg-sky-950/70 text-sky-100",
+  reply: "border-violet-500/35 bg-violet-950/70 text-violet-100",
+  message: "border-emerald-500/35 bg-emerald-950/70 text-emerald-100",
+  profile: "border-cyan-500/35 bg-cyan-950/70 text-cyan-100",
+  photo: "border-fuchsia-500/35 bg-fuchsia-950/70 text-fuchsia-100",
 };
 
 const REASON_COLORS: Record<string, string> = {
-  auto_flagged: "bg-red-500/10 text-red-400",
-  user_report: "bg-amber-500/10 text-amber-400",
-  manual_review: "bg-white/10 text-white/60",
+  auto_flagged: "border-red-500/40 bg-red-950/70 text-red-100",
+  user_report: "border-amber-500/40 bg-amber-950/70 text-amber-100",
+  manual_review: "border-white/20 bg-zinc-900/80 text-zinc-100",
 };
 
 export function ModerationQueue() {
@@ -156,8 +157,8 @@ export function ModerationQueue() {
   const selectAllId = `${idPrefix}-select-all`;
   const tabTriggerClass =
     "press border-0 bg-transparent shadow-none ring-0 text-white/60 px-3 text-sm transition-all duration-200 ease-out data-[state=active]:bg-white/10 data-[state=active]:text-white data-[state=active]:shadow-[inset_0_-2px_0_0_rgba(34,211,238,0.55)] data-[state=inactive]:shadow-none";
-  const ghostActionFocus =
-    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black";
+  const paginationBtnClass =
+    "min-h-11 border-2 border-white/25 bg-white/5 text-white hover:bg-white/15 hover:border-white/40 sm:min-h-9";
 
   return (
     <section
@@ -172,7 +173,10 @@ export function ModerationQueue() {
           Content moderation
         </h1>
         {total > 0 && statusFilter === "pending" && (
-          <Badge className="w-fit shrink-0 bg-amber-500/10 text-amber-400 text-sm">
+          <Badge
+            variant="secondary"
+            className="w-fit shrink-0 border border-amber-400/45 bg-amber-950/60 text-sm text-amber-100"
+          >
             {total} pending
           </Badge>
         )}
@@ -227,28 +231,22 @@ export function ModerationQueue() {
             <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:w-auto">
               <Button
                 size="sm"
-                variant="ghost"
-                className={cn(
-                  ghostActionFocus,
-                  "min-h-11 w-full justify-center text-green-300 hover:bg-green-500/10 hover:text-green-200 sm:min-h-9 sm:w-auto"
-                )}
+                variant="success"
+                className="min-h-11 w-full justify-center sm:min-h-9 sm:w-auto"
                 onClick={() => handleBulkAction("approved")}
                 disabled={actionLoading === "bulk"}
               >
-                <CheckCircle className="h-4 w-4 mr-1 shrink-0" aria-hidden />
+                <CheckCircle className="mr-1 h-4 w-4 shrink-0" aria-hidden />
                 Approve All
               </Button>
               <Button
                 size="sm"
-                variant="ghost"
-                className={cn(
-                  ghostActionFocus,
-                  "min-h-11 w-full justify-center text-red-300 hover:bg-red-500/10 hover:text-red-200 sm:min-h-9 sm:w-auto"
-                )}
+                variant="destructive"
+                className="min-h-11 w-full justify-center sm:min-h-9 sm:w-auto"
                 onClick={() => handleBulkAction("deleted")}
                 disabled={actionLoading === "bulk"}
               >
-                <Trash2 className="h-4 w-4 mr-1 shrink-0" aria-hidden />
+                <Trash2 className="mr-1 h-4 w-4 shrink-0" aria-hidden />
                 Remove All
               </Button>
             </div>
@@ -327,15 +325,19 @@ export function ModerationQueue() {
                           {item.userName}
                         </a>
                         <Badge
+                          variant="secondary"
                           className={cn(
-                            "text-xs capitalize",
+                            "border text-xs capitalize",
                             CONTENT_TYPE_COLORS[item.contentType]
                           )}
                         >
                           <Icon className="mr-1 h-3 w-3" aria-hidden />
                           {item.contentType}
                         </Badge>
-                        <Badge className={cn("text-xs", REASON_COLORS[item.reason])}>
+                        <Badge
+                          variant="secondary"
+                          className={cn("border text-xs", REASON_COLORS[item.reason])}
+                        >
                           {item.reason === "auto_flagged" && (
                             <AlertTriangle className="mr-1 h-3 w-3" aria-hidden />
                           )}
@@ -382,11 +384,8 @@ export function ModerationQueue() {
                     <div className="flex w-full min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap md:w-auto md:shrink-0">
                       <Button
                         size="sm"
-                        variant="ghost"
-                        className={cn(
-                          ghostActionFocus,
-                          "min-h-11 w-full justify-center px-3 text-green-300 hover:bg-green-500/10 hover:text-green-200 sm:min-h-9 sm:w-auto"
-                        )}
+                        variant="success"
+                        className="min-h-11 w-full justify-center sm:min-h-9 sm:w-auto"
                         onClick={() => handleAction(item.id, "approved")}
                         disabled={actionLoading === item.id}
                         title="Approve (keep content)"
@@ -396,11 +395,8 @@ export function ModerationQueue() {
                       </Button>
                       <Button
                         size="sm"
-                        variant="ghost"
-                        className={cn(
-                          ghostActionFocus,
-                          "min-h-11 w-full justify-center px-3 text-red-300 hover:bg-red-500/10 hover:text-red-200 sm:min-h-9 sm:w-auto"
-                        )}
+                        variant="destructive"
+                        className="min-h-11 w-full justify-center sm:min-h-9 sm:w-auto"
                         onClick={() => handleAction(item.id, "deleted")}
                         disabled={actionLoading === item.id}
                         title="Remove (delete content)"
@@ -410,11 +406,8 @@ export function ModerationQueue() {
                       </Button>
                       <Button
                         size="sm"
-                        variant="ghost"
-                        className={cn(
-                          ghostActionFocus,
-                          "min-h-11 w-full justify-center px-3 text-amber-300 hover:bg-amber-500/10 hover:text-amber-200 sm:min-h-9 sm:w-auto"
-                        )}
+                        variant="warning"
+                        className="min-h-11 w-full justify-center sm:min-h-9 sm:w-auto"
                         onClick={() => handleAction(item.id, "rejected")}
                         disabled={actionLoading === item.id}
                         title="Warn (remove + send warning)"
@@ -437,14 +430,11 @@ export function ModerationQueue() {
           <p className="text-xs text-white/50">{total} items total</p>
           <div className="flex flex-wrap items-center gap-2">
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
               disabled={page <= 1}
               onClick={() => setPage((p) => p - 1)}
-              className={cn(
-                ghostActionFocus,
-                "min-h-11 text-white/60 sm:min-h-9"
-              )}
+              className={paginationBtnClass}
             >
               Previous
             </Button>
@@ -452,14 +442,11 @@ export function ModerationQueue() {
               {page} / {totalPages}
             </span>
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
               disabled={page >= totalPages}
               onClick={() => setPage((p) => p + 1)}
-              className={cn(
-                ghostActionFocus,
-                "min-h-11 text-white/60 sm:min-h-9"
-              )}
+              className={paginationBtnClass}
             >
               Next
             </Button>
@@ -472,11 +459,27 @@ export function ModerationQueue() {
 
 function StatusBadge({ status }: { status: ModerationStatus }) {
   const config: Record<ModerationStatus, { label: string; className: string }> = {
-    pending: { label: "Pending", className: "bg-amber-500/10 text-amber-400" },
-    approved: { label: "Approved", className: "bg-green-500/10 text-green-400" },
-    rejected: { label: "Warned", className: "bg-red-500/10 text-red-400" },
-    deleted: { label: "Removed", className: "bg-red-500/10 text-red-400" },
+    pending: {
+      label: "Pending",
+      className: "border-amber-400/45 bg-amber-950/60 text-amber-100",
+    },
+    approved: {
+      label: "Approved",
+      className: "border-emerald-500/40 bg-emerald-950/70 text-emerald-100",
+    },
+    rejected: {
+      label: "Warned",
+      className: "border-red-500/40 bg-red-950/70 text-red-100",
+    },
+    deleted: {
+      label: "Removed",
+      className: "border-red-500/40 bg-red-950/70 text-red-100",
+    },
   };
   const c = config[status];
-  return <Badge className={cn("text-xs", c.className)}>{c.label}</Badge>;
+  return (
+    <Badge variant="secondary" className={cn("border text-xs", c.className)}>
+      {c.label}
+    </Badge>
+  );
 }
