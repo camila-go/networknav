@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireSupabaseAdmin, isSupabaseConfigured } from '@/lib/supabase/client';
 import { authenticateRequest, getUserProfile } from '@/lib/auth/middleware';
+import { enrichProfileRowsWithResolvedPhotoUrl } from '@/lib/profile/profile-photo-url';
 
 export async function GET(req: NextRequest) {
   try {
@@ -40,6 +41,7 @@ export async function GET(req: NextRequest) {
         created_at,
         matched_user:user_profiles!matched_user_id (
           id,
+          user_id,
           name,
           bio,
           interests,
@@ -66,10 +68,28 @@ export async function GET(req: NextRequest) {
       throw error;
     }
 
+    const matchedSources = (matches || [])
+      .map((m) => m.matched_user)
+      .filter((u): u is Record<string, unknown> => Boolean(u));
+    const enrichedMatched =
+      matchedSources.length > 0
+        ? await enrichProfileRowsWithResolvedPhotoUrl(
+            supabaseAdmin,
+            matchedSources as Array<{ id: string; user_id?: string | null; photo_url?: string | null }>
+          )
+        : [];
+    const photoByMatchedId = new Map(
+      enrichedMatched.map((row) => [String(row.id), row])
+    );
+
     // Transform matches to include match type determination
     const transformedMatches = (matches || []).map((match) => {
       const similarity = match.similarity_score;
-      const matchedUser = match.matched_user;
+      const rawMatched = match.matched_user as Record<string, unknown> | undefined;
+      const matchedUser =
+        rawMatched && photoByMatchedId.has(String(rawMatched.id))
+          ? (photoByMatchedId.get(String(rawMatched.id)) as Record<string, unknown>)
+          : rawMatched;
       
       // Determine match type based on similarity and profile comparison
       let matchType: 'high-affinity' | 'strategic' = 'high-affinity';

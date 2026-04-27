@@ -154,7 +154,9 @@ export function MatchCard({
             <div className="flex w-full items-center gap-5">
               <Link href={profileUrl} className="shrink-0">
                 <Avatar className="h-[65px] w-[65px] border-0 shadow-none ring-0 cursor-pointer transition-transform duration-300 ease-out hover:scale-[1.04] group-hover/matchcard:ring-2 group-hover/matchcard:ring-white/10">
-                  <AvatarImage src={matchedUser.profile.photoUrl} />
+                  <AvatarImage
+                    src={matchedUser.profile.photoUrl?.trim() || undefined}
+                  />
                   <AvatarFallback
                     className={cn(
                       "text-base font-bold text-[#0d0d0d]",

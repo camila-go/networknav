@@ -24,7 +24,7 @@ const NAV_ITEMS = [
     minRole: "admin" as const,
   },
   {
-    label: "Moderation",
+    label: "Gallery photos",
     href: "/admin/moderation",
     icon: Shield,
     minRole: "moderator" as const,

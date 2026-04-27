@@ -10,13 +10,7 @@ const bulkSchema = z.object({
   status: z.enum(["approved", "rejected", "deleted"]),
 });
 
-const NOTIFICATION_LABEL: Record<string, string> = {
-  photo: "gallery photo",
-  profile: "profile photo",
-  post: "post",
-  reply: "reply",
-  message: "message",
-};
+const GALLERY_PHOTO_LABEL = "gallery photo";
 
 // PATCH /api/admin/moderation/bulk — bulk update moderation items
 export async function PATCH(request: NextRequest) {
@@ -79,7 +73,7 @@ export async function PATCH(request: NextRequest) {
           body: `Your ${label} was removed. Please ensure your content follows community guidelines.`,
           data: { contentType: item.content_type, contentId: item.content_id },
         } as never);
-      } else if (status === "approved" && item.content_type === "photo") {
+      } else if (status === "approved") {
         await supabaseAdmin.from("notifications").insert({
           user_id: item.user_id,
           type: "content_approved",

@@ -9,10 +9,7 @@ import {
 
 // DELETE /api/admin/users/[userId]/avatar
 //
-// Moderator-initiated avatar removal. Avatars are auto-approved at upload, so
-// the moderation queue normally only sees them when a user reports the profile.
-// This route lets an admin proactively strip an inappropriate avatar from the
-// users-management page without going through the report flow.
+// Moderator-initiated avatar removal from the users-management page.
 export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ userId: string }> }
@@ -65,25 +62,12 @@ export async function DELETE(
       }
     }
 
-    // Write an audit trail so the moderation log shows who removed what and when.
-    await supabaseAdmin.from("moderation_queue" as never).insert({
-      content_type: "profile",
-      content_id: userId,
-      user_id: userId,
-      content_snapshot: "Avatar removed by moderator",
-      image_url: (profile as { photo_url?: string | null }).photo_url ?? null,
-      reason: "manual_review",
-      status: "deleted",
-      reviewed_by: session.userId,
-      reviewed_at: now,
-    } as never);
-
     await supabaseAdmin.from("notifications").insert({
       user_id: userId,
       type: "content_removed",
       title: "Profile Photo Removed",
       body: "Your profile photo was removed by a moderator. Please upload one that follows community guidelines.",
-      data: { contentType: "profile", contentId: userId },
+      data: { contentType: "avatar", contentId: userId },
     } as never);
 
     return NextResponse.json({ success: true });

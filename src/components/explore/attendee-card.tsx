@@ -126,7 +126,9 @@ export function AttendeeCard({
             <div className="flex w-full items-center gap-5">
               <Link href={profileUrl} className="shrink-0">
                 <Avatar className="h-[65px] w-[65px] border-0 shadow-none ring-0 cursor-pointer transition-opacity hover:opacity-95">
-                  <AvatarImage src={user.profile.photoUrl} />
+                  <AvatarImage
+                    src={user.profile.photoUrl?.trim() || undefined}
+                  />
                   <AvatarFallback
                     className={cn(
                       "text-base font-bold text-[#0d0d0d]",

@@ -21,6 +21,7 @@ import {
   rescaleCohortScores,
   type EmbeddingPair,
 } from "@/lib/matching/market-basket-analysis";
+import { enrichProfileRowsWithResolvedPhotoUrl } from "@/lib/profile/profile-photo-url";
 
 // Get label for a value from questionnaire options
 function getLabel(questionId: string, value: string): string {
@@ -782,7 +783,12 @@ async function searchSupabaseUsers(
       return [];
     }
 
-    const profileIds = (profiles as UserProfileRow[])
+    const profilesEnriched = await enrichProfileRowsWithResolvedPhotoUrl(
+      supabaseAdmin,
+      profiles as UserProfileRow[]
+    );
+
+    const profileIds = (profilesEnriched as UserProfileRow[])
       .map((p) => p.id)
       .filter((id): id is string => Boolean(id));
     const galleryTagsByUserId = new Map<string, string[]>();
@@ -808,7 +814,7 @@ async function searchSupabaseUsers(
 
     const results: AttendeeSearchResult[] = [];
 
-    for (const profile of profiles as UserProfileRow[]) {
+    for (const profile of profilesEnriched as UserProfileRow[]) {
       if (!profile.name) continue;
 
       const candidateResponses = (profile.questionnaire_data || {}) as Record<string, unknown>;

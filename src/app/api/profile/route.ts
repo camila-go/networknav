@@ -292,23 +292,32 @@ export async function PATCH(request: NextRequest) {
 
     users.set(session.email, user);
 
-    // Persist to Supabase if configured
     if (supabaseAdmin) {
       try {
+        const nowIso = user.updatedAt.toISOString();
+        const base = {
+          name,
+          title,
+          company: normalizedCompany,
+          location: location ?? null,
+          updated_at: nowIso,
+        };
         await supabaseAdmin
           .from("user_profiles")
           .update({
-            name,
-            title,
-            company: normalizedCompany,
-            location: location ?? null,
-            photo_url: photoUrl ?? undefined,
-            updated_at: user.updatedAt.toISOString(),
+            ...base,
+            ...(photoUrl !== undefined ? { photo_url: photoUrl } : {}),
           })
           .eq("user_id", user.id);
+        await supabaseAdmin
+          .from("user_profiles")
+          .update({
+            ...base,
+            ...(photoUrl !== undefined ? { photo_url: photoUrl } : {}),
+          })
+          .eq("id", user.id);
       } catch (err) {
         console.error("Supabase profile sync error:", err);
-        // Non-blocking — in-memory update already succeeded
       }
     }
 

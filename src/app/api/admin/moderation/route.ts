@@ -14,8 +14,6 @@ export async function GET(request: NextRequest) {
     const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
     const pageSize = Math.min(50, parseInt(searchParams.get("pageSize") || "20"));
     const status = searchParams.get("status") || "pending";
-    const contentType = searchParams.get("contentType") || "";
-
     if (!isSupabaseConfigured || !supabaseAdmin) {
       return NextResponse.json({
         success: true,
@@ -33,9 +31,7 @@ export async function GET(request: NextRequest) {
     if (status && status !== "all") {
       query = query.eq("status", status);
     }
-    if (contentType) {
-      query = query.eq("content_type", contentType);
-    }
+    query = query.eq("content_type", "photo");
 
     const { data: rawData, count, error } = await query
       .order("created_at", { ascending: false })
@@ -98,9 +94,8 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/admin/moderation — manually add item to queue
+// POST /api/admin/moderation — manually add a gallery photo to the queue
 const addItemSchema = z.object({
-  contentType: z.enum(["post", "reply", "message", "profile", "photo"]),
   contentId: z.string().uuid(),
   userId: z.string().uuid(),
   contentSnapshot: z.string().optional(),
@@ -130,7 +125,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { error } = await supabaseAdmin.from("moderation_queue" as never).insert({
-      content_type: result.data.contentType,
+      content_type: "photo",
       content_id: result.data.contentId,
       user_id: result.data.userId,
       content_snapshot: result.data.contentSnapshot || null,

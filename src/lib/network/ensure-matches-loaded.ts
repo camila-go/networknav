@@ -5,6 +5,7 @@ import {
   generateConversationStarters,
   hasUsableQuestionnaire,
 } from "@/lib/matching/market-basket-analysis";
+import { enrichProfileRowsWithResolvedPhotoUrl } from "@/lib/profile/profile-photo-url";
 import type { Match, QuestionnaireData } from "@/types";
 
 /**
@@ -47,7 +48,7 @@ export async function ensureMatchesLoaded(
 
   const { data: profiles, error } = await supabaseAdmin
     .from("user_profiles")
-    .select("id, name, email, title, company, photo_url, questionnaire_data")
+    .select("id, user_id, name, email, title, company, photo_url, questionnaire_data")
     .eq("is_active", true)
     .limit(80);
 
@@ -55,6 +56,7 @@ export async function ensureMatchesLoaded(
 
   type Profile = {
     id: string;
+    user_id?: string | null;
     name: string;
     email?: string;
     title?: string;
@@ -73,8 +75,10 @@ export async function ensureMatchesLoaded(
 
   if (!filtered.length) return [];
 
+  const enriched = await enrichProfileRowsWithResolvedPhotoUrl(supabaseAdmin, filtered);
+
   const now = new Date();
-  return filtered.map((p) => {
+  return enriched.map((p) => {
     const candidateQ = (p.questionnaire_data ?? {}) as Partial<QuestionnaireData>;
     let score: number;
     let type: "high-affinity" | "strategic";

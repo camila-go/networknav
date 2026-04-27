@@ -35,7 +35,7 @@ export function AdminDashboard() {
       bg: "bg-cyan-500/10",
     },
     {
-      label: "Pending Moderation",
+      label: "Pending gallery photos",
       value: stats?.pendingModeration ?? 0,
       icon: Shield,
       color: "text-amber-400",
@@ -121,13 +121,14 @@ export function AdminDashboard() {
             <Shield className="h-5 w-5 text-amber-400" />
             <div>
               <p className="font-medium text-white">
-                {stats.pendingModeration} item{stats.pendingModeration !== 1 ? "s" : ""} awaiting review
+                {stats.pendingModeration} gallery photo
+                {stats.pendingModeration !== 1 ? "s" : ""} awaiting review
               </p>
               <Link
                 href="/admin/moderation"
                 className="text-sm text-cyan-400 hover:underline"
               >
-                Go to moderation queue
+                Open gallery photo queue
               </Link>
             </div>
           </div>

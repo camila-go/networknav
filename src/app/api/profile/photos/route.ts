@@ -208,7 +208,6 @@ export async function POST(request: NextRequest) {
     // as orphaned-pending forever. On failure, roll back user_photos + storage so the user retries.
     try {
       await addToModerationQueue({
-        contentType: "photo",
         contentId: newPhoto.id as string,
         userId: session.userId,
         contentSnapshot: caption?.trim() || normalizedTag,

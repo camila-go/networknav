@@ -7,42 +7,17 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   CheckCircle,
   XCircle,
   Trash2,
   AlertTriangle,
-  MessageSquare,
   Image as ImageIcon,
-  User,
-  FileText,
-  Reply,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { ModerationItem, ModerationContentType, ModerationStatus } from "@/types";
+import type { ModerationItem, ModerationStatus } from "@/types";
 
-const CONTENT_TYPE_ICONS: Record<ModerationContentType, typeof FileText> = {
-  post: FileText,
-  reply: Reply,
-  message: MessageSquare,
-  profile: User,
-  photo: ImageIcon,
-};
-
-/** Use `variant="secondary"` on Badge so default cyan gradient is not applied under these tokens. */
-const CONTENT_TYPE_COLORS: Record<ModerationContentType, string> = {
-  post: "border-sky-500/35 bg-sky-950/70 text-sky-100",
-  reply: "border-violet-500/35 bg-violet-950/70 text-violet-100",
-  message: "border-emerald-500/35 bg-emerald-950/70 text-emerald-100",
-  profile: "border-cyan-500/35 bg-cyan-950/70 text-cyan-100",
-  photo: "border-fuchsia-500/35 bg-fuchsia-950/70 text-fuchsia-100",
-};
+const PHOTO_TYPE_BADGE =
+  "border-fuchsia-500/35 bg-fuchsia-950/70 text-fuchsia-100";
 
 const REASON_COLORS: Record<string, string> = {
   auto_flagged: "border-red-500/40 bg-red-950/70 text-red-100",
@@ -56,7 +31,6 @@ export function ModerationQueue() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("pending");
-  const [contentTypeFilter, setContentTypeFilter] = useState<string>("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const idPrefix = useId();
@@ -71,7 +45,6 @@ export function ModerationQueue() {
         pageSize: String(pageSize),
         status: statusFilter,
       });
-      if (contentTypeFilter) params.set("contentType", contentTypeFilter);
 
       const res = await fetch(`/api/admin/moderation?${params}`);
       const json = await res.json();
@@ -84,10 +57,10 @@ export function ModerationQueue() {
     } finally {
       setLoading(false);
     }
-  }, [page, statusFilter, contentTypeFilter]);
+  }, [page, statusFilter]);
 
   useEffect(() => {
-    fetchItems();
+    void fetchItems();
   }, [fetchItems]);
 
   async function handleAction(
@@ -168,9 +141,9 @@ export function ModerationQueue() {
       <div className="mb-6 flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1
           id="moderation-heading"
-          className="font-display text-3xl font-bold text-white min-w-0"
+          className="font-display min-w-0 text-3xl font-bold text-white"
         >
-          Content moderation
+          Gallery photo review
         </h1>
         {total > 0 && statusFilter === "pending" && (
           <Badge
@@ -182,7 +155,6 @@ export function ModerationQueue() {
         )}
       </div>
 
-      {/* Filters */}
       <div className="mb-4 flex min-w-0 flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
           <Tabs
@@ -202,29 +174,8 @@ export function ModerationQueue() {
               </TabsTrigger>
             </TabsList>
           </Tabs>
-
-          <Select
-            value={contentTypeFilter || "all_types"}
-            onValueChange={(v) => {
-              setContentTypeFilter(v === "all_types" ? "" : v);
-              setPage(1);
-            }}
-          >
-            <SelectTrigger className="h-11 w-full min-w-0 bg-white/5 border-white/10 text-white sm:h-9 sm:w-36">
-              <SelectValue placeholder="All types" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all_types">All types</SelectItem>
-              <SelectItem value="post">Posts</SelectItem>
-              <SelectItem value="reply">Replies</SelectItem>
-              <SelectItem value="message">Messages</SelectItem>
-              <SelectItem value="profile">Profiles</SelectItem>
-              <SelectItem value="photo">Photos</SelectItem>
-            </SelectContent>
-          </Select>
         </div>
 
-        {/* Bulk actions */}
         {selected.size > 0 && (
           <div className="flex w-full min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center lg:w-auto lg:justify-end">
             <span className="text-sm text-white/60">{selected.size} selected</span>
@@ -254,18 +205,16 @@ export function ModerationQueue() {
         )}
       </div>
 
-      {/* Items */}
       {loading ? (
         <div className="py-12 text-center text-white/50">Loading...</div>
       ) : items.length === 0 ? (
-        <Card className="bg-white/5 border-white/10 p-12 text-center">
+        <Card className="border-white/10 bg-white/5 p-12 text-center">
           <CheckCircle className="mx-auto mb-3 h-12 w-12 text-green-400/50" aria-hidden />
           <p className="text-lg text-white/60">Queue is clear</p>
-          <p className="mt-1 text-sm text-white/45">No items to review</p>
+          <p className="mt-1 text-sm text-white/45">No gallery photos to review</p>
         </Card>
       ) : (
         <div className="space-y-3">
-          {/* Select all checkbox */}
           {statusFilter === "pending" && items.length > 1 && (
             <div className="flex items-center gap-2 px-1">
               <input
@@ -285,7 +234,6 @@ export function ModerationQueue() {
           )}
 
           {items.map((item) => {
-            const Icon = CONTENT_TYPE_ICONS[item.contentType] || FileText;
             const isSelected = selected.has(item.id);
             const isPending = item.status === "pending";
 
@@ -293,29 +241,26 @@ export function ModerationQueue() {
               <Card
                 key={item.id}
                 className={cn(
-                  "bg-white/5 border-white/10 p-4 transition-colors",
+                  "border-white/10 bg-white/5 p-4 transition-colors",
                   isSelected && "border-cyan-500/40 bg-cyan-500/5"
                 )}
               >
                 <div className="flex min-w-0 flex-col gap-3 md:flex-row md:items-start md:gap-3">
                   <div className="flex min-w-0 flex-1 gap-3">
-                    {/* Checkbox for pending items */}
                     {isPending && (
                       <input
                         type="checkbox"
                         checked={isSelected}
                         onChange={() => toggleSelect(item.id)}
-                        aria-label={`Select moderation item for ${item.userName}`}
+                        aria-label={`Select queue item for ${item.userName}`}
                         className="mt-1 size-4 shrink-0 accent-cyan-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
                       />
                     )}
 
-                    {/* User avatar */}
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-sm font-medium">
                       {item.userName.charAt(0).toUpperCase()}
                     </div>
 
-                    {/* Content */}
                     <div className="min-w-0 flex-1">
                       <div className="mb-1 flex flex-wrap items-center gap-2">
                         <a
@@ -326,13 +271,10 @@ export function ModerationQueue() {
                         </a>
                         <Badge
                           variant="secondary"
-                          className={cn(
-                            "border text-xs capitalize",
-                            CONTENT_TYPE_COLORS[item.contentType]
-                          )}
+                          className={cn("border text-xs", PHOTO_TYPE_BADGE)}
                         >
-                          <Icon className="mr-1 h-3 w-3" aria-hidden />
-                          {item.contentType}
+                          <ImageIcon className="mr-1 h-3 w-3" aria-hidden />
+                          Gallery photo
                         </Badge>
                         <Badge
                           variant="secondary"
@@ -348,16 +290,15 @@ export function ModerationQueue() {
                         </span>
                       </div>
 
-                      {/* Content snapshot */}
                       <div className="mt-2 rounded-lg bg-white/[0.03] p-3">
                         <p className="whitespace-pre-wrap break-words text-sm text-white/70">
-                          {item.contentSnapshot || "(no text content)"}
+                          {item.contentSnapshot || "(no caption or tag)"}
                         </p>
                         {item.imageUrl && (
                           <div className="mt-2">
                             <Image
                               src={item.imageUrl}
-                              alt={`Preview of reported ${item.contentType} for moderation review`}
+                              alt="Gallery photo pending review"
                               width={800}
                               height={600}
                               sizes="(max-width: 768px) 100vw, 400px"
@@ -367,7 +308,6 @@ export function ModerationQueue() {
                         )}
                       </div>
 
-                      {/* Reviewer info (for reviewed items) */}
                       {item.status !== "pending" && (
                         <div className="mt-2 text-xs text-white/45">
                           <StatusBadge status={item.status as ModerationStatus} />
@@ -379,7 +319,6 @@ export function ModerationQueue() {
                     </div>
                   </div>
 
-                  {/* Action buttons (only for pending) */}
                   {isPending && (
                     <div className="flex w-full min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap md:w-auto md:shrink-0">
                       <Button
@@ -424,7 +363,6 @@ export function ModerationQueue() {
         </div>
       )}
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <div className="mt-4 flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-white/50">{total} items total</p>

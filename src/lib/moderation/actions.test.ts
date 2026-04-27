@@ -41,7 +41,6 @@ function tableMock(table: string) {
   };
   builder.eq = (col: string, val: unknown) => {
     rec.eqs.push({ col, val });
-    // terminal for update/delete
     if (rec.op === "update" || rec.op === "delete") {
       return Promise.resolve({ data: null, error: null });
     }
@@ -101,7 +100,6 @@ describe("applyModerationDecision", () => {
       expect(update?.payload?.reviewed_at).toBeTypeOf("string");
       expect(update?.eqs).toEqual([{ col: "id", val: "photo-1" }]);
 
-      // Approval must NOT delete from storage.
       expect(storageRemove).not.toHaveBeenCalled();
     });
 
@@ -143,81 +141,6 @@ describe("applyModerationDecision", () => {
 
       expect(storageRemove).toHaveBeenCalledWith(["user-1/gallery/photo-1"]);
       expect(findQuery("user_photos", "delete")).toBeDefined();
-    });
-  });
-
-  describe("profile (avatar) content type", () => {
-    it("leaves avatar untouched on approve", async () => {
-      await applyModerationDecision({
-        contentType: "profile",
-        contentId: "user-1",
-        userId: "user-1",
-        decision: "approved",
-        reviewerId: "mod-1",
-      });
-
-      expect(storageRemove).not.toHaveBeenCalled();
-      expect(findQuery("user_profiles", "update")).toBeUndefined();
-    });
-
-    it("clears photo_url and deletes avatar storage on delete", async () => {
-      await applyModerationDecision({
-        contentType: "profile",
-        contentId: "user-1",
-        userId: "user-1",
-        decision: "deleted",
-        reviewerId: "mod-1",
-      });
-
-      expect(storageRemove).toHaveBeenCalledWith(["user-1/avatar"]);
-
-      const updates = queryLog.filter(
-        (q) => q.table === "user_profiles" && q.op === "update"
-      );
-      expect(updates).toHaveLength(2);
-      expect(updates[0].payload).toMatchObject({ photo_url: null });
-      // Clears on both primary-key row and auth-user row.
-      expect(updates.map((u) => u.eqs[0].col)).toEqual(["id", "user_id"]);
-    });
-
-    it("clears photo_url and deletes avatar storage on reject", async () => {
-      await applyModerationDecision({
-        contentType: "profile",
-        contentId: "user-1",
-        userId: "user-1",
-        decision: "rejected",
-        reviewerId: "mod-1",
-      });
-
-      expect(storageRemove).toHaveBeenCalledWith(["user-1/avatar"]);
-    });
-  });
-
-  describe("text content types", () => {
-    it("no-ops on approve for messages", async () => {
-      await applyModerationDecision({
-        contentType: "message",
-        contentId: "msg-1",
-        userId: "user-1",
-        decision: "approved",
-        reviewerId: "mod-1",
-      });
-
-      expect(findQuery("messages", "delete")).toBeUndefined();
-    });
-
-    it("deletes messages row on delete", async () => {
-      await applyModerationDecision({
-        contentType: "message",
-        contentId: "msg-1",
-        userId: "user-1",
-        decision: "deleted",
-        reviewerId: "mod-1",
-      });
-
-      const del = findQuery("messages", "delete");
-      expect(del).toBeDefined();
-      expect(del?.eqs).toEqual([{ col: "id", val: "msg-1" }]);
     });
   });
 });

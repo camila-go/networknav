@@ -1,6 +1,8 @@
 "use client";
 
 import {
+  type CSSProperties,
+  type TransitionEvent,
   useCallback,
   useEffect,
   useMemo,
@@ -38,9 +40,12 @@ type ThemeCarouselCard = {
 
 const THEME_FLOW_EASE = "transition-[transform,opacity,filter] duration-500 ease-out";
 
-const SLIDESHOW_DISSOLVE_MS = 120;
+const SLIDESHOW_DISSOLVE_MS = 520;
+const SLIDESHOW_DISSOLVE_FALLBACK_BUFFER_MS = 80;
 const SLIDESHOW_START_DELAY_MS = 120;
 const SLIDESHOW_HOLD_MS = 4000;
+/** naturalWidth / naturalHeight — at or above = treat as landscape framing in the 3:4 card. */
+const SLIDESHOW_WIDE_ASPECT_THRESHOLD = 1.2;
 
 function subscribeReducedMotion(cb: () => void) {
   const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -89,8 +94,15 @@ function ringOffset(i: number, active: number, n: number): number {
   return d;
 }
 
-const SLIDESHOW_IMAGE_CLASS =
-  "object-cover object-[center_25%]";
+function slideshowObjectFitClass(
+  url: string,
+  wideByUrl: Record<string, boolean | undefined>
+): string {
+  const wide = wideByUrl[url];
+  if (wide === true) return "object-cover object-center";
+  if (wide === false) return "object-cover object-[center_22%]";
+  return "object-cover object-center";
+}
 
 function ThemePhotoSlideshow({
   photos,
@@ -107,6 +119,7 @@ function ThemePhotoSlideshow({
   const [idx, setIdx] = useState(0);
   const [isFading, setIsFading] = useState(false);
   const fadeEndCommittedRef = useRef(false);
+  const [wideByUrl, setWideByUrl] = useState<Record<string, boolean | undefined>>({});
 
   const n = photos.length;
   const nextIdx = n > 0 ? (idx + 1) % n : 0;
@@ -120,6 +133,7 @@ function ThemePhotoSlideshow({
     setIdx(0);
     setIsFading(false);
     fadeEndCommittedRef.current = false;
+    setWideByUrl({});
   }, [photoKey]);
 
   useEffect(() => {
@@ -130,21 +144,27 @@ function ThemePhotoSlideshow({
     }
   }, [isFocal]);
 
+  const requestFadeStart = useCallback(() => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setIsFading((fading) => (fading ? fading : true));
+      });
+    });
+  }, []);
+
   useEffect(() => {
     if (!isFocal || n < 2 || reducedMotion) return;
 
     let intervalId: ReturnType<typeof setInterval> | undefined;
     const startDelay = window.setTimeout(() => {
-      intervalId = window.setInterval(() => {
-        setIsFading((fading) => (fading ? fading : true));
-      }, SLIDESHOW_HOLD_MS);
+      intervalId = window.setInterval(requestFadeStart, SLIDESHOW_HOLD_MS);
     }, SLIDESHOW_START_DELAY_MS);
 
     return () => {
       window.clearTimeout(startDelay);
       if (intervalId !== undefined) window.clearInterval(intervalId);
     };
-  }, [isFocal, n, reducedMotion]);
+  }, [isFocal, n, reducedMotion, requestFadeStart]);
 
   const handleFadeEnd = useCallback(() => {
     if (fadeEndCommittedRef.current) return;
@@ -156,75 +176,106 @@ function ThemePhotoSlideshow({
     });
   }, [n]);
 
-  // Drive the dissolve strictly on wall-clock time so it always matches
-  // SLIDESHOW_DISSOLVE_MS (transitionend can fire early or twice on some engines).
+  const onOutgoingTransitionEnd = useCallback(
+    (e: TransitionEvent<HTMLDivElement>) => {
+      if (e.propertyName !== "opacity") return;
+      if (e.target !== e.currentTarget) return;
+      handleFadeEnd();
+    },
+    [handleFadeEnd]
+  );
+
   useEffect(() => {
     if (!isFading) return;
-    const id = window.setTimeout(handleFadeEnd, SLIDESHOW_DISSOLVE_MS);
+    const ms = SLIDESHOW_DISSOLVE_MS + SLIDESHOW_DISSOLVE_FALLBACK_BUFFER_MS;
+    const id = window.setTimeout(handleFadeEnd, ms);
     return () => window.clearTimeout(id);
   }, [isFading, handleFadeEnd]);
+
+  const onPhotoLoaded = useCallback((url: string) => {
+    return (img: HTMLImageElement) => {
+      const w = img.naturalWidth;
+      const h = img.naturalHeight;
+      if (w <= 0 || h <= 0) return;
+      const wide = w / h >= SLIDESHOW_WIDE_ASPECT_THRESHOLD;
+      setWideByUrl((prev) => {
+        if (prev[url] === wide) return prev;
+        return { ...prev, [url]: wide };
+      });
+    };
+  }, []);
 
   if (n === 0) return null;
 
   if (n === 1) {
+    const u0 = photos[0].url;
     return (
       <div className="absolute inset-0 z-0 overflow-hidden bg-black">
         <Image
-          src={photos[0].url}
+          src={u0}
           alt=""
           fill
-          className={SLIDESHOW_IMAGE_CLASS}
+          className={slideshowObjectFitClass(u0, wideByUrl)}
           sizes={imageSizes}
           priority={prioritizeImage}
+          onLoadingComplete={onPhotoLoaded(u0)}
         />
       </div>
     );
   }
 
   const dissolveMs = SLIDESHOW_DISSOLVE_MS;
-  const layerStyle = {
-    transitionProperty: "opacity",
-    transitionDuration: `${dissolveMs}ms`,
-    transitionTimingFunction: "linear" as const,
-    backfaceVisibility: "hidden" as const,
-    WebkitBackfaceVisibility: "hidden" as const,
+  const layerStyle: CSSProperties = {
+    transitionProperty: isFading ? "opacity" : "none",
+    transitionDuration: isFading ? `${dissolveMs}ms` : "0s",
+    transitionTimingFunction: "linear",
+    backfaceVisibility: "hidden",
+    WebkitBackfaceVisibility: "hidden",
     transform: "translateZ(0)",
+    willChange: isFading ? "opacity" : "auto",
   };
+
+  const urlCurrent = photos[idx].url;
+  const urlNext = photos[nextIdx].url;
 
   return (
     <div className="absolute inset-0 z-0 overflow-hidden bg-black">
+      {/* Current: always beneath incoming; opacity-only crossfade (stable z-index). */}
       <div
         className="absolute inset-0"
         style={{
           ...layerStyle,
+          zIndex: 1,
           opacity: isFading ? 0 : 1,
-          zIndex: isFading ? 1 : 2,
         }}
+        onTransitionEnd={onOutgoingTransitionEnd}
       >
         <Image
-          src={photos[idx].url}
+          src={urlCurrent}
           alt=""
           fill
-          className={SLIDESHOW_IMAGE_CLASS}
+          className={slideshowObjectFitClass(urlCurrent, wideByUrl)}
           sizes={imageSizes}
           priority={prioritizeImage && !isFading}
+          onLoadingComplete={onPhotoLoaded(urlCurrent)}
         />
       </div>
       <div
-        className="absolute inset-0"
+        className="pointer-events-none absolute inset-0"
         style={{
           ...layerStyle,
+          zIndex: 2,
           opacity: isFading ? 1 : 0,
-          zIndex: isFading ? 2 : 1,
         }}
       >
         <Image
-          src={photos[nextIdx].url}
+          src={urlNext}
           alt=""
           fill
-          className={SLIDESHOW_IMAGE_CLASS}
+          className={slideshowObjectFitClass(urlNext, wideByUrl)}
           sizes={imageSizes}
           priority={isFocal}
+          onLoadingComplete={onPhotoLoaded(urlNext)}
         />
       </div>
     </div>

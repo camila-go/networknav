@@ -668,7 +668,7 @@ export type UserPhotoUpdate = {
 // Moderation Queue Table
 // ============================================
 
-export type ModerationContentType = 'post' | 'reply' | 'message' | 'profile' | 'photo';
+export type ModerationContentType = 'photo';
 export type ModerationReason = 'auto_flagged' | 'user_report' | 'manual_review';
 export type ModerationQueueStatus = 'pending' | 'approved' | 'rejected' | 'deleted';
 

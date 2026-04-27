@@ -10,13 +10,7 @@ const updateSchema = z.object({
   reviewerNotes: z.string().max(500).optional(),
 });
 
-const NOTIFICATION_LABEL: Record<string, string> = {
-  photo: "gallery photo",
-  profile: "profile photo",
-  post: "post",
-  reply: "reply",
-  message: "message",
-};
+const GALLERY_PHOTO_LABEL = "gallery photo";
 
 // PATCH /api/admin/moderation/[itemId] — approve/reject/delete
 export async function PATCH(
@@ -87,7 +81,7 @@ export async function PATCH(
 
     // Notify the content author when we actually touched their content.
     // Approved gallery photos get a "published" ping; other approvals are silent.
-    const label = NOTIFICATION_LABEL[item.content_type] ?? item.content_type;
+    const label = GALLERY_PHOTO_LABEL;
     if (status === "deleted") {
       await supabaseAdmin.from("notifications").insert({
         user_id: item.user_id,
@@ -104,7 +98,7 @@ export async function PATCH(
         body: `Your ${label} was removed. ${reviewerNotes || "Please ensure your content follows community guidelines."}`,
         data: { contentType: item.content_type, contentId: item.content_id },
       } as never);
-    } else if (status === "approved" && item.content_type === "photo") {
+    } else if (status === "approved") {
       await supabaseAdmin.from("notifications").insert({
         user_id: item.user_id,
         type: "content_approved",

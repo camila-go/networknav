@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { users } from "@/lib/stores";
 import { supabaseAdmin } from "@/lib/supabase/client";
+import { syncUserProfilePhotoUrlAcrossRows } from "@/lib/profile/profile-photo-url";
 
 export async function POST(request: NextRequest) {
   try {
@@ -52,18 +53,10 @@ export async function POST(request: NextRequest) {
       users.set(session.email, user);
     }
 
-    // Persist to Supabase
     try {
-      await supabaseAdmin
-        .from("user_profiles")
-        .update({
-          photo_url: publicUrl,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("user_id", session.userId);
+      await syncUserProfilePhotoUrlAcrossRows(supabaseAdmin, session.userId, publicUrl);
     } catch (err) {
       console.error("Supabase avatar URL sync error:", err);
-      // Non-blocking
     }
 
     return NextResponse.json({

@@ -3,7 +3,6 @@ import { requireSupabaseAdmin, isSupabaseConfigured } from '@/lib/supabase/clien
 import { authenticateRequest, getUserProfile } from '@/lib/auth/middleware';
 import { reportUserSchema } from '@/lib/validation/schemas';
 import { checkRateLimit } from '@/lib/security/rateLimit';
-import { addToModerationQueue } from '@/lib/moderation/queue';
 import { z } from 'zod';
 
 /**
@@ -47,11 +46,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Verify reported user exists; also grab their avatar so the moderator
-    // can see it inline in the moderation queue.
     const { data: reportedProfile, error: reportedError } = await supabaseAdmin
       .from('user_profiles')
-      .select('id, photo_url')
+      .select('id')
       .eq('id', reportedUserId)
       .single();
 
@@ -103,24 +100,6 @@ export async function POST(req: NextRequest) {
       blocker_id: profile.id,
       blocked_id: reportedUserId,
     } as never);
-
-    // Bridge report into moderation queue for admin review (non-blocking).
-    // Include the reported user's avatar URL so moderators can act on it directly.
-    const reportedPhotoUrl =
-      (reportedProfile as { photo_url?: string | null }).photo_url ?? undefined;
-    try {
-      await addToModerationQueue({
-        contentType: 'profile',
-        contentId: reportedUserId,
-        userId: reportedUserId,
-        contentSnapshot: `Report reason: ${reason}${description ? ` — ${description}` : ''}`,
-        imageUrl: reportedPhotoUrl || undefined,
-        reason: 'user_report',
-        reportId: report?.id as string | undefined,
-      });
-    } catch (err) {
-      console.error('Failed to add report to moderation queue:', err);
-    }
 
     return NextResponse.json({
       success: true,

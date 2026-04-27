@@ -7,6 +7,7 @@ import { checkRateLimit } from "@/lib/security/rateLimit";
 import { notifyMeetingRequest } from "@/lib/notifications/notification-service";
 import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
 import { isLiveDatabaseMode } from "@/lib/supabase/data-mode";
+import { enrichProfileRowsWithResolvedPhotoUrl } from "@/lib/profile/profile-photo-url";
 
 // Helper to get user profile by ID
 function getUserById(userId: string): PublicUser | null {
@@ -57,7 +58,7 @@ async function getUserFromSupabase(userId: string): Promise<PublicUser | null> {
   if (isUuid) {
     const result = await supabaseAdmin
       .from('user_profiles')
-      .select('id, name, title, company, photo_url, location, questionnaire_completed')
+      .select('id, user_id, name, title, company, photo_url, location, questionnaire_completed')
       .eq('id', userId)
       .maybeSingle();
     if (result.data) data = result.data;
@@ -67,7 +68,7 @@ async function getUserFromSupabase(userId: string): Promise<PublicUser | null> {
   if (!data) {
     const nameResult = await supabaseAdmin
       .from('user_profiles')
-      .select('id, name, title, company, photo_url, location, questionnaire_completed')
+      .select('id, user_id, name, title, company, photo_url, location, questionnaire_completed')
       .ilike('name', userId)
       .maybeSingle();
     
@@ -94,7 +95,7 @@ async function getUserFromSupabase(userId: string): Promise<PublicUser | null> {
   if (!data) {
     const emailResult = await supabaseAdmin
       .from('user_profiles')
-      .select('id, name, title, company, photo_url, location, questionnaire_completed')
+      .select('id, user_id, name, title, company, photo_url, location, questionnaire_completed')
       .ilike('email', `${userId}@%`)
       .maybeSingle();
     
@@ -104,10 +105,10 @@ async function getUserFromSupabase(userId: string): Promise<PublicUser | null> {
   }
   
   if (!data) return null;
-  
-  // Type assertion for Supabase response
+
   const row = data as {
     id: string;
+    user_id?: string | null;
     name: string;
     title?: string;
     company?: string;
@@ -115,17 +116,19 @@ async function getUserFromSupabase(userId: string): Promise<PublicUser | null> {
     location?: string;
     questionnaire_completed?: boolean;
   };
-  
+
+  const [resolved] = await enrichProfileRowsWithResolvedPhotoUrl(supabaseAdmin, [row]);
+
   return {
-    id: row.id,
+    id: resolved.id,
     profile: {
-      name: row.name,
-      title: row.title || '',
-      company: row.company,
-      photoUrl: row.photo_url,
-      location: row.location,
+      name: resolved.name,
+      title: resolved.title || "",
+      company: resolved.company,
+      photoUrl: resolved.photo_url,
+      location: resolved.location,
     },
-    questionnaireCompleted: row.questionnaire_completed || false,
+    questionnaireCompleted: resolved.questionnaire_completed || false,
   };
 }
 

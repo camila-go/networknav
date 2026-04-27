@@ -556,10 +556,10 @@ export const POINT_VALUES: Record<ActivityType, number> = {
 };
 
 // ============================================
-// Moderation Types
+// Moderation (gallery photos only)
 // ============================================
 
-export type ModerationContentType = "post" | "reply" | "message" | "profile" | "photo";
+export type ModerationContentType = "photo";
 export type ModerationReason = "auto_flagged" | "user_report" | "manual_review";
 export type ModerationStatus = "pending" | "approved" | "rejected" | "deleted";
 

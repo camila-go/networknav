@@ -13,6 +13,7 @@ import { users, questionnaireResponses, userMatches } from "@/lib/stores";
 import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
 import { isLiveDatabaseMode } from "@/lib/supabase/data-mode";
 import { normalizeCompany } from "@/lib/company/normalize";
+import { enrichProfileRowsWithResolvedPhotoUrl } from "@/lib/profile/profile-photo-url";
 import type { Match, QuestionnaireData } from "@/types";
 
 export async function GET(request: NextRequest) {
@@ -276,13 +277,18 @@ async function generateMatchesFromSupabase(currentUserId: string, currentUserEma
       return [];
     }
 
+    const profilesWithPhotos = await enrichProfileRowsWithResolvedPhotoUrl(
+      supabaseAdmin,
+      filteredProfiles
+    );
+
     // Log for debugging
     console.log(`Generating matches for user: ${currentUserId} (email: ${currentUserEmail})`);
     console.log(`Filtered ${typedProfiles.length} profiles down to ${filteredProfiles.length}`);
 
     const now = new Date();
 
-    const buildRows: MatchBuildRow[] = filteredProfiles.map((profile) => {
+    const buildRows: MatchBuildRow[] = profilesWithPhotos.map((profile) => {
       const candidateHasQuestionnaire = hasUsableQuestionnaire(profile.questionnaire_data);
       const candidateResponses = (profile.questionnaire_data ?? {}) as Partial<QuestionnaireData>;
       const profileCompany = normalizeCompany(profile.company);

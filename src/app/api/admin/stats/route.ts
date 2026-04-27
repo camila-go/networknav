@@ -20,11 +20,12 @@ export async function GET() {
         .select("*", { count: "exact", head: true });
       if (userCount !== null) totalUsers = userCount;
 
-      // Pending moderation
+      // Pending gallery photo moderation only
       const { count: modCount } = await supabaseAdmin
         .from("moderation_queue" as never)
         .select("*", { count: "exact", head: true })
-        .eq("status", "pending");
+        .eq("status", "pending")
+        .eq("content_type", "photo");
       if (modCount !== null) pendingModeration = modCount;
 
       // Reports this week
