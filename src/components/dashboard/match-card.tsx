@@ -56,7 +56,7 @@ interface MatchCardProps {
   match: MatchWithUser;
   onPass: (id: string) => void;
   viewerFirstName?: string;
-  /** Fixed-height carousel slides: middle content scrolls */
+  /** Fixed-height carousel slides: header and body scroll together above the footer */
   variant?: "grid" | "carousel";
 }
 
@@ -135,56 +135,53 @@ export function MatchCard({
         "hover:border-[#3a3a3a]",
         isCarousel
           ? "h-full min-h-0 flex-1 overflow-hidden"
-          : "min-h-[420px] h-full flex-1"
+          : "min-h-[420px] h-full flex-1 overflow-hidden"
       )}
     >
-      {/* Figma: chip top-right, then avatar row (rounded pill, not full-width cap) */}
-      <div className="shrink-0 px-4 pb-3 pt-[11px]">
-        <div className="flex w-full flex-col items-end gap-[11px]">
-          <MatchTypeChip type={type} />
-          <div className="flex w-full items-center gap-5">
-            <Link href={profileUrl} className="shrink-0">
-              <Avatar className="h-[65px] w-[65px] border-0 shadow-none ring-0 cursor-pointer transition-transform duration-300 ease-out hover:scale-[1.04] group-hover/matchcard:ring-2 group-hover/matchcard:ring-white/10">
-                <AvatarImage src={matchedUser.profile.photoUrl} />
-                <AvatarFallback
-                  className={cn(
-                    "text-base font-bold text-[#0d0d0d]",
-                    isHighAffinity ? MATCH_TYPE_CHIP_HA : MATCH_TYPE_CHIP_STRATEGIC
-                  )}
-                >
-                  {initials}
-                </AvatarFallback>
-              </Avatar>
-            </Link>
-            <div className="min-w-0 flex-1 text-left">
-              <Link href={profileUrl} className="text-white hover:opacity-90">
-                <h3 className="text-xl font-bold leading-tight text-white">
-                  {matchedUser.profile.name}
-                </h3>
+      <div
+        className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain touch-pan-y"
+        style={{ WebkitOverflowScrolling: "touch" }}
+      >
+        {/* Figma: chip top-right, then avatar row (rounded pill, not full-width cap) */}
+        <div className="shrink-0 px-4 pb-3 pt-[11px]">
+          <div className="flex w-full flex-col items-end gap-[11px]">
+            <MatchTypeChip type={type} />
+            <div className="flex w-full items-center gap-5">
+              <Link href={profileUrl} className="shrink-0">
+                <Avatar className="h-[65px] w-[65px] border-0 shadow-none ring-0 cursor-pointer transition-transform duration-300 ease-out hover:scale-[1.04] group-hover/matchcard:ring-2 group-hover/matchcard:ring-white/10">
+                  <AvatarImage src={matchedUser.profile.photoUrl} />
+                  <AvatarFallback
+                    className={cn(
+                      "text-base font-bold text-[#0d0d0d]",
+                      isHighAffinity ? MATCH_TYPE_CHIP_HA : MATCH_TYPE_CHIP_STRATEGIC
+                    )}
+                  >
+                    {initials}
+                  </AvatarFallback>
+                </Avatar>
               </Link>
-              {teamPositionLine && (
-                <p className="mt-1 text-base font-normal leading-snug text-white">
-                  {teamPositionLine}
-                </p>
-              )}
-              {matchedUser.profile.company && (
-                <p className="mt-[5px] text-xs font-normal uppercase tracking-normal text-white">
-                  {matchedUser.profile.company}
-                </p>
-              )}
+              <div className="min-w-0 flex-1 text-left">
+                <Link href={profileUrl} className="text-white hover:opacity-90">
+                  <h3 className="text-xl font-bold leading-tight text-white">
+                    {matchedUser.profile.name}
+                  </h3>
+                </Link>
+                {teamPositionLine && (
+                  <p className="mt-1 text-base font-normal leading-snug text-white">
+                    {teamPositionLine}
+                  </p>
+                )}
+                {matchedUser.profile.company && (
+                  <p className="mt-[5px] text-xs font-normal uppercase tracking-normal text-white">
+                    {matchedUser.profile.company}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div
-        className={cn(
-          "flex min-h-0 flex-1 flex-col gap-[13px] px-4 pb-4",
-          isCarousel &&
-            "touch-pan-y overflow-y-auto overscroll-contain"
-        )}
-        style={isCarousel ? { WebkitOverflowScrolling: "touch" } : undefined}
-      >
+        <div className="flex min-h-0 flex-1 flex-col gap-[13px] px-4 pb-4">
         {/* Why connect */}
         {topCommonality && (
           <div>
@@ -248,6 +245,7 @@ export function MatchCard({
             </span>
           </div>
         </div>
+      </div>
       </div>
 
       <div className="shrink-0 bg-[#191919] px-3 sm:px-4">

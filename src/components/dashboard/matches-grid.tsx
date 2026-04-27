@@ -238,46 +238,55 @@ export function MatchesGrid({ onMatchesLoaded }: MatchesGridProps = {}) {
       )}
 
       <Tabs defaultValue="all" className="min-w-0 w-full">
-        <TabsList className="mb-6 grid w-full grid-cols-3 border border-white/10 bg-white/5">
-        <TabsTrigger value="all" className="press data-[state=active]:bg-white/10 data-[state=active]:text-white data-[state=active]:shadow-[inset_0_-2px_0_0_rgba(34,211,238,0.55)] text-white/60 text-xs sm:text-sm px-2 sm:px-4 transition-all duration-200 ease-out">
-          <span className="hidden sm:inline">All matches</span>
-          <span className="sm:hidden">All</span>
-          <span className="ml-1">({matches.filter(m => !m.passed).length})</span>
-        </TabsTrigger>
-        <TabsTrigger value="high-affinity" className="press data-[state=active]:bg-white/10 data-[state=active]:text-white data-[state=active]:shadow-[inset_0_-2px_0_0_rgba(34,211,238,0.55)] text-white/60 text-xs sm:text-sm px-2 sm:px-4 transition-all duration-200 ease-out">
-          <span className="hidden sm:inline">High-affinity</span>
-          <span className="sm:hidden">High</span>
-          <span className="ml-1">({highAffinityMatches.length})</span>
-        </TabsTrigger>
-        <TabsTrigger value="strategic" className="press data-[state=active]:bg-white/10 data-[state=active]:text-white data-[state=active]:shadow-[inset_0_-2px_0_0_rgba(237,126,53,0.6)] text-white/60 text-xs sm:text-sm px-2 sm:px-4 transition-all duration-200 ease-out">
-          Strategic ({strategicMatches.length})
-        </TabsTrigger>
-      </TabsList>
+        <div className="mb-4 grid grid-cols-1 gap-2 rounded-xl bg-white/5 p-3 md:grid-cols-2 md:gap-3">
+          <div className="flex items-start gap-2">
+            <span
+              aria-hidden
+              className="mt-1 h-2 w-2 flex-shrink-0 rounded-full"
+              style={{ backgroundColor: "#1b8ea6" }}
+            />
+            <p className="text-xs leading-snug">
+              <span className="font-semibold text-white">High-affinity</span>
+              <span className="text-white/60"> — Leaders who share your goals, challenges, and interests. Great for validating ideas and finding common ground.</span>
+            </p>
+          </div>
+          <div className="flex items-start gap-2">
+            <span
+              aria-hidden
+              className="mt-1 h-2 w-2 flex-shrink-0 rounded-full"
+              style={{ backgroundColor: "#ed7e35" }}
+            />
+            <p className="text-xs leading-snug">
+              <span className="font-semibold text-white">Strategic</span>
+              <span className="text-white/60"> — Leaders with complementary expertise. Great for learning, growth, and fresh perspectives.</span>
+            </p>
+          </div>
+        </div>
 
-      <div className="mb-4 grid grid-cols-1 md:grid-cols-2 gap-2 rounded-lg border border-white/10 bg-white/5 p-3">
-        <div className="flex items-start gap-2">
-          <span
-            aria-hidden
-            className="mt-1 h-2 w-2 flex-shrink-0 rounded-full"
-            style={{ backgroundColor: "#1b8ea6" }}
-          />
-          <p className="text-xs leading-snug">
-            <span className="font-semibold text-white">High-affinity</span>
-            <span className="text-white/60"> — Leaders who share your goals, challenges, and interests. Great for validating ideas and finding common ground.</span>
-          </p>
-        </div>
-        <div className="flex items-start gap-2">
-          <span
-            aria-hidden
-            className="mt-1 h-2 w-2 flex-shrink-0 rounded-full"
-            style={{ backgroundColor: "#ed7e35" }}
-          />
-          <p className="text-xs leading-snug">
-            <span className="font-semibold text-white">Strategic</span>
-            <span className="text-white/60"> — Leaders with complementary expertise. Great for learning, growth, and fresh perspectives.</span>
-          </p>
-        </div>
-      </div>
+        <TabsList className="mb-6 grid w-full grid-cols-3 rounded-xl bg-white/5 p-1">
+          <TabsTrigger
+            value="all"
+            className="press border-0 bg-transparent shadow-none ring-0 text-white/60 text-xs sm:text-sm px-2 sm:px-4 transition-all duration-200 ease-out data-[state=active]:bg-white/10 data-[state=active]:text-white data-[state=active]:shadow-[inset_0_-2px_0_0_rgba(34,211,238,0.55)] data-[state=inactive]:shadow-none"
+          >
+            <span className="hidden sm:inline">All matches</span>
+            <span className="sm:hidden">All</span>
+            <span className="ml-1">({matches.filter((m) => !m.passed).length})</span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="high-affinity"
+            className="press border-0 bg-transparent shadow-none ring-0 text-white/60 text-xs sm:text-sm px-2 sm:px-4 transition-all duration-200 ease-out data-[state=active]:bg-white/10 data-[state=active]:text-white data-[state=active]:shadow-[inset_0_-2px_0_0_rgba(34,211,238,0.55)] data-[state=inactive]:shadow-none"
+          >
+            <span className="hidden sm:inline">High-affinity</span>
+            <span className="sm:hidden">High</span>
+            <span className="ml-1">({highAffinityMatches.length})</span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="strategic"
+            className="press border-0 bg-transparent shadow-none ring-0 text-white/60 text-xs sm:text-sm px-2 sm:px-4 transition-all duration-200 ease-out data-[state=active]:bg-white/10 data-[state=active]:text-white data-[state=active]:shadow-[inset_0_-2px_0_0_rgba(237,126,53,0.6)] data-[state=inactive]:shadow-none"
+          >
+            Strategic ({strategicMatches.length})
+          </TabsTrigger>
+        </TabsList>
 
       <TabsContent value="all" className="min-w-0">
         <MatchGrid

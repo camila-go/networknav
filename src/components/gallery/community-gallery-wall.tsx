@@ -249,23 +249,29 @@ function ThemeCarouselCardView({
         kenClass={ken}
       />
       <div
-        className="pointer-events-none absolute inset-0 z-[2] bg-gradient-to-t from-black/90 via-black/25 to-transparent"
+        className="pointer-events-none absolute inset-0 z-[2] bg-gradient-to-t from-black via-black/92 via-black/35 to-transparent"
         aria-hidden
       />
-      <span
-        className="pointer-events-none absolute right-2.5 top-2.5 z-20 rounded-lg px-2.5 py-1 text-[11px] font-semibold lowercase tracking-wide text-white shadow-md sm:right-3 sm:top-3 sm:px-3 sm:text-xs md:text-sm"
-        style={{ backgroundColor: tagBg }}
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 px-[clamp(1rem,4.5vw,1.75rem)] pt-[max(1rem,calc(0.75rem+env(safe-area-inset-top,0px)))] sm:px-6 sm:pt-5 md:px-7">
+        <div className="flex justify-end">
+          <span
+            className="rounded-lg px-3 py-1.5 text-[11px] font-semibold lowercase tracking-wide text-white shadow-md sm:px-3.5 sm:py-1.5 sm:text-xs md:text-sm"
+            style={{ backgroundColor: tagBg }}
+          >
+            {theme.tag}
+          </span>
+        </div>
+      </div>
+      <div
+        className="pointer-events-none absolute inset-x-0 bottom-0 z-[3] max-w-full px-[clamp(1rem,4.5vw,1.75rem)] pb-[max(1.25rem,calc(1rem+env(safe-area-inset-bottom,0px)))] pt-10 text-left sm:px-6 sm:pb-7 sm:pt-12 md:px-7 md:pb-8 md:pt-14"
       >
-        {theme.tag}
-      </span>
-      <div className="pointer-events-none absolute bottom-0 left-0 z-[3] p-4 sm:p-5 md:p-6">
         <p className="text-3xl font-bold leading-none tracking-tight text-white sm:text-4xl md:text-5xl">
           {percent}%
         </p>
-        <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-white/90 sm:text-sm md:text-base">
+        <p className="mt-1.5 text-xs font-semibold uppercase tracking-wide text-white/90 sm:mt-2 sm:text-sm md:text-base">
           of attendees
         </p>
-        <p className="mt-2 max-w-[14rem] text-[11px] leading-snug text-white/55 sm:text-xs">
+        <p className="mt-2.5 max-w-[min(100%,18rem)] text-pretty text-[11px] leading-relaxed text-white/70 sm:mt-3 sm:max-w-[20rem] sm:text-xs sm:leading-snug">
           {theme.count} {theme.count === 1 ? "person" : "people"} shared this
           activity photo · {denominator} in cohort
         </p>

@@ -110,52 +110,49 @@ export function AttendeeCard({
           : "min-h-[420px] h-full flex-1"
       )}
     >
-      <div className="shrink-0 px-4 pb-3 pt-[11px]">
-        <div className="flex w-full flex-col items-end gap-[11px]">
-          <MatchTypeChip type={matchType} />
-          <div className="flex w-full items-center gap-5">
-            <Link href={profileUrl} className="shrink-0">
-              <Avatar className="h-[65px] w-[65px] border-0 shadow-none ring-0 cursor-pointer transition-opacity hover:opacity-95">
-                <AvatarImage src={user.profile.photoUrl} />
-                <AvatarFallback
-                  className={cn(
-                    "text-base font-bold text-[#0d0d0d]",
-                    isHighAffinity ? MATCH_TYPE_CHIP_HA : MATCH_TYPE_CHIP_STRATEGIC
-                  )}
-                >
-                  {initials}
-                </AvatarFallback>
-              </Avatar>
-            </Link>
-            <div className="min-w-0 flex-1 text-left">
-              <Link href={profileUrl} className="text-white hover:opacity-90">
-                <h3 className="text-xl font-bold leading-tight text-white">
-                  {user.profile.name}
-                </h3>
+      <div
+        className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain touch-pan-y"
+        style={{ WebkitOverflowScrolling: "touch" }}
+      >
+        <div className="shrink-0 px-4 pb-3 pt-[11px]">
+          <div className="flex w-full flex-col items-end gap-[11px]">
+            <MatchTypeChip type={matchType} />
+            <div className="flex w-full items-center gap-5">
+              <Link href={profileUrl} className="shrink-0">
+                <Avatar className="h-[65px] w-[65px] border-0 shadow-none ring-0 cursor-pointer transition-opacity hover:opacity-95">
+                  <AvatarImage src={user.profile.photoUrl} />
+                  <AvatarFallback
+                    className={cn(
+                      "text-base font-bold text-[#0d0d0d]",
+                      isHighAffinity ? MATCH_TYPE_CHIP_HA : MATCH_TYPE_CHIP_STRATEGIC
+                    )}
+                  >
+                    {initials}
+                  </AvatarFallback>
+                </Avatar>
               </Link>
-              {teamPositionLine && (
-                <p className="mt-1 text-base font-normal leading-snug text-white">
-                  {teamPositionLine}
-                </p>
-              )}
-              {user.profile.company && (
-                <p className="mt-[5px] text-xs font-normal uppercase tracking-normal text-white">
-                  {user.profile.company}
-                </p>
-              )}
+              <div className="min-w-0 flex-1 text-left">
+                <Link href={profileUrl} className="text-white hover:opacity-90">
+                  <h3 className="text-xl font-bold leading-tight text-white">
+                    {user.profile.name}
+                  </h3>
+                </Link>
+                {teamPositionLine && (
+                  <p className="mt-1 text-base font-normal leading-snug text-white">
+                    {teamPositionLine}
+                  </p>
+                )}
+                {user.profile.company && (
+                  <p className="mt-[5px] text-xs font-normal uppercase tracking-normal text-white">
+                    {user.profile.company}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div
-        className={cn(
-          "flex min-h-0 flex-1 flex-col gap-[13px] px-4 pb-4",
-          isCarousel &&
-            "touch-pan-y overflow-y-auto overscroll-contain"
-        )}
-        style={isCarousel ? { WebkitOverflowScrolling: "touch" } : undefined}
-      >
+        <div className="flex min-h-0 flex-1 flex-col gap-[13px] px-4 pb-4">
         {searchMatchLabels && searchMatchLabels.length > 0 && (
           <div className="w-full rounded-[12px] bg-[#141e21] p-3">
             <div className="flex w-full min-w-0 flex-col items-stretch gap-1">
@@ -252,6 +249,7 @@ export function AttendeeCard({
             </span>
           </div>
         </div>
+      </div>
       </div>
 
       <div className="shrink-0 bg-[#191919] px-4">

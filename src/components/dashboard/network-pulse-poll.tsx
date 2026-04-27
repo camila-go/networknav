@@ -254,13 +254,11 @@ export function NetworkPulseSection() {
 function PulseMajorityBar({ majorityLabel }: { majorityLabel: string }) {
   return (
     <div className="flex w-full flex-wrap items-center justify-center gap-2 rounded-xl border border-[#62d0ea]/30 bg-[#070d10] px-4 py-3 sm:gap-3 sm:px-5 sm:py-3.5">
-      <span className="text-xs font-bold uppercase tracking-[0.12em] text-white sm:text-sm">
-        MAJORITY
-      </span>
+      <span className="text-xs font-semibold text-white sm:text-sm">Majority</span>
       <span className="hidden text-white/35 sm:inline" aria-hidden>
         :
       </span>
-      <span className="rounded-full bg-[#62d0ea]/22 px-3 py-1 text-center text-[11px] font-bold uppercase leading-snug tracking-wide text-[#62d0ea] ring-1 ring-inset ring-[#62d0ea]/35 sm:text-xs">
+      <span className="rounded-full bg-[#62d0ea]/22 px-3 py-1 text-center text-[11px] font-medium leading-snug text-[#62d0ea] ring-1 ring-inset ring-[#62d0ea]/35 sm:text-xs">
         {majorityLabel}
       </span>
     </div>
@@ -288,20 +286,24 @@ function PulseQuestionCard({
   return (
     <article
       data-pulse-slide
-      className="box-border max-w-none shrink-0 grow-0 snap-center basis-full"
+      className="box-border flex max-h-[min(520px,72dvh)] min-h-0 max-w-none shrink-0 grow-0 snap-center basis-full flex-col"
       aria-label={poll.question}
     >
-      <div className="rounded-xl border border-[#62d0ea]/22 bg-[#0d0d0d] px-3 py-4 shadow-inner shadow-black/20 md:px-5 md:py-7 lg:px-[34px] lg:py-8">
-        <div className="flex w-full flex-col gap-4 sm:gap-5 md:gap-[19px] lg:flex-row lg:items-center lg:justify-between lg:gap-8 xl:gap-10">
-          <h3 className="shrink-0 text-center text-base font-bold leading-snug text-[#62d0ea] lg:max-w-[42%] lg:text-left xl:max-w-[40%]">
-            {poll.question}
-          </h3>
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-[#62d0ea]/22 bg-[#0d0d0d] shadow-inner shadow-black/20">
+        <div
+          className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain touch-pan-y px-3 py-4 md:px-5 md:py-7 lg:px-[34px] lg:py-8"
+          style={{ WebkitOverflowScrolling: "touch" }}
+        >
+          <div className="flex w-full flex-col gap-4 sm:gap-5 md:gap-[19px] lg:flex-row lg:items-center lg:justify-between lg:gap-8 xl:gap-10">
+            <h3 className="shrink-0 text-center text-base font-bold leading-snug text-[#62d0ea] lg:max-w-[42%] lg:text-left xl:max-w-[40%]">
+              {poll.question}
+            </h3>
 
-          <div
-            className="flex w-full min-w-0 flex-col gap-2.5 sm:gap-3 lg:max-w-[582px] lg:flex-1 lg:flex-row lg:items-center lg:justify-end lg:gap-2.5"
-            role="group"
-            aria-label="Choices"
-          >
+            <div
+              className="flex w-full min-w-0 flex-col gap-2.5 sm:gap-3 lg:max-w-[582px] lg:flex-1 lg:flex-row lg:items-center lg:justify-end lg:gap-2.5"
+              role="group"
+              aria-label="Choices"
+            >
             {poll.options.map((opt) => {
               const selected = userVote === opt.id;
               const pct = showResults ? (percentages[opt.id] ?? 0) : null;
@@ -327,7 +329,7 @@ function PulseQuestionCard({
                       : undefined
                   }
                   className={cn(
-                    "relative isolate flex min-h-[48px] w-full min-w-0 flex-1 touch-pan-y items-center justify-center overflow-hidden rounded-xl px-3 py-2 text-base font-medium transition-[border-color,box-shadow,background-color] duration-200 sm:px-4 sm:text-[17px] lg:px-6 lg:text-lg xl:px-8",
+                    "relative isolate flex min-h-[48px] w-full min-w-0 flex-1 items-center justify-center overflow-hidden rounded-xl px-3 py-2 text-base font-medium transition-[border-color,box-shadow,background-color] duration-200 sm:px-4 sm:text-[17px] lg:px-6 lg:text-lg xl:px-8",
                     showResults && "xl:px-6",
                     !showResults && "xl:px-[50px] xl:text-xl",
                     showResults
@@ -353,7 +355,7 @@ function PulseQuestionCard({
                 >
                   <span
                     className={cn(
-                      "relative z-[1] max-w-full text-center tabular-nums",
+                      "relative z-[1] max-w-full text-center normal-case tabular-nums",
                       showResults
                         ? cn(
                             "whitespace-nowrap text-sm leading-none tracking-tight text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.72)] sm:text-[15px] md:text-base lg:text-[17px]",
@@ -367,14 +369,15 @@ function PulseQuestionCard({
                 </button>
               );
             })}
+            </div>
           </div>
-        </div>
 
-        {showResults ? (
-          <div className="mt-4 w-full sm:mt-5">
-            <PulseMajorityBar majorityLabel={majorityLabel} />
-          </div>
-        ) : null}
+          {showResults ? (
+            <div className="mt-4 w-full sm:mt-5">
+              <PulseMajorityBar majorityLabel={majorityLabel} />
+            </div>
+          ) : null}
+        </div>
       </div>
     </article>
   );

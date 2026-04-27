@@ -21,25 +21,25 @@ export const NETWORK_PULSE_POLLS: readonly NetworkPulsePollDefinition[] = [
     pollId: "disney_marvel",
     question: "Disney or Marvel or neither?",
     options: [
-      { id: "disney", label: "Disney", majorityTag: "DISNEY FANS" },
-      { id: "marvel", label: "Marvel", majorityTag: "MARVEL FANS" },
-      { id: "neither", label: "Neither", majorityTag: "NEITHER / OTHER" },
+      { id: "disney", label: "Disney", majorityTag: "Disney fans" },
+      { id: "marvel", label: "Marvel", majorityTag: "Marvel fans" },
+      { id: "neither", label: "Neither", majorityTag: "Neither or other" },
     ],
   },
   {
     pollId: "audio_pref",
     question: "Podcasts or music?",
     options: [
-      { id: "podcasts", label: "Podcasts", majorityTag: "PODCASTS" },
-      { id: "music", label: "Music", majorityTag: "MUSIC" },
+      { id: "podcasts", label: "Podcasts", majorityTag: "Podcasts" },
+      { id: "music", label: "Music", majorityTag: "Music" },
     ],
   },
   {
     pollId: "communication_style",
     question: "Text or call?",
     options: [
-      { id: "text", label: "Text", majorityTag: "TEXT" },
-      { id: "call", label: "Call", majorityTag: "CALL" },
+      { id: "text", label: "Text", majorityTag: "Text" },
+      { id: "call", label: "Call", majorityTag: "Call" },
     ],
   },
 ] as const;

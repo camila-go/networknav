@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useId } from "react";
 import Image from "next/image";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -58,6 +58,7 @@ export function ModerationQueue() {
   const [contentTypeFilter, setContentTypeFilter] = useState<string>("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const idPrefix = useId();
 
   const pageSize = 20;
 
@@ -152,87 +153,117 @@ export function ModerationQueue() {
   }
 
   const totalPages = Math.ceil(total / pageSize);
+  const selectAllId = `${idPrefix}-select-all`;
+  const tabTriggerClass =
+    "press border-0 bg-transparent shadow-none ring-0 text-white/60 px-3 text-sm transition-all duration-200 ease-out data-[state=active]:bg-white/10 data-[state=active]:text-white data-[state=active]:shadow-[inset_0_-2px_0_0_rgba(34,211,238,0.55)] data-[state=inactive]:shadow-none";
+  const ghostActionFocus =
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black";
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Content moderation</h1>
+    <section
+      aria-labelledby="moderation-heading"
+      className="min-w-0 w-full max-w-full"
+    >
+      <div className="mb-6 flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h1
+          id="moderation-heading"
+          className="font-display text-3xl font-bold text-white min-w-0"
+        >
+          Content moderation
+        </h1>
         {total > 0 && statusFilter === "pending" && (
-          <Badge className="bg-amber-500/10 text-amber-400 text-sm">
+          <Badge className="w-fit shrink-0 bg-amber-500/10 text-amber-400 text-sm">
             {total} pending
           </Badge>
         )}
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-3 mb-4">
-        <Tabs
-          value={statusFilter}
-          onValueChange={(v) => { setStatusFilter(v); setPage(1); setSelected(new Set()); }}
-        >
-          <TabsList className="bg-white/5 border border-white/10">
-            <TabsTrigger value="pending" className="data-[state=active]:bg-white/10 data-[state=active]:text-white text-white/50">
-              Pending
-            </TabsTrigger>
-            <TabsTrigger value="all" className="data-[state=active]:bg-white/10 data-[state=active]:text-white text-white/50">
-              All
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
+      <div className="mb-4 flex min-w-0 flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+          <Tabs
+            value={statusFilter}
+            onValueChange={(v) => {
+              setStatusFilter(v);
+              setPage(1);
+              setSelected(new Set());
+            }}
+          >
+            <TabsList className="inline-flex h-auto rounded-xl bg-white/5 p-1">
+              <TabsTrigger value="pending" className={tabTriggerClass}>
+                Pending
+              </TabsTrigger>
+              <TabsTrigger value="all" className={tabTriggerClass}>
+                All
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
 
-        <Select
-          value={contentTypeFilter || "all_types"}
-          onValueChange={(v) => { setContentTypeFilter(v === "all_types" ? "" : v); setPage(1); }}
-        >
-          <SelectTrigger className="w-36 bg-white/5 border-white/10 text-white">
-            <SelectValue placeholder="All types" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all_types">All types</SelectItem>
-            <SelectItem value="post">Posts</SelectItem>
-            <SelectItem value="reply">Replies</SelectItem>
-            <SelectItem value="message">Messages</SelectItem>
-            <SelectItem value="profile">Profiles</SelectItem>
-            <SelectItem value="photo">Photos</SelectItem>
-          </SelectContent>
-        </Select>
+          <Select
+            value={contentTypeFilter || "all_types"}
+            onValueChange={(v) => {
+              setContentTypeFilter(v === "all_types" ? "" : v);
+              setPage(1);
+            }}
+          >
+            <SelectTrigger className="h-11 w-full min-w-0 bg-white/5 border-white/10 text-white sm:h-9 sm:w-36">
+              <SelectValue placeholder="All types" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all_types">All types</SelectItem>
+              <SelectItem value="post">Posts</SelectItem>
+              <SelectItem value="reply">Replies</SelectItem>
+              <SelectItem value="message">Messages</SelectItem>
+              <SelectItem value="profile">Profiles</SelectItem>
+              <SelectItem value="photo">Photos</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
         {/* Bulk actions */}
         {selected.size > 0 && (
-          <div className="flex items-center gap-2 ml-auto">
-            <span className="text-sm text-white/50">{selected.size} selected</span>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="text-green-400 hover:text-green-300 hover:bg-green-500/10"
-              onClick={() => handleBulkAction("approved")}
-              disabled={actionLoading === "bulk"}
-            >
-              <CheckCircle className="h-4 w-4 mr-1" />
-              Approve All
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
-              onClick={() => handleBulkAction("deleted")}
-              disabled={actionLoading === "bulk"}
-            >
-              <Trash2 className="h-4 w-4 mr-1" />
-              Remove All
-            </Button>
+          <div className="flex w-full min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center lg:w-auto lg:justify-end">
+            <span className="text-sm text-white/60">{selected.size} selected</span>
+            <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:w-auto">
+              <Button
+                size="sm"
+                variant="ghost"
+                className={cn(
+                  ghostActionFocus,
+                  "min-h-11 w-full justify-center text-green-300 hover:bg-green-500/10 hover:text-green-200 sm:min-h-9 sm:w-auto"
+                )}
+                onClick={() => handleBulkAction("approved")}
+                disabled={actionLoading === "bulk"}
+              >
+                <CheckCircle className="h-4 w-4 mr-1 shrink-0" aria-hidden />
+                Approve All
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className={cn(
+                  ghostActionFocus,
+                  "min-h-11 w-full justify-center text-red-300 hover:bg-red-500/10 hover:text-red-200 sm:min-h-9 sm:w-auto"
+                )}
+                onClick={() => handleBulkAction("deleted")}
+                disabled={actionLoading === "bulk"}
+              >
+                <Trash2 className="h-4 w-4 mr-1 shrink-0" aria-hidden />
+                Remove All
+              </Button>
+            </div>
           </div>
         )}
       </div>
 
       {/* Items */}
       {loading ? (
-        <div className="text-center py-12 text-white/40">Loading...</div>
+        <div className="py-12 text-center text-white/50">Loading...</div>
       ) : items.length === 0 ? (
         <Card className="bg-white/5 border-white/10 p-12 text-center">
-          <CheckCircle className="h-12 w-12 mx-auto text-green-400/50 mb-3" />
-          <p className="text-white/60 text-lg">Queue is clear</p>
-          <p className="text-white/30 text-sm mt-1">No items to review</p>
+          <CheckCircle className="mx-auto mb-3 h-12 w-12 text-green-400/50" aria-hidden />
+          <p className="text-lg text-white/60">Queue is clear</p>
+          <p className="mt-1 text-sm text-white/45">No items to review</p>
         </Card>
       ) : (
         <div className="space-y-3">
@@ -240,12 +271,18 @@ export function ModerationQueue() {
           {statusFilter === "pending" && items.length > 1 && (
             <div className="flex items-center gap-2 px-1">
               <input
+                id={selectAllId}
                 type="checkbox"
                 checked={selected.size === items.length}
                 onChange={toggleSelectAll}
-                className="accent-cyan-500"
+                className="size-4 shrink-0 accent-cyan-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
               />
-              <span className="text-xs text-white/40">Select all on this page</span>
+              <label
+                htmlFor={selectAllId}
+                className="cursor-pointer text-xs text-white/50"
+              >
+                Select all on this page
+              </label>
             </div>
           )}
 
@@ -262,108 +299,127 @@ export function ModerationQueue() {
                   isSelected && "border-cyan-500/40 bg-cyan-500/5"
                 )}
               >
-                <div className="flex items-start gap-3">
-                  {/* Checkbox for pending items */}
-                  {isPending && (
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      onChange={() => toggleSelect(item.id)}
-                      className="accent-cyan-500 mt-1"
-                    />
-                  )}
+                <div className="flex min-w-0 flex-col gap-3 md:flex-row md:items-start md:gap-3">
+                  <div className="flex min-w-0 flex-1 gap-3">
+                    {/* Checkbox for pending items */}
+                    {isPending && (
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleSelect(item.id)}
+                        aria-label={`Select moderation item for ${item.userName}`}
+                        className="mt-1 size-4 shrink-0 accent-cyan-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+                      />
+                    )}
 
-                  {/* User avatar */}
-                  <div className="h-10 w-10 rounded-full bg-white/10 flex items-center justify-center text-sm font-medium shrink-0">
-                    {item.userName.charAt(0).toUpperCase()}
-                  </div>
-
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <a
-                        href={`/user/${item.userId}`}
-                        className="font-medium text-white hover:text-cyan-400 transition-colors"
-                      >
-                        {item.userName}
-                      </a>
-                      <Badge className={cn("text-xs capitalize", CONTENT_TYPE_COLORS[item.contentType])}>
-                        <Icon className="h-3 w-3 mr-1" />
-                        {item.contentType}
-                      </Badge>
-                      <Badge className={cn("text-xs", REASON_COLORS[item.reason])}>
-                        {item.reason === "auto_flagged" && <AlertTriangle className="h-3 w-3 mr-1" />}
-                        {item.reason.replace("_", " ")}
-                      </Badge>
-                      <span className="text-xs text-white/30">
-                        {new Date(item.createdAt).toLocaleString()}
-                      </span>
+                    {/* User avatar */}
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-sm font-medium">
+                      {item.userName.charAt(0).toUpperCase()}
                     </div>
 
-                    {/* Content snapshot */}
-                    <div className="bg-white/[0.03] rounded-lg p-3 mt-2">
-                      <p className="text-sm text-white/70 whitespace-pre-wrap break-words">
-                        {item.contentSnapshot || "(no text content)"}
-                      </p>
-                      {item.imageUrl && (
-                        <div className="mt-2">
-                          <Image
-                            src={item.imageUrl}
-                            alt="Flagged content"
-                            width={800}
-                            height={600}
-                            sizes="(max-width: 768px) 100vw, 400px"
-                            className="max-h-48 w-auto rounded border border-white/10"
-                          />
+                    {/* Content */}
+                    <div className="min-w-0 flex-1">
+                      <div className="mb-1 flex flex-wrap items-center gap-2">
+                        <a
+                          href={`/user/${item.userId}`}
+                          className="font-medium text-white transition-colors hover:text-cyan-400"
+                        >
+                          {item.userName}
+                        </a>
+                        <Badge
+                          className={cn(
+                            "text-xs capitalize",
+                            CONTENT_TYPE_COLORS[item.contentType]
+                          )}
+                        >
+                          <Icon className="mr-1 h-3 w-3" aria-hidden />
+                          {item.contentType}
+                        </Badge>
+                        <Badge className={cn("text-xs", REASON_COLORS[item.reason])}>
+                          {item.reason === "auto_flagged" && (
+                            <AlertTriangle className="mr-1 h-3 w-3" aria-hidden />
+                          )}
+                          {item.reason.replace("_", " ")}
+                        </Badge>
+                        <span className="text-xs text-white/45">
+                          {new Date(item.createdAt).toLocaleString()}
+                        </span>
+                      </div>
+
+                      {/* Content snapshot */}
+                      <div className="mt-2 rounded-lg bg-white/[0.03] p-3">
+                        <p className="whitespace-pre-wrap break-words text-sm text-white/70">
+                          {item.contentSnapshot || "(no text content)"}
+                        </p>
+                        {item.imageUrl && (
+                          <div className="mt-2">
+                            <Image
+                              src={item.imageUrl}
+                              alt={`Preview of reported ${item.contentType} for moderation review`}
+                              width={800}
+                              height={600}
+                              sizes="(max-width: 768px) 100vw, 400px"
+                              className="max-h-48 w-auto rounded border border-white/10"
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Reviewer info (for reviewed items) */}
+                      {item.status !== "pending" && (
+                        <div className="mt-2 text-xs text-white/45">
+                          <StatusBadge status={item.status as ModerationStatus} />
+                          {item.reviewerNotes && (
+                            <span className="ml-2">Note: {item.reviewerNotes}</span>
+                          )}
                         </div>
                       )}
                     </div>
-
-                    {/* Reviewer info (for reviewed items) */}
-                    {item.status !== "pending" && (
-                      <div className="mt-2 text-xs text-white/30">
-                        <StatusBadge status={item.status as ModerationStatus} />
-                        {item.reviewerNotes && (
-                          <span className="ml-2">Note: {item.reviewerNotes}</span>
-                        )}
-                      </div>
-                    )}
                   </div>
 
                   {/* Action buttons (only for pending) */}
                   {isPending && (
-                    <div className="flex items-center gap-1 shrink-0">
+                    <div className="flex w-full min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap md:w-auto md:shrink-0">
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="text-green-400 hover:text-green-300 hover:bg-green-500/10 h-9 px-3"
+                        className={cn(
+                          ghostActionFocus,
+                          "min-h-11 w-full justify-center px-3 text-green-300 hover:bg-green-500/10 hover:text-green-200 sm:min-h-9 sm:w-auto"
+                        )}
                         onClick={() => handleAction(item.id, "approved")}
                         disabled={actionLoading === item.id}
                         title="Approve (keep content)"
                       >
-                        <CheckCircle className="h-4 w-4 mr-1" />
+                        <CheckCircle className="mr-1 h-4 w-4 shrink-0" aria-hidden />
                         Approve
                       </Button>
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="text-red-400 hover:text-red-300 hover:bg-red-500/10 h-9 px-3"
+                        className={cn(
+                          ghostActionFocus,
+                          "min-h-11 w-full justify-center px-3 text-red-300 hover:bg-red-500/10 hover:text-red-200 sm:min-h-9 sm:w-auto"
+                        )}
                         onClick={() => handleAction(item.id, "deleted")}
                         disabled={actionLoading === item.id}
                         title="Remove (delete content)"
                       >
-                        <Trash2 className="h-4 w-4 mr-1" />
+                        <Trash2 className="mr-1 h-4 w-4 shrink-0" aria-hidden />
                         Remove
                       </Button>
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 h-9 px-3"
+                        className={cn(
+                          ghostActionFocus,
+                          "min-h-11 w-full justify-center px-3 text-amber-300 hover:bg-amber-500/10 hover:text-amber-200 sm:min-h-9 sm:w-auto"
+                        )}
                         onClick={() => handleAction(item.id, "rejected")}
                         disabled={actionLoading === item.id}
                         title="Warn (remove + send warning)"
                       >
-                        <XCircle className="h-4 w-4 mr-1" />
+                        <XCircle className="mr-1 h-4 w-4 shrink-0" aria-hidden />
                         Warn
                       </Button>
                     </div>
@@ -377,19 +433,22 @@ export function ModerationQueue() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between mt-4">
-          <p className="text-xs text-white/40">{total} items total</p>
-          <div className="flex gap-2">
+        <div className="mt-4 flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs text-white/50">{total} items total</p>
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               variant="ghost"
               size="sm"
               disabled={page <= 1}
               onClick={() => setPage((p) => p - 1)}
-              className="text-white/60"
+              className={cn(
+                ghostActionFocus,
+                "min-h-11 text-white/60 sm:min-h-9"
+              )}
             >
               Previous
             </Button>
-            <span className="text-sm text-white/40 flex items-center px-2">
+            <span className="flex min-w-[4rem] items-center justify-center px-2 text-sm text-white/50">
               {page} / {totalPages}
             </span>
             <Button
@@ -397,14 +456,17 @@ export function ModerationQueue() {
               size="sm"
               disabled={page >= totalPages}
               onClick={() => setPage((p) => p + 1)}
-              className="text-white/60"
+              className={cn(
+                ghostActionFocus,
+                "min-h-11 text-white/60 sm:min-h-9"
+              )}
             >
               Next
             </Button>
           </div>
         </div>
       )}
-    </div>
+    </section>
   );
 }
 
