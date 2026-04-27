@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
+import { getHorizontalCarouselStride } from "@/lib/horizontal-carousel";
 import {
   Network,
   Sparkles,
@@ -330,13 +331,13 @@ export function NetworkContainer() {
       <div className="flex items-center justify-center h-full bg-black">
         <div className="text-center">
           <Network className="h-16 w-16 text-white/20 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-white mb-2">No Network Data</h2>
+          <h2 className="text-xl font-semibold text-white mb-2">No network data</h2>
           <p className="text-white/60 mb-4">
             Complete your questionnaire to see your network map
           </p>
           <Link href="/onboarding">
             <Button>
-              Complete Questionnaire
+              Complete questionnaire
             </Button>
           </Link>
         </div>
@@ -353,7 +354,7 @@ export function NetworkContainer() {
           <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
             <div className="flex items-center gap-2">
               <Network className="h-5 w-5 text-cyan-400" />
-              <h1 className="text-base sm:text-lg font-semibold text-white">My Network</h1>
+              <h1 className="text-base sm:text-lg font-semibold text-white">My network</h1>
             </div>
 
             {/* Filter select */}
@@ -371,7 +372,7 @@ export function NetworkContainer() {
                 <SelectItem value="high-affinity" className="text-white hover:bg-white/10">
                   <span className="flex items-center gap-2">
                     <Sparkles className="h-4 w-4 text-teal-400" />
-                    High-Affinity
+                    High-affinity
                   </span>
                 </SelectItem>
                 <SelectItem value="strategic" className="text-white hover:bg-white/10">
@@ -389,7 +390,7 @@ export function NetworkContainer() {
             <div className="hidden md:flex items-center gap-4 text-sm">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-gradient-to-br from-teal-500 to-teal-400" />
-                <span className="text-white/60">High-Affinity</span>
+                <span className="text-white/60">High-affinity</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-gradient-to-br from-amber-500 to-amber-400" />
@@ -422,7 +423,7 @@ export function NetworkContainer() {
         <div className="flex md:hidden items-center gap-3 mb-3 text-[11px] px-1">
           <div className="flex items-center gap-1.5">
             <div className="w-2 h-2 rounded-full bg-gradient-to-br from-teal-500 to-teal-400" />
-            <span className="text-white/50">High-Affinity</span>
+            <span className="text-white/50">High-affinity</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="w-2 h-2 rounded-full bg-gradient-to-br from-amber-500 to-amber-400" />
@@ -441,7 +442,7 @@ export function NetworkContainer() {
               <div className="w-5 h-5 rounded-full bg-gradient-to-r from-violet-500 to-purple-500 flex items-center justify-center">
                 <Users className="h-3 w-3 text-white" />
               </div>
-              <span className="text-sm font-medium text-white/70">People You Could Meet</span>
+              <span className="text-sm font-medium text-white/70">People you could meet</span>
               <span className="text-xs text-violet-300/50 ml-auto">{discoverableContacts.length} people</span>
             </div>
             <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
@@ -569,7 +570,7 @@ export function NetworkContainer() {
                     )}
                   >
                     {selectedNode.matchType === "high-affinity" ? (
-                      <><Sparkles className="h-3 w-3" />High-Affinity</>
+                      <><Sparkles className="h-3 w-3" />High-affinity</>
                     ) : (
                       <><Zap className="h-3 w-3" />Strategic</>
                     )}
@@ -666,7 +667,7 @@ export function NetworkContainer() {
               <div className="flex gap-2">
                 <Link href={`/user/${selectedNode.realUserId ?? selectedNode.id}`} className="flex-1">
                   <Button variant="outline" size="sm" className="w-full border-white/20 text-white hover:bg-white/10">
-                    View Full Profile
+                    View full profile
                   </Button>
                 </Link>
                 <button
@@ -729,7 +730,7 @@ export function NetworkContainer() {
           />
           <aside className="absolute right-0 top-0 bottom-0 w-80 max-w-[90vw] bg-gray-900 shadow-xl border-l border-white/10 p-4 flex flex-col gap-4 overflow-y-auto">
             <div className="flex items-center justify-between mb-2">
-              <h2 className="font-semibold text-white">Network Insights</h2>
+              <h2 className="font-semibold text-white">Network insights</h2>
               <Button
                 variant="ghost"
                 size="icon"
@@ -744,7 +745,7 @@ export function NetworkContainer() {
             <div className="flex items-center gap-3 text-xs pb-3 border-b border-white/10">
               <div className="flex items-center gap-1.5">
                 <div className="w-2.5 h-2.5 rounded-full bg-gradient-to-br from-teal-500 to-teal-400" />
-                <span className="text-white/60">High-Affinity</span>
+                <span className="text-white/60">High-affinity</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-2.5 h-2.5 rounded-full bg-gradient-to-br from-amber-500 to-amber-400" />
@@ -761,7 +762,7 @@ export function NetworkContainer() {
               <div className="rounded-xl bg-white/5 border-2 border-cyan-500/30 p-4">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-sm font-medium text-white/50">
-                    Selected Connection
+                    Selected connection
                   </span>
                   <Button
                     variant="ghost"
@@ -795,7 +796,7 @@ export function NetworkContainer() {
                   <div className="flex gap-2">
                     <Link href={`/user/${selectedNode.realUserId ?? selectedNode.id}`} className="flex-1">
                       <Button variant="outline" size="sm" className="w-full border-white/20 text-white hover:bg-white/10">
-                        View Profile
+                        View profile
                       </Button>
                     </Link>
                     {selectedNode.email?.trim() ? (
@@ -844,15 +845,15 @@ export function NetworkContainer() {
                 <div className="rounded-xl bg-white/5 border border-white/10 p-4">
                   <div className="flex items-center gap-2 mb-3">
                     <TrendingUp className="h-4 w-4 text-cyan-400" />
-                    <span className="text-sm font-medium text-white">Network Stats</span>
+                    <span className="text-sm font-medium text-white">Network stats</span>
                   </div>
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-white/60">Total Connections</span>
+                      <span className="text-sm text-white/60">Total connections</span>
                       <span className="font-semibold text-white">{insights.totalConnections}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-white/60">High-Affinity</span>
+                      <span className="text-sm text-white/60">High-affinity</span>
                       <span className="font-semibold text-teal-400">{insights.highAffinityCount}</span>
                     </div>
                     <div className="flex justify-between items-center">
@@ -874,7 +875,7 @@ export function NetworkContainer() {
           <div className="rounded-xl bg-white/5 border-2 border-cyan-500/30 p-4">
             <div className="flex items-center justify-between mb-3">
               <span className="text-sm font-medium text-white/50">
-                Selected Connection
+                Selected connection
               </span>
               <Button
                 variant="ghost"
@@ -918,12 +919,12 @@ export function NetworkContainer() {
                   {selectedNode.matchType === "high-affinity" ? (
                     <>
                       <Sparkles className="h-3 w-3" />
-                      High-Affinity Match
+                      High-affinity match
                     </>
                   ) : (
                     <>
                       <Zap className="h-3 w-3" />
-                      Strategic Match
+                      Strategic match
                     </>
                   )}
                 </Badge>
@@ -1009,7 +1010,7 @@ export function NetworkContainer() {
               <div className="flex gap-2">
                 <Link href={`/user/${selectedNode.realUserId ?? selectedNode.id}`} className="flex-1">
                   <Button variant="outline" size="sm" className="w-full border-white/20 text-white hover:bg-white/10">
-                    View Profile
+                    View profile
                   </Button>
                 </Link>
                 {selectedNode.email?.trim() ? (
@@ -1065,17 +1066,17 @@ export function NetworkContainer() {
             <div className="rounded-xl bg-white/5 border border-white/10 p-4">
               <div className="flex items-center gap-2 mb-3">
                 <TrendingUp className="h-4 w-4 text-cyan-400" />
-                <span className="text-sm font-medium text-white">Network Stats</span>
+                <span className="text-sm font-medium text-white">Network stats</span>
               </div>
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-white/60">Total Connections</span>
+                  <span className="text-sm text-white/60">Total connections</span>
                   <span className="font-semibold text-white">{insights.totalConnections}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-white/60 flex items-center gap-1">
                     <Sparkles className="h-3 w-3 text-teal-400" />
-                    High-Affinity
+                    High-affinity
                   </span>
                   <span className="font-semibold text-teal-400">{insights.highAffinityCount}</span>
                 </div>
@@ -1087,7 +1088,7 @@ export function NetworkContainer() {
                   <span className="font-semibold text-amber-400">{insights.strategicCount}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-white/60">Avg. Match Strength</span>
+                  <span className="text-sm text-white/60">Avg. match strength</span>
                   <span className="font-semibold text-white">{insights.averageStrength}%</span>
                 </div>
               </div>
@@ -1100,15 +1101,15 @@ export function NetworkContainer() {
               </div>
               <div className="space-y-3">
                 <div>
-                  <p className="text-xs font-medium text-white/50">Strongest Cluster</p>
+                  <p className="text-xs font-medium text-white/50">Strongest cluster</p>
                   <p className="text-sm text-white">{insights.strongestCluster}</p>
                 </div>
                 <div>
-                  <p className="text-xs font-medium text-white/50">Most Common Link</p>
+                  <p className="text-xs font-medium text-white/50">Most common link</p>
                   <p className="text-sm text-white">{insights.topCommonality}</p>
                 </div>
                 <div className="p-3 bg-cyan-500/10 border border-cyan-500/20 rounded-lg">
-                  <p className="text-xs font-medium text-cyan-400 mb-1">💡 Recommendation</p>
+                  <p className="text-xs font-medium text-cyan-400 mb-1">💡 Tip</p>
                   <p className="text-sm text-white/80">{insights.recommendation}</p>
                 </div>
               </div>
@@ -1162,9 +1163,12 @@ function NetworkMobileCards({
   const handleScroll = () => {
     if (!scrollRef.current) return;
     const scrollLeft = scrollRef.current.scrollLeft;
-    const cardWidth = scrollRef.current.offsetWidth * 0.85 + 16;
-    const newIndex = Math.round(scrollLeft / cardWidth);
-    setActiveIndex(Math.min(newIndex, nodes.length - 1));
+    const stride = getHorizontalCarouselStride(scrollRef.current);
+    if (stride < 8) return;
+    const newIndex = Math.round(scrollLeft / stride);
+    if (!Number.isFinite(newIndex)) return;
+    const clamped = Math.min(Math.max(0, newIndex), nodes.length - 1);
+    setActiveIndex((prev) => (prev === clamped ? prev : clamped));
   };
 
   if (nodes.length === 0) {
@@ -1187,17 +1191,23 @@ function NetworkMobileCards({
             <Network className="h-3 w-3 text-white" />
           </div>
           <span className="text-sm font-medium text-white/70">
-            Your Matches
+            Your matches
           </span>
         </div>
         <span className="text-xs text-white/50">{activeIndex + 1} of {nodes.length}</span>
       </div>
 
       {/* Swipeable cards */}
-      <div 
+      <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-4 scrollbar-hide scroll-smooth -mx-4 px-4"
+        className="flex min-w-0 touch-manipulation touch-pan-x items-start gap-3 overflow-x-auto overflow-y-hidden overscroll-x-contain scroll-smooth snap-x snap-proximity pb-1 pl-0.5 pr-0.5 pt-0.5 [-webkit-overflow-scrolling:touch] scrollbar-hide -mx-4 px-4"
+        style={{
+          scrollPaddingLeft: "max(0px,env(safe-area-inset-left))",
+          scrollPaddingRight: "max(0px,env(safe-area-inset-right))",
+          WebkitOverflowScrolling: "touch",
+          overscrollBehaviorX: "contain",
+        }}
       >
         {nodes.map((node) => {
           const mutualConnections = getMutualConnections(node.id);
@@ -1205,8 +1215,9 @@ function NetworkMobileCards({
           return (
             <div
               key={node.id}
+              data-carousel-slide
               className={cn(
-                "flex-shrink-0 w-[85vw] max-w-[340px] snap-start overflow-hidden rounded-2xl border",
+                "flex w-[min(85vw,340px)] min-w-0 flex-shrink-0 snap-start flex-col overflow-hidden rounded-2xl border",
                 node.matchType === "high-affinity"
                   ? "bg-gradient-to-b from-teal-500/10 to-teal-900/20 border-teal-500/20"
                   : "bg-gradient-to-b from-amber-500/10 to-amber-900/20 border-amber-500/20"
@@ -1250,7 +1261,7 @@ function NetworkMobileCards({
                   )}
                 >
                   {node.matchType === "high-affinity" ? (
-                    <><Sparkles className="h-3 w-3" /> High-Affinity</>
+                    <><Sparkles className="h-3 w-3" /> High-affinity</>
                   ) : (
                     <><Zap className="h-3 w-3" /> Strategic</>
                   )}
@@ -1314,7 +1325,7 @@ function NetworkMobileCards({
                   className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-full text-sm font-medium bg-white/10 text-white hover:bg-white/20 transition-colors"
                 >
                   <Eye className="h-4 w-4" />
-                  View Profile
+                  View profile
                 </Link>
                 <button
                   onClick={() => onMeet(node)}
@@ -1339,10 +1350,11 @@ function NetworkMobileCards({
             <button
               key={index}
               onClick={() => {
-                if (scrollRef.current) {
-                  const cardWidth = scrollRef.current.offsetWidth * 0.85 + 16;
-                  scrollRef.current.scrollTo({ left: cardWidth * index, behavior: 'smooth' });
-                }
+                const el = scrollRef.current;
+                if (!el) return;
+                const stride = getHorizontalCarouselStride(el);
+                if (stride < 8) return;
+                el.scrollTo({ left: stride * index, behavior: "smooth" });
               }}
               className={`h-1.5 rounded-full transition-all ${
                 index === activeIndex

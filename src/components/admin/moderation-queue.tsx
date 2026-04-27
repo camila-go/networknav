@@ -156,7 +156,7 @@ export function ModerationQueue() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Content Moderation</h1>
+        <h1 className="text-2xl font-bold">Content moderation</h1>
         {total > 0 && statusFilter === "pending" && (
           <Badge className="bg-amber-500/10 text-amber-400 text-sm">
             {total} pending

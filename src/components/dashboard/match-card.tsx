@@ -181,7 +181,7 @@ export function MatchCard({
         className={cn(
           "flex min-h-0 flex-1 flex-col gap-[13px] px-4 pb-4",
           isCarousel &&
-            "touch-pan-y overflow-y-auto overscroll-y-contain"
+            "touch-pan-y overflow-y-auto overscroll-contain"
         )}
         style={isCarousel ? { WebkitOverflowScrolling: "touch" } : undefined}
       >

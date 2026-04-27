@@ -4,8 +4,7 @@ import { supabaseAdmin } from "@/lib/supabase/client";
 import { normalizeActivityTag } from "@/lib/profile/activity-tag";
 import { addToModerationQueue } from "@/lib/moderation/queue";
 import type { UserPhoto, UserPhotoStatus } from "@/types";
-
-const MAX_PHOTOS = 12;
+import { MAX_PROFILE_GALLERY_PHOTOS } from "@/lib/profile-gallery";
 
 function rowToUserPhoto(row: {
   id: string;
@@ -144,11 +143,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if ((count ?? 0) >= MAX_PHOTOS) {
+    if ((count ?? 0) >= MAX_PROFILE_GALLERY_PHOTOS) {
       // Clean up the orphaned storage file
       await supabaseAdmin.storage.from("profile-photos").remove([storageKey]);
       return NextResponse.json(
-        { success: false, error: `Maximum ${MAX_PHOTOS} gallery photos allowed` },
+        {
+          success: false,
+          error: `Maximum ${MAX_PROFILE_GALLERY_PHOTOS} gallery photos allowed`,
+        },
         { status: 400 }
       );
     }

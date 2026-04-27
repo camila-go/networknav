@@ -79,7 +79,7 @@ export function QuestionnaireWizard() {
 
       toast({
         variant: "success",
-        title: "Profile complete!",
+        title: "Profile complete",
         description: "We're finding your matches...",
       });
 

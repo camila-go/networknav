@@ -178,9 +178,9 @@ describe("NetworkContainer", () => {
     render(<NetworkContainer />);
 
     await waitFor(() => {
-      expect(screen.getByText("Network Stats")).toBeInTheDocument();
+      expect(screen.getByText("Network stats")).toBeInTheDocument();
     });
-    expect(screen.getByText("Total Connections")).toBeInTheDocument();
+    expect(screen.getByText("Total connections")).toBeInTheDocument();
     expect(screen.getByText("2")).toBeInTheDocument();
     expect(screen.getByText("80%")).toBeInTheDocument();
   });
@@ -215,10 +215,10 @@ describe("NetworkContainer", () => {
     await user.click(screen.getByTestId("node-user-2"));
 
     await waitFor(() => {
-      expect(screen.getByText("Selected Connection")).toBeInTheDocument();
+      expect(screen.getByText("Selected connection")).toBeInTheDocument();
     });
     // The name appears both in mock graph and sidebar — just check sidebar renders
-    expect(screen.getByText("High-Affinity Match")).toBeInTheDocument();
+    expect(screen.getByText("High-affinity match")).toBeInTheDocument();
     expect(screen.getByText("3 commonalities")).toBeInTheDocument();
   });
 
@@ -252,7 +252,7 @@ describe("NetworkContainer", () => {
 
     await user.click(screen.getByTestId("node-user-2"));
     await waitFor(() => {
-      expect(screen.getByText("Selected Connection")).toBeInTheDocument();
+      expect(screen.getByText("Selected connection")).toBeInTheDocument();
     });
 
     // Find the close button in the selected connection panel

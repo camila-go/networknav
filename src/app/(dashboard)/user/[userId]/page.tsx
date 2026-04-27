@@ -270,7 +270,7 @@ export default function UserProfilePage() {
         <h2 className="text-2xl font-bold text-white mb-4">User not found</h2>
         <p className="text-white/60 mb-6">This profile may not be available.</p>
         <Link href="/dashboard">
-          <Button>Back to Dashboard</Button>
+          <Button>Back to dashboard</Button>
         </Link>
       </div>
     );
@@ -394,29 +394,29 @@ export default function UserProfilePage() {
       {/* Networking activity stats (points, streak, etc.) — hidden for this release */}
       {SHOW_GAMIFICATION_UI && activityStats && activityStats.totalPoints > 0 && (
         <div className="rounded-xl bg-white/5 border border-white/10 p-6">
-          <h2 className="text-xs font-semibold text-white/50 uppercase tracking-wider mb-4 flex items-center gap-2">
+          <h2 className="text-xs font-semibold text-white/50 tracking-wide mb-4 flex items-center gap-2">
             <TrendingUp className="h-4 w-4 text-cyan-400" />
-            Networking Activity
+            Networking activity
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div className="p-3 bg-gradient-to-br from-cyan-500/10 to-teal-500/10 rounded-xl border border-cyan-500/20 text-center">
               <p className="text-2xl font-bold text-white">{activityStats.totalPoints}</p>
-              <p className="text-xs text-white/50 mt-1">Connection Points</p>
+              <p className="text-xs text-white/50 mt-1">Connection points</p>
             </div>
             <div className="p-3 bg-gradient-to-br from-purple-500/10 to-violet-500/10 rounded-xl border border-purple-500/20 text-center">
               <p className="text-2xl font-bold text-white">{activityStats.messagesSent}</p>
-              <p className="text-xs text-white/50 mt-1">Messages Sent</p>
+              <p className="text-xs text-white/50 mt-1">Messages sent</p>
             </div>
             <div className="p-3 bg-gradient-to-br from-amber-500/10 to-orange-500/10 rounded-xl border border-amber-500/20 text-center">
               <p className="text-2xl font-bold text-white">{activityStats.connectionsMade}</p>
-              <p className="text-xs text-white/50 mt-1">Connections Made</p>
+              <p className="text-xs text-white/50 mt-1">Connections made</p>
             </div>
             <div className="p-3 bg-gradient-to-br from-rose-500/10 to-pink-500/10 rounded-xl border border-rose-500/20 text-center flex flex-col items-center justify-center">
               <div className="flex items-center gap-1">
                 <Flame className="h-5 w-5 text-orange-400" />
                 <p className="text-2xl font-bold text-white">{activityStats.currentDailyStreak}</p>
               </div>
-              <p className="text-xs text-white/50 mt-1">Day Streak</p>
+              <p className="text-xs text-white/50 mt-1">Day streak</p>
             </div>
           </div>
         </div>
@@ -425,7 +425,7 @@ export default function UserProfilePage() {
       {interests && hasProfileInterestContent(interests) && (
         <InterestChipsPanel
           interests={interests}
-          title="Interests & Passions"
+          title="Interests and passions"
           variant="public"
         />
       )}
@@ -614,8 +614,8 @@ export default function UserProfilePage() {
       {/* What you share / Why connect */}
       {matchData && matchData.commonalities.length > 0 && (
         <div className="rounded-xl bg-white/5 border border-white/10 p-6">
-          <h2 className="text-xs font-semibold text-white/50 uppercase tracking-wider mb-4">
-            {matchData.type === "high-affinity" ? "What You Share" : "Why Connect"}
+          <h2 className="text-xs font-semibold text-white/50 tracking-wide mb-4">
+            {matchData.type === "high-affinity" ? "What you share" : "Why connect"}
           </h2>
           <div className="space-y-3">
             {matchData.commonalities.map((commonality, index) => (
@@ -636,9 +636,9 @@ export default function UserProfilePage() {
       {/* Conversation starters */}
       {matchData && matchData.conversationStarters.length > 0 && (
         <div className="rounded-xl bg-white/5 border border-white/10 p-6">
-          <h2 className="text-xs font-semibold text-white/50 uppercase tracking-wider mb-4 flex items-center gap-2">
+          <h2 className="text-xs font-semibold text-white/50 tracking-wide mb-4 flex items-center gap-2">
             <MessageCircle className="h-4 w-4 text-cyan-400" />
-            Conversation Starters
+            Conversation starters
           </h2>
           <div className="space-y-3">
             {matchData.conversationStarters.map((starter, index) => (

@@ -197,7 +197,7 @@ export function LoginForm({ ssoForce = false }: LoginFormProps) {
               Logging in...
             </>
           ) : (
-            "Log In"
+            "Log in"
           )}
         </Button>
       </form>

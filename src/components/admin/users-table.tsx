@@ -205,7 +205,7 @@ export function UsersTable() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">User Management</h1>
+      <h1 className="text-2xl font-bold mb-6">User management</h1>
 
       {/* Filters */}
       <div className="flex gap-3 mb-4">
@@ -421,7 +421,7 @@ export function UsersTable() {
       <Dialog open={deleteDialog} onOpenChange={setDeleteDialog}>
         <DialogContent className="bg-zinc-900 border-white/10 text-white">
           <DialogHeader>
-            <DialogTitle>Delete Account</DialogTitle>
+            <DialogTitle>Delete account</DialogTitle>
             <DialogDescription className="text-white/50">
               Are you sure you want to permanently delete {actionUser?.name}&apos;s account?
               This will remove all their data including posts, messages, and connections.
@@ -447,7 +447,7 @@ export function UsersTable() {
       <Dialog open={avatarDialog} onOpenChange={setAvatarDialog}>
         <DialogContent className="bg-zinc-900 border-white/10 text-white">
           <DialogHeader>
-            <DialogTitle>Remove Profile Photo</DialogTitle>
+            <DialogTitle>Remove profile photo</DialogTitle>
             <DialogDescription className="text-white/50">
               Remove the profile photo for {actionUser?.name}? The image will be
               deleted from storage and they&apos;ll be notified. They can upload a
@@ -473,7 +473,7 @@ export function UsersTable() {
       <Dialog open={resetDialog} onOpenChange={(open) => { setResetDialog(open); if (!open) setTempPassword(""); }}>
         <DialogContent className="bg-zinc-900 border-white/10 text-white">
           <DialogHeader>
-            <DialogTitle>Reset Password</DialogTitle>
+            <DialogTitle>Reset password</DialogTitle>
             <DialogDescription className="text-white/50">
               {tempPassword
                 ? "The password has been reset. Share this temporary password with the user."

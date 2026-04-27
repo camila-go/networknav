@@ -19,7 +19,7 @@ export function EmptyState({ compact }: EmptyStateProps) {
         </p>
         <Link href="/dashboard">
           <Button size="sm" variant="outline" className="border-white/20 text-white hover:bg-white/10">
-            View Matches
+            View matches
           </Button>
         </Link>
       </div>
@@ -41,7 +41,7 @@ export function EmptyState({ compact }: EmptyStateProps) {
       <Link href="/dashboard">
         <Button>
           <MessageCircle className="h-4 w-4 mr-2" />
-          View Your Matches
+          View your matches
         </Button>
       </Link>
     </div>

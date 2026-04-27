@@ -205,7 +205,7 @@ export default function ProfilePage() {
       <div className="max-w-3xl mx-auto space-y-6 px-4 py-6">
         <div>
           <h1 className="text-3xl font-display font-bold text-white">
-            Your Profile
+            Your profile
           </h1>
           <p className="text-white/60 mt-1">
             Manage your profile, view your activity, and update settings
@@ -215,7 +215,7 @@ export default function ProfilePage() {
         {/* Profile Information */}
         <div className="rounded-xl bg-white/5 border border-white/10 p-6">
           <div className="mb-4">
-            <h2 className="text-lg font-semibold text-white">Profile Information</h2>
+            <h2 className="text-lg font-semibold text-white">Profile information</h2>
             <p className="text-sm text-white/50">
               This information is visible to your matches
             </p>
@@ -256,9 +256,10 @@ export default function ProfilePage() {
         {currentUserId && (
           <div className="rounded-xl bg-white/5 border border-white/10 p-6">
             <div className="mb-4">
-              <h2 className="text-lg font-semibold text-white">Photo Gallery</h2>
+              <h2 className="text-lg font-semibold text-white">Photo gallery</h2>
               <p className="text-sm text-white/50">
-                Share photos from your leadership journey
+                Post a few pics of you in your element - hobbies, interests or
+                whatever you love.
               </p>
             </div>
             <PhotoGallery userId={currentUserId} isOwner={true} />
@@ -268,9 +269,9 @@ export default function ProfilePage() {
         {/* Activity Stats (points, streak, activity counts) — gamification; hidden for this release */}
         {SHOW_GAMIFICATION_UI && stats && (
           <div className="rounded-xl bg-white/5 border border-white/10 p-6">
-            <h2 className="text-xs font-semibold text-white/50 uppercase tracking-wider flex items-center gap-2 mb-4">
+            <h2 className="text-xs font-semibold text-white/50 tracking-wide flex items-center gap-2 mb-4">
               <Trophy className="h-4 w-4 text-amber-400" />
-              Your Activity
+              Your activity
             </h2>
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
               <div className="bg-gradient-to-br from-amber-500/20 to-orange-500/20 rounded-lg p-3 text-center border border-amber-500/20">
@@ -279,7 +280,7 @@ export default function ProfilePage() {
               </div>
               <div className="bg-white/5 rounded-lg p-3 text-center border border-white/10">
                 <p className="text-2xl font-bold text-white">{stats.currentDailyStreak}</p>
-                <p className="text-xs text-white/60">Day Streak</p>
+                <p className="text-xs text-white/60">Day streak</p>
               </div>
               <div className="bg-white/5 rounded-lg p-3 text-center border border-white/10">
                 <p className="text-2xl font-bold text-white">{stats.messagesSent}</p>
@@ -303,7 +304,7 @@ export default function ProfilePage() {
             badges={badges}
             progress={badgeProgress}
             showProgress
-            heading="Your Badges"
+            heading="Your badges"
           />
         )}
 
@@ -312,7 +313,7 @@ export default function ProfilePage() {
           <div className="mb-4">
             <h2 className="text-xs font-semibold text-white/50 uppercase tracking-wider flex items-center gap-2">
               <Users className="h-4 w-4 text-cyan-400" />
-              Your Connections ({connections.length})
+              Your connections ({connections.length})
             </h2>
             <p className="mt-1.5 text-xs text-white/40 leading-relaxed">
               People from your suggested match list (high-affinity and strategic).
@@ -374,9 +375,9 @@ export default function ProfilePage() {
                   className="w-full mt-3 text-white/60 hover:text-white"
                 >
                   {showAllConnections ? (
-                    <>Show Less <ChevronUp className="h-4 w-4 ml-1" /></>
+                    <>Show less <ChevronUp className="h-4 w-4 ml-1" /></>
                   ) : (
-                    <>Show All ({filteredConnections.length}) <ChevronDown className="h-4 w-4 ml-1" /></>
+                    <>Show all ({filteredConnections.length}) <ChevronDown className="h-4 w-4 ml-1" /></>
                   )}
                 </Button>
               )}
@@ -391,14 +392,14 @@ export default function ProfilePage() {
         {interests && hasProfileInterestContent(interests) && (
           <InterestChipsPanel
             interests={interests}
-            title="Your Interests & Passions"
+            title="Your interests and passions"
             variant="profile"
           />
         )}
         {interests && !hasProfileInterestContent(interests) && (
           <div className="rounded-xl border border-dashed border-white/15 bg-white/[0.03] p-6">
             <h2 className="text-xs font-semibold text-white/50 uppercase tracking-wider mb-3">
-              Your Interests & Passions
+              Your interests and passions
             </h2>
             <p className="text-sm text-white/55 mb-4">
               {profileQuestionnaireCompleted
@@ -422,7 +423,7 @@ export default function ProfilePage() {
           className="rounded-xl bg-white/5 border border-white/10 p-6"
         >
           <div className="mb-4">
-            <h2 className="text-lg font-semibold text-white">Questionnaire Responses</h2>
+            <h2 className="text-lg font-semibold text-white">Questionnaire responses</h2>
             <p className="text-sm text-white/50">
               Update your answers to improve your matches
             </p>
@@ -431,7 +432,7 @@ export default function ProfilePage() {
             href="/onboarding"
             className="text-cyan-400 hover:text-cyan-300 font-medium transition-colors"
           >
-            Retake Questionnaire →
+            Retake questionnaire →
           </a>
         </div>
 
@@ -446,7 +447,7 @@ export default function ProfilePage() {
                 <Shield className="h-5 w-5 text-violet-400" />
               </div>
               <div className="text-left">
-                <h2 className="text-lg font-semibold text-white">Privacy Settings</h2>
+                <h2 className="text-lg font-semibold text-white">Privacy settings</h2>
                 <p className="text-sm text-white/50">Control what others can see</p>
               </div>
             </div>
@@ -468,7 +469,7 @@ export default function ProfilePage() {
                   <div className="flex items-center gap-3">
                     <Eye className="h-4 w-4 text-white/50" />
                     <div>
-                      <p className="text-sm font-medium text-white">Show Activity Stats</p>
+                      <p className="text-sm font-medium text-white">Show activity stats</p>
                       <p className="text-xs text-white/50">Let others see your points and streaks</p>
                     </div>
                   </div>
@@ -482,7 +483,7 @@ export default function ProfilePage() {
                 <div className="flex items-center gap-3">
                   <Users className="h-4 w-4 text-white/50" />
                   <div>
-                    <p className="text-sm font-medium text-white">Show Connections</p>
+                    <p className="text-sm font-medium text-white">Show connections</p>
                     <p className="text-xs text-white/50">Let others see who you're connected with</p>
                   </div>
                 </div>
@@ -495,7 +496,7 @@ export default function ProfilePage() {
                 <div className="flex items-center gap-3">
                   <Heart className="h-4 w-4 text-white/50" />
                   <div>
-                    <p className="text-sm font-medium text-white">Show Interests</p>
+                    <p className="text-sm font-medium text-white">Show interests</p>
                     <p className="text-xs text-white/50">Let others see your interests and hobbies</p>
                   </div>
                 </div>
@@ -519,7 +520,7 @@ export default function ProfilePage() {
                 <Bell className="h-5 w-5 text-cyan-400" />
               </div>
               <div className="text-left">
-                <h2 className="text-lg font-semibold text-white">Notification Settings</h2>
+                <h2 className="text-lg font-semibold text-white">Notification settings</h2>
                 <p className="text-sm text-white/50">Manage your notification preferences</p>
               </div>
             </div>
@@ -534,7 +535,7 @@ export default function ProfilePage() {
             <div className="px-6 pb-6 space-y-4 border-t border-white/10 pt-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-white">New Matches</p>
+                  <p className="text-sm font-medium text-white">New matches</p>
                   <p className="text-xs text-white/50">Get notified when you have new matches</p>
                 </div>
                 <Switch
@@ -545,7 +546,7 @@ export default function ProfilePage() {
               {SHOW_GAMIFICATION_UI && (
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-white">Streak Reminders</p>
+                    <p className="text-sm font-medium text-white">Streak reminders</p>
                     <p className="text-xs text-white/50">Get reminded to maintain your streak</p>
                   </div>
                   <Switch
@@ -569,7 +570,7 @@ export default function ProfilePage() {
                 <Settings className="h-5 w-5 text-amber-400" />
               </div>
               <div className="text-left">
-                <h2 className="text-lg font-semibold text-white">Account Settings</h2>
+                <h2 className="text-lg font-semibold text-white">Account settings</h2>
                 <p className="text-sm text-white/50">Manage your account and security</p>
               </div>
             </div>
@@ -589,7 +590,7 @@ export default function ProfilePage() {
                 <div className="flex items-center gap-3">
                   <Lock className="h-4 w-4 text-white/50" />
                   <div>
-                    <p className="text-sm font-medium text-white">Change Password</p>
+                    <p className="text-sm font-medium text-white">Change password</p>
                     <p className="text-xs text-white/50">
                       Use “Forgot password” on the sign-in page to reset
                     </p>
@@ -615,7 +616,7 @@ export default function ProfilePage() {
                   }}
                 >
                   <LogOut className="h-4 w-4" />
-                  Sign Out
+                  Sign out
                 </Button>
               </div>
             </div>
@@ -653,7 +654,7 @@ export default function ProfilePage() {
                 <div className="flex items-center gap-3">
                   <BookOpenCheck className="h-4 w-4 text-cyan-400" />
                   <div className="text-left">
-                    <p className="text-sm font-medium text-white">View App Tour</p>
+                    <p className="text-sm font-medium text-white">View app tour</p>
                     <p className="text-xs text-white/50">
                       {SHOW_GAMIFICATION_UI
                         ? "Learn how matches, streaks, and badges work"

@@ -128,10 +128,10 @@ interface MeetingRequestModalProps {
 }
 
 const MEETING_TYPES: { value: MeetingType; label: string; icon: typeof Video; description: string }[] = [
-  { value: "video", label: "Video Call", icon: Video, description: "Teams or Google Meet" },
-  { value: "coffee", label: "Coffee/Meal", icon: Coffee, description: "In person at conference" },
-  { value: "conference", label: "Conference Meetup", icon: Users, description: "Meet at the event" },
-  { value: "phone", label: "Phone Call", icon: Phone, description: "Quick voice call" },
+  { value: "video", label: "Video call", icon: Video, description: "Teams or Google Meet" },
+  { value: "coffee", label: "Coffee/meal", icon: Coffee, description: "In person at conference" },
+  { value: "conference", label: "Conference meetup", icon: Users, description: "Meet at the event" },
+  { value: "phone", label: "Phone call", icon: Phone, description: "Quick voice call" },
 ];
 
 const DURATION_OPTIONS = [
@@ -292,7 +292,7 @@ export function MeetingRequestModal({
               </AvatarFallback>
             </Avatar>
             <div>
-              <span className="block text-white">Request Meeting with</span>
+              <span className="block text-white">Request meeting with</span>
               <span className="text-cyan-400">{recipient.profile.name}</span>
             </div>
           </DialogTitle>
@@ -305,7 +305,7 @@ export function MeetingRequestModal({
         <div className="space-y-6 py-4">
           {/* Meeting Type */}
           <div className="space-y-3">
-            <Label className="text-sm font-medium text-white">Meeting Type</Label>
+            <Label className="text-sm font-medium text-white">Meeting type</Label>
             <div className="grid grid-cols-2 gap-2">
               {MEETING_TYPES.map((type) => (
                 <button
@@ -355,7 +355,7 @@ export function MeetingRequestModal({
           {/* Proposed Times */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium text-white">Propose Times</Label>
+              <Label className="text-sm font-medium text-white">Propose times</Label>
               <Button
                 type="button"
                 variant="ghost"

@@ -21,7 +21,7 @@ export default function RegisterPage() {
     return (
       <Card className="w-full max-w-md animate-fade-in summit-card border-white/10">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-display text-white">Account Registration</CardTitle>
+          <CardTitle className="text-2xl font-display text-white">Account registration</CardTitle>
           <CardDescription className="text-white/60">
             Accounts are created automatically through corporate SSO
           </CardDescription>
@@ -44,9 +44,10 @@ export default function RegisterPage() {
   return (
     <Card className="w-full max-w-md animate-fade-in summit-card border-white/10">
       <CardHeader className="text-center">
-        <CardTitle className="text-2xl font-display text-white">Create Your Account</CardTitle>
+        <CardTitle className="text-2xl font-display text-white">Create your account</CardTitle>
         <CardDescription className="text-white/60">
-          Join the leadership network and discover meaningful connections
+          Streamline your account setup with your corporate SSO (recommended) or
+          manually enter your details to create an account.
         </CardDescription>
       </CardHeader>
       <CardContent>

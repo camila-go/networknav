@@ -96,7 +96,7 @@ export function RegisterForm() {
       <Button asChild className="w-full" size="lg">
         <a href="/api/auth/sso/login">
           <Shield className="mr-2 h-5 w-5" aria-hidden />
-          Sign in with Corporate SSO
+          Sign in with corporate SSO
         </a>
       </Button>
       <div className="relative">
@@ -110,7 +110,7 @@ export function RegisterForm() {
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="name" className="text-white/80">Full Name</Label>
+        <Label htmlFor="name" className="text-white/80">Full name</Label>
         <Input
           id="name"
           type="text"
@@ -250,7 +250,7 @@ export function RegisterForm() {
             Creating account...
           </>
         ) : (
-          "Create Account"
+          "Create account"
         )}
       </Button>
 

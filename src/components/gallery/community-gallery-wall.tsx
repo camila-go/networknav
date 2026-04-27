@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -23,26 +30,52 @@ type Payload = {
 };
 
 type GalleryPhoto = { url: string; userId: string };
-type GalleryCard = { photo: GalleryPhoto; theme: CommunityGalleryTheme };
+
+type ThemeCarouselCard = {
+  theme: CommunityGalleryTheme;
+  photos: GalleryPhoto[];
+};
 
 const THEME_FLOW_EASE = "transition-[transform,opacity,filter] duration-500 ease-out";
 
-/**
- * Flatten themes into one card per photo. Photos from the same theme stay
- * adjacent in the carousel so consecutive cards share an activity chip and
- * the same percent/cohort stats.
- */
-function flattenCards(themes: CommunityGalleryTheme[]): GalleryCard[] {
+const SLIDESHOW_DISSOLVE_MS = 120;
+const SLIDESHOW_START_DELAY_MS = 120;
+const SLIDESHOW_HOLD_MS = 4000;
+
+function subscribeReducedMotion(cb: () => void) {
+  const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+  mq.addEventListener("change", cb);
+  return () => mq.removeEventListener("change", cb);
+}
+
+function getReducedMotionSnapshot() {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+function usePrefersReducedMotion(): boolean {
+  return useSyncExternalStore(subscribeReducedMotion, getReducedMotionSnapshot, () => false);
+}
+
+function dedupePhotosForTheme(theme: CommunityGalleryTheme): GalleryPhoto[] {
   const seen = new Set<string>();
-  const out: GalleryCard[] = [];
+  const out: GalleryPhoto[] = [];
+  for (const photo of theme.samplePhotos) {
+    if (!isSafeGalleryImageUrl(photo.url)) continue;
+    const key = `${photo.userId}\0${photo.url}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(photo);
+  }
+  return out;
+}
+
+/** One carousel card per activity tag; photos are de-duplicated within the theme. */
+function oneCardPerTheme(themes: CommunityGalleryTheme[]): ThemeCarouselCard[] {
+  const out: ThemeCarouselCard[] = [];
   for (const theme of themes) {
-    for (const photo of theme.samplePhotos) {
-      if (!isSafeGalleryImageUrl(photo.url)) continue;
-      const key = `${photo.userId}\0${photo.url}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      out.push({ photo, theme });
-    }
+    const photos = dedupePhotosForTheme(theme);
+    if (photos.length === 0) continue;
+    out.push({ theme, photos });
   }
   return out;
 }
@@ -56,16 +89,141 @@ function ringOffset(i: number, active: number, n: number): number {
   return d;
 }
 
-/** One photo = one portrait card. Ken-Burns runs only on the focal card. */
-function PhotoCard({
+function ThemePhotoSlideshow({
+  photos,
+  isFocal,
+  prioritizeImage,
+  imageSizes,
+  kenClass,
+}: {
+  photos: GalleryPhoto[];
+  isFocal: boolean;
+  prioritizeImage: boolean;
+  imageSizes: string;
+  kenClass: string;
+}) {
+  const reducedMotion = usePrefersReducedMotion();
+  const [idx, setIdx] = useState(0);
+  const [isFading, setIsFading] = useState(false);
+
+  const n = photos.length;
+  const nextIdx = n > 0 ? (idx + 1) % n : 0;
+
+  const photoKey = useMemo(
+    () => photos.map((p) => `${p.userId}\0${p.url}`).join("|"),
+    [photos]
+  );
+
+  useEffect(() => {
+    setIdx(0);
+    setIsFading(false);
+  }, [photoKey]);
+
+  useEffect(() => {
+    if (!isFocal) {
+      setIsFading(false);
+      setIdx(0);
+    }
+  }, [isFocal]);
+
+  useEffect(() => {
+    if (!isFocal || n < 2 || reducedMotion) return;
+
+    let intervalId: ReturnType<typeof setInterval> | undefined;
+    const startDelay = window.setTimeout(() => {
+      intervalId = window.setInterval(() => {
+        setIsFading((fading) => (fading ? fading : true));
+      }, SLIDESHOW_HOLD_MS);
+    }, SLIDESHOW_START_DELAY_MS);
+
+    return () => {
+      window.clearTimeout(startDelay);
+      if (intervalId !== undefined) window.clearInterval(intervalId);
+    };
+  }, [isFocal, n, reducedMotion]);
+
+  const handleFadeEnd = useCallback(() => {
+    setIdx((i) => (i + 1) % n);
+    setIsFading(false);
+  }, [n]);
+
+  useEffect(() => {
+    if (!isFading) return;
+    const t = window.setTimeout(handleFadeEnd, SLIDESHOW_DISSOLVE_MS);
+    return () => window.clearTimeout(t);
+  }, [isFading, handleFadeEnd]);
+
+  if (n === 0) return null;
+
+  if (n === 1) {
+    return (
+      <div className={`absolute inset-0 z-0 overflow-hidden ${kenClass}`}>
+        <Image
+          src={photos[0].url}
+          alt=""
+          fill
+          className="object-cover object-center"
+          sizes={imageSizes}
+          priority={prioritizeImage}
+        />
+      </div>
+    );
+  }
+
+  const dissolveStyle = {
+    transition: `opacity ${SLIDESHOW_DISSOLVE_MS}ms ease-in-out`,
+  } as const;
+
+  return (
+    <div className={`absolute inset-0 z-0 overflow-hidden ${isFocal && !isFading ? kenClass : ""}`}>
+      <div
+        className="absolute inset-0"
+        style={{
+          ...dissolveStyle,
+          opacity: isFading ? 0 : 1,
+          zIndex: isFading ? 1 : 2,
+        }}
+      >
+        <Image
+          src={photos[idx].url}
+          alt=""
+          fill
+          className="object-cover object-center"
+          sizes={imageSizes}
+          priority={prioritizeImage && !isFading}
+        />
+      </div>
+      <div
+        className="absolute inset-0"
+        style={{
+          ...dissolveStyle,
+          opacity: isFading ? 1 : 0,
+          zIndex: isFading ? 2 : 1,
+        }}
+      >
+        <Image
+          src={photos[nextIdx].url}
+          alt=""
+          fill
+          className="object-cover object-center"
+          sizes={imageSizes}
+          priority={false}
+        />
+      </div>
+    </div>
+  );
+}
+
+/** One category = one portrait card; multiple photos dissolve inside when focal. */
+function ThemeCarouselCardView({
   theme,
-  photo,
+  photos,
   denominator,
   prioritizeImage,
   isFocal,
 }: {
   theme: CommunityGalleryTheme;
-  photo: GalleryPhoto;
+  photos: GalleryPhoto[];
   denominator: number;
   prioritizeImage: boolean;
   isFocal: boolean;
@@ -74,25 +232,22 @@ function PhotoCard({
   const tagBg = useMemo(() => galleryTagBackground(theme.tag), [theme.tag]);
 
   const imageSizes = isFocal
-    ? "(max-width: 640px) 80vw, 300px"
+    ? "(max-width: 640px) 92vw, 380px"
     : "(max-width: 640px) 50vw, 220px";
 
   const ken = isFocal ? "motion-safe:animate-gallery-ken-burns" : "";
 
   return (
     <div
-      className={`relative aspect-[3/4] w-[260px] overflow-hidden rounded-[1.5rem] border border-white/12 bg-zinc-900 shadow-[0_24px_55px_-12px_rgba(0,0,0,0.92)] sm:w-[280px] sm:rounded-[1.75rem] md:w-[300px] md:rounded-[2rem] ${THEME_FLOW_EASE}`}
+      className={`relative aspect-[3/4] w-[min(92vw,380px)] overflow-hidden rounded-[1.5rem] border border-white/12 bg-zinc-900 shadow-[0_24px_55px_-12px_rgba(0,0,0,0.92)] sm:w-[min(90vw,320px)] sm:rounded-[1.75rem] md:w-[300px] md:rounded-[2rem] ${THEME_FLOW_EASE}`}
     >
-      <div className={`absolute inset-0 z-0 overflow-hidden ${ken}`}>
-        <Image
-          src={photo.url}
-          alt=""
-          fill
-          className="object-cover object-center"
-          sizes={imageSizes}
-          priority={prioritizeImage}
-        />
-      </div>
+      <ThemePhotoSlideshow
+        photos={photos}
+        isFocal={isFocal}
+        prioritizeImage={prioritizeImage}
+        imageSizes={imageSizes}
+        kenClass={ken}
+      />
       <div
         className="pointer-events-none absolute inset-0 z-[2] bg-gradient-to-t from-black/90 via-black/25 to-transparent"
         aria-hidden
@@ -130,7 +285,7 @@ export function CommunityGalleryWall() {
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
 
   const cards = useMemo(
-    () => (data ? flattenCards(data.themes) : []),
+    () => (data ? oneCardPerTheme(data.themes) : []),
     [data]
   );
   const cardCount = cards.length;
@@ -251,6 +406,7 @@ export function CommunityGalleryWall() {
 
   const showNav = cardCount > 1;
   const stepPx = 200;
+  const totalLabeled = data.totalLabeledPhotos;
 
   return (
     <div className="space-y-10">
@@ -261,14 +417,23 @@ export function CommunityGalleryWall() {
       <section
         className="relative mx-auto w-full max-w-6xl px-1 sm:px-4"
         aria-roledescription="carousel"
-        aria-label="Attendee activity photos"
+        aria-label="Attendee activity photos by category"
       >
         <p className="mb-2 text-center text-sm text-white/55 tabular-nums">
           {cardCount === 1 ? (
             <>
               Showing{" "}
-              <span className="font-semibold text-white/[0.82]">1</span> labeled
-              photo
+              <span className="font-semibold text-white/[0.82]">1</span>{" "}
+              activity
+              {typeof totalLabeled === "number" && totalLabeled > 0 ? (
+                <>
+                  {" "}
+                  <span className="text-white/40">
+                    · {totalLabeled} labeled photo
+                    {totalLabeled !== 1 ? "s" : ""} in the gallery
+                  </span>
+                </>
+              ) : null}
             </>
           ) : (
             <>
@@ -280,7 +445,16 @@ export function CommunityGalleryWall() {
               <span className="font-semibold text-white/[0.82]">
                 {cardCount}
               </span>{" "}
-              labeled photos
+              {cardCount === 1 ? "activity" : "activities"}
+              {typeof totalLabeled === "number" && totalLabeled > 0 ? (
+                <>
+                  {" "}
+                  <span className="text-white/40">
+                    · {totalLabeled} labeled photo
+                    {totalLabeled !== 1 ? "s" : ""} total
+                  </span>
+                </>
+              ) : null}
             </>
           )}
         </p>
@@ -319,7 +493,7 @@ export function CommunityGalleryWall() {
             if (dx > 0) goPrev();
             else goNext();
           }}
-          className="relative mx-auto h-[min(520px,78vh)] min-h-[400px] w-full max-w-full touch-pan-y overflow-hidden pb-2 outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-black sm:h-[540px]"
+          className="relative mx-auto h-[min(560px,82vh)] min-h-[min(440px,72dvh)] w-full max-w-full touch-pan-y overflow-hidden pb-2 outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-black sm:h-[560px] sm:min-h-[400px]"
           style={{ perspective: "min(1400px, 130vw)" }}
         >
           <div className="absolute inset-0 flex items-center justify-center [transform-style:preserve-3d]">
@@ -350,19 +524,23 @@ export function CommunityGalleryWall() {
               };
 
               const exploreHref = exploreHrefForTag(card.theme.tag);
-              const cardKey = `${card.theme.tag}\0${card.photo.userId}\0${card.photo.url}`;
+              const photoCount = card.photos.length;
+              const ariaLabel =
+                photoCount > 1
+                  ? `Search attendees: ${card.theme.tag}, ${photoCount} photos in this category`
+                  : `Search attendees: ${card.theme.tag}`;
 
               return (
                 <Link
-                  key={cardKey}
+                  key={card.theme.tag}
                   href={exploreHref}
                   className={`absolute left-1/2 top-1/2 block ${THEME_FLOW_EASE} cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-2 focus-visible:ring-offset-black`}
                   style={style}
-                  aria-label={`Search attendees: ${card.theme.tag}`}
+                  aria-label={ariaLabel}
                 >
-                  <PhotoCard
+                  <ThemeCarouselCardView
                     theme={card.theme}
-                    photo={card.photo}
+                    photos={card.photos}
                     denominator={data.denominator}
                     prioritizeImage={d === 0}
                     isFocal={d === 0}
@@ -377,7 +555,7 @@ export function CommunityGalleryWall() {
           <div className="mt-6 flex justify-center gap-4 sm:mt-8">
             <button
               type="button"
-              aria-label="Previous photo"
+              aria-label="Previous activity"
               onClick={goPrev}
               className="flex size-12 items-center justify-center rounded-full border-2 border-white/75 bg-transparent text-white shadow-sm transition hover:border-white hover:bg-white/10"
             >
@@ -385,7 +563,7 @@ export function CommunityGalleryWall() {
             </button>
             <button
               type="button"
-              aria-label="Next photo"
+              aria-label="Next activity"
               onClick={goNext}
               className="flex size-12 items-center justify-center rounded-full border-2 border-white/75 bg-transparent text-white shadow-sm transition hover:border-white hover:bg-white/10"
             >

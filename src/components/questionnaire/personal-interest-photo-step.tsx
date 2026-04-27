@@ -9,6 +9,7 @@ import {
   normalizeActivityTag,
   suggestActivityTagFromPersonalInterest,
 } from "@/lib/profile/activity-tag";
+import { MAX_PROFILE_GALLERY_PHOTOS } from "@/lib/profile-gallery";
 import { cn } from "@/lib/utils";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
@@ -247,13 +248,14 @@ export function PersonalInterestPhotoStep({
   return (
     <div className="rounded-xl border border-white/10 bg-zinc-900/80 p-4 space-y-4">
       <p className="text-xs text-zinc-400">
-        Optional: add a photo for your profile and the community gallery. Use the{" "}
-        <span className="text-zinc-300 font-medium">file button</span> below
-        (opens Photos / Files on your device). JPEG, PNG, WebP, or GIF. After it
-        saves, tap{" "}
+        Optional: add a photo for your profile and the community gallery. You can
+        also add up to {MAX_PROFILE_GALLERY_PHOTOS} activity photos anytime from{" "}
+        <span className="text-zinc-300 font-medium">Profile</span> in the nav.
+        Use the <span className="text-zinc-300 font-medium">file button</span>{" "}
+        below (opens Photos / Files on your device). JPEG, PNG, WebP, or GIF.
+        After it saves, tap{" "}
         <span className="text-zinc-300">Continue to next question</span>. No
-        photo?{" "}
-        <span className="text-zinc-300">Skip photo — next question</span>.
+        photo? <span className="text-zinc-300">Skip photo — next question</span>.
       </p>
 
       <div className="space-y-2">

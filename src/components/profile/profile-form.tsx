@@ -267,7 +267,7 @@ export function ProfileForm() {
 
       {/* Name */}
       <div className="space-y-2">
-        <Label htmlFor="name" className="text-white/80">Full Name</Label>
+        <Label htmlFor="name" className="text-white/80">Full name</Label>
         <Input
           id="name"
           {...register("name")}

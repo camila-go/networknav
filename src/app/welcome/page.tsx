@@ -33,7 +33,7 @@ export default function WelcomePage() {
                 size="sm"
                 className="h-10 px-3 text-sm text-white/80 hover:text-white hover:bg-white/10 sm:h-11 sm:px-4 sm:text-base"
               >
-                Log In
+                Log in
               </Button>
             </Link>
             <Link href="/register" className="min-h-[44px]">
@@ -41,7 +41,7 @@ export default function WelcomePage() {
                 size="sm"
                 className="h-10 px-3 text-sm font-semibold sm:h-11 sm:px-4 sm:text-base"
               >
-                Get Started
+                Get started
               </Button>
             </Link>
           </div>
@@ -134,7 +134,7 @@ export default function WelcomePage() {
                   size="lg"
                   className="h-12 min-h-[48px] w-full border-0 px-8 text-base font-semibold sm:h-14 sm:px-10 sm:text-lg"
                 >
-                  Get Started
+                  Get started
                   <ArrowRight className="ml-2 h-5 w-5 shrink-0" aria-hidden="true" />
                 </Button>
               </Link>
@@ -153,7 +153,7 @@ export default function WelcomePage() {
               <div className="inline-flex max-w-full flex-col items-center gap-4 text-sm text-white sm:flex-row sm:gap-8">
                 <div className="flex items-center justify-center gap-2 text-center">
                   <Calendar className="h-4 w-4 shrink-0 text-cyan-400" aria-hidden="true" />
-                  <span className="text-balance">April 30 – May 2, 2026</span>
+                  <span className="text-balance">May 6th–8th, 2026</span>
                 </div>
                 <div className="hidden h-4 w-px bg-white/25 sm:block" />
                 <span className="text-balance text-center">Disney&apos;s Grand Floridian Resort</span>
@@ -178,7 +178,7 @@ export default function WelcomePage() {
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 id="features-heading" className="font-display text-3xl md:text-5xl font-bold mb-4">
-              <span className="text-gradient">Energizing Leaders</span>
+              <span className="text-gradient">Energizing leaders</span>
             </h2>
             <p className="text-white/80 text-lg max-w-2xl mx-auto">
               Sparking future thinking and building resilience through meaningful connections
@@ -188,21 +188,21 @@ export default function WelcomePage() {
           <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
             <FeatureCard
               icon={<Users className="h-8 w-8" />}
-              title="High-Affinity Matches"
+              title="High-affinity matches"
               description="Connect with leaders who share your challenges and interests for peer support and mutual understanding."
               color="cyan"
               delay={0}
             />
             <FeatureCard
               icon={<Sparkles className="h-8 w-8" />}
-              title="Strategic Matches"
+              title="Strategic matches"
               description="Discover leaders with complementary expertise to expand your perspective and create valuable partnerships."
               color="teal"
               delay={100}
             />
             <FeatureCard
               icon={<MessageCircle className="h-8 w-8" />}
-              title="AI Conversation Starters"
+              title="AI conversation starters"
               description="Get personalized talking points based on your commonalities to break the ice and build real connections."
               color="emerald"
               delay={200}
@@ -223,9 +223,9 @@ export default function WelcomePage() {
         <div className="relative container mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center summit-card rounded-3xl p-12">
             <h2 id="cta-heading" className="font-display text-3xl md:text-5xl font-bold mb-6">
-              <span className="text-white">Ready to Transform Your</span>
+              <span className="text-white">Ready to transform your</span>
               <br />
-              <span className="text-gradient">Conference Experience?</span>
+              <span className="text-gradient">Conference experience?</span>
             </h2>
             <p className="text-white/80 text-lg mb-10 max-w-xl mx-auto">
               Complete a quick questionnaire and unlock personalized matches 
@@ -233,7 +233,7 @@ export default function WelcomePage() {
             </p>
             <Link href="/register">
               <Button size="lg" className="h-14 px-12 text-lg font-semibold">
-                Confirm Attendance
+                Confirm attendance
                 <ArrowRight className="ml-2 h-5 w-5" aria-hidden="true" />
               </Button>
             </Link>

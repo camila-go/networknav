@@ -22,9 +22,9 @@ export default function LoginPage() {
   return (
     <Card className="w-full max-w-md animate-fade-in summit-card border-white/10">
       <CardHeader className="text-center">
-        <CardTitle className="text-2xl font-display text-white">Welcome Back</CardTitle>
+        <CardTitle className="text-2xl font-display text-white">Welcome back</CardTitle>
         <CardDescription className="text-white/60">
-          Log in to connect with your leadership network
+          Log in with your corporate SSO or the email and password you selected.
         </CardDescription>
       </CardHeader>
       <CardContent>

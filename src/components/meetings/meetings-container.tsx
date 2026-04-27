@@ -199,7 +199,7 @@ export function MeetingsContainer() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <h1 className="text-xl sm:text-2xl font-bold text-white font-display">My Meetings</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-white font-display">My meetings</h1>
           <p className="text-sm sm:text-base text-white/60 truncate">
             Manage your scheduled meetings
           </p>
@@ -480,7 +480,7 @@ export function MeetingsContainer() {
                                   )}
                                 >
                                   {meeting.status === "pending" 
-                                    ? (isSent ? "Awaiting Response" : "Needs Response")
+                                    ? (isSent ? "Awaiting response" : "Needs response")
                                     : meeting.status.charAt(0).toUpperCase() + meeting.status.slice(1)
                                   }
                                 </Badge>
@@ -764,7 +764,7 @@ function UpcomingMeetingCard({
               </p>
             </div>
             {isStartingSoon && (
-              <Badge className="bg-cyan-500 text-black">Starting Soon</Badge>
+              <Badge className="bg-cyan-500 text-black">Starting soon</Badge>
             )}
           </div>
 
@@ -883,7 +883,7 @@ function RequestCard({
                 ? "text-violet-400 border-violet-500/30 bg-violet-500/10"
                 : "text-amber-400 border-amber-500/30 bg-amber-500/10"
             )}>
-              {isSentByMe ? "Awaiting Response" : "Needs Response"}
+              {isSentByMe ? "Awaiting response" : "Needs response"}
             </Badge>
           </div>
 

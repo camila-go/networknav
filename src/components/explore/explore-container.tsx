@@ -211,7 +211,7 @@ export function ExploreContainer() {
       } else {
         toast({
           variant: "destructive",
-          title: "Search failed",
+          title: "Couldn't complete search",
           description: result.error || "Please try again",
         });
       }
@@ -219,7 +219,7 @@ export function ExploreContainer() {
       console.error("Search error:", error);
       toast({
         variant: "destructive",
-        title: "Search failed",
+        title: "Couldn't complete search",
         description: "An unexpected error occurred",
       });
     } finally {
@@ -259,7 +259,7 @@ export function ExploreContainer() {
 
   function handleSaveSearch() {
     toast({
-      title: "Search saved!",
+      title: "Saved your search",
       description: "You'll be notified when new attendees match your criteria.",
     });
   }
@@ -732,8 +732,10 @@ function MobileCardSwiper({
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex min-w-0 touch-manipulation touch-pan-x items-stretch gap-4 overflow-x-auto overflow-y-hidden overscroll-x-contain snap-x snap-mandatory pb-0 scrollbar-hide"
+        className="flex min-w-0 touch-manipulation touch-pan-x items-start gap-3 overflow-x-auto overflow-y-hidden overscroll-x-contain scroll-smooth snap-x snap-proximity pb-1 pl-0.5 pr-0.5 pt-0.5 [-webkit-overflow-scrolling:touch] scrollbar-hide"
         style={{
+          scrollPaddingLeft: "max(0px,env(safe-area-inset-left))",
+          scrollPaddingRight: "max(0px,env(safe-area-inset-right))",
           WebkitOverflowScrolling: "touch",
           overscrollBehaviorX: "contain",
         }}
@@ -742,7 +744,7 @@ function MobileCardSwiper({
           <div
             key={attendee.user.id}
             data-carousel-slide
-            className="flex h-[min(720px,calc(100svh-9.5rem))] w-[85vw] max-w-[340px] flex-shrink-0 snap-start flex-col"
+            className="flex h-[min(680px,calc(100dvh-12.5rem))] min-h-[20rem] w-[min(85vw,340px)] min-w-0 flex-shrink-0 snap-start flex-col overflow-hidden"
           >
             <AttendeeCard
               attendee={attendee}

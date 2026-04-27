@@ -23,7 +23,7 @@ export default function DashboardPage() {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h1 className="text-3xl font-display font-bold text-white">
-            Your Matches
+            Your matches
           </h1>
           <p className="text-white/60 mt-1">
             Discover leaders who share your challenges, interests, and goals

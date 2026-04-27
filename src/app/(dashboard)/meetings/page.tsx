@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { MeetingsContainer } from "@/components/meetings/meetings-container";
 
 export const metadata = {
-  title: "My Meetings | GS26",
+  title: "My meetings | GS26",
   description: "View and manage your scheduled meetings",
 };
 

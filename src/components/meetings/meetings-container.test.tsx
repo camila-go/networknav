@@ -97,7 +97,7 @@ describe("MeetingsContainer", () => {
   it("should render page title", async () => {
     render(<MeetingsContainer />);
 
-    expect(screen.getByText("My Meetings")).toBeInTheDocument();
+    expect(screen.getByText("My meetings")).toBeInTheDocument();
     expect(screen.getByText(/manage your scheduled meetings/i)).toBeInTheDocument();
   });
 
@@ -358,7 +358,7 @@ describe("MeetingsContainer", () => {
     render(<MeetingsContainer />);
 
     await waitFor(() => {
-      expect(screen.getByText("My Meetings")).toBeInTheDocument();
+      expect(screen.getByText("My meetings")).toBeInTheDocument();
     });
 
     // The view toggle is a pair of small buttons in a container div
@@ -381,7 +381,7 @@ describe("MeetingsContainer", () => {
       });
     } else {
       // If we can't find the toggle, just verify the component renders
-      expect(screen.getByText("My Meetings")).toBeInTheDocument();
+      expect(screen.getByText("My meetings")).toBeInTheDocument();
     }
   });
 

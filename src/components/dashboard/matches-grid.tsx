@@ -240,12 +240,12 @@ export function MatchesGrid({ onMatchesLoaded }: MatchesGridProps = {}) {
       <Tabs defaultValue="all" className="min-w-0 w-full">
         <TabsList className="mb-6 grid w-full grid-cols-3 border border-white/10 bg-white/5">
         <TabsTrigger value="all" className="press data-[state=active]:bg-white/10 data-[state=active]:text-white data-[state=active]:shadow-[inset_0_-2px_0_0_rgba(34,211,238,0.55)] text-white/60 text-xs sm:text-sm px-2 sm:px-4 transition-all duration-200 ease-out">
-          <span className="hidden sm:inline">All Matches</span>
+          <span className="hidden sm:inline">All matches</span>
           <span className="sm:hidden">All</span>
           <span className="ml-1">({matches.filter(m => !m.passed).length})</span>
         </TabsTrigger>
         <TabsTrigger value="high-affinity" className="press data-[state=active]:bg-white/10 data-[state=active]:text-white data-[state=active]:shadow-[inset_0_-2px_0_0_rgba(34,211,238,0.55)] text-white/60 text-xs sm:text-sm px-2 sm:px-4 transition-all duration-200 ease-out">
-          <span className="hidden sm:inline">High-Affinity</span>
+          <span className="hidden sm:inline">High-affinity</span>
           <span className="sm:hidden">High</span>
           <span className="ml-1">({highAffinityMatches.length})</span>
         </TabsTrigger>
@@ -262,7 +262,7 @@ export function MatchesGrid({ onMatchesLoaded }: MatchesGridProps = {}) {
             style={{ backgroundColor: "#1b8ea6" }}
           />
           <p className="text-xs leading-snug">
-            <span className="font-semibold text-white">High-Affinity</span>
+            <span className="font-semibold text-white">High-affinity</span>
             <span className="text-white/60"> — Leaders who share your goals, challenges, and interests. Great for validating ideas and finding common ground.</span>
           </p>
         </div>

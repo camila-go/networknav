@@ -15,9 +15,8 @@ export default function GalleryPage() {
           </span>
         </h1>
         <p className="mt-3 text-sm leading-relaxed text-white/60 sm:text-base">
-          See what attendees are into outside of work — photos cluster by
-          activity, with a share of the cohort who named each interest (survey
-          or photo label).
+          See what people enjoy outside of work - photos are grouped by
+          activity, along with how many people picked each interest.
         </p>
       </header>
       <div className="mt-10">

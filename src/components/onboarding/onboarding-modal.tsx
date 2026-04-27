@@ -4,21 +4,23 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { 
-  Sparkles, 
-  Users, 
-  MessageCircle, 
-  Calendar, 
-  Trophy, 
-  Flame, 
+import {
+  Sparkles,
+  Users,
+  MessageCircle,
+  Calendar,
+  Trophy,
+  Flame,
   Target,
   Zap,
   ArrowRight,
   Check,
-  Network
+  Network,
+  Image,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SHOW_GAMIFICATION_UI } from "@/lib/feature-flags";
+import { MAX_PROFILE_GALLERY_PHOTOS } from "@/lib/profile-gallery";
 
 const ONBOARDING_STORAGE_KEY = "jynx_onboarding_completed";
 const QUESTIONNAIRE_COMPLETED_KEY = "jynx_questionnaire_completed";
@@ -45,6 +47,19 @@ const ALL_ONBOARDING_STEPS: OnboardingStep[] = [
       { icon: <MessageCircle className="h-5 w-5" />, text: "Start conversations easily" },
     ],
     gradient: "from-cyan-500 to-teal-500",
+  },
+  {
+    id: "profile-photos",
+    title: "Photos on your profile",
+    description: `You can add up to ${MAX_PROFILE_GALLERY_PHOTOS} activity photos to your profile gallery—separate from your main profile picture. Open Profile in the navigation anytime to upload or manage them.`,
+    icon: <Image className="h-12 w-12" />,
+    highlights: [
+      {
+        icon: <Image className="h-5 w-5 text-cyan-300" />,
+        text: `Up to ${MAX_PROFILE_GALLERY_PHOTOS} gallery images from Profile help others see what you’re into`,
+      },
+    ],
+    gradient: "from-sky-500 to-cyan-600",
   },
   {
     id: "matches",

@@ -68,9 +68,8 @@ export const QUESTIONNAIRE_SECTIONS: QuestionSection[] = [
     questions: [
       {
         id: "roleSummary",
-        text: "In one sentence, what do you actually do – beyond your title?",
-        conversationalPrompt:
-          "In one sentence, what do you actually do – beyond your title?",
+        text: "Describe what you do in one sentence.",
+        conversationalPrompt: "Describe what you do in one sentence.",
         type: "text",
         required: true,
         textPlaceholder: "e.g. I help teams ship AI products customers trust",

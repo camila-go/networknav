@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase/client";
 import { checkRateLimit } from "@/lib/security/rateLimit";
+import { MAX_PROFILE_GALLERY_PHOTOS } from "@/lib/profile-gallery";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const MAX_SIZE = 10 * 1024 * 1024; // 10 MB
-const MAX_PHOTOS = 12;
 
 export async function POST(request: NextRequest) {
   try {
@@ -71,9 +71,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if ((count ?? 0) >= MAX_PHOTOS) {
+    if ((count ?? 0) >= MAX_PROFILE_GALLERY_PHOTOS) {
       return NextResponse.json(
-        { success: false, error: `Maximum ${MAX_PHOTOS} gallery photos allowed` },
+        {
+          success: false,
+          error: `Maximum ${MAX_PROFILE_GALLERY_PHOTOS} gallery photos allowed`,
+        },
         { status: 400 }
       );
     }

@@ -70,12 +70,12 @@ export async function getEncouragementMessage(
     if (streaks.daily.hoursUntilExpiry <= 6 && streaks.daily.current >= 3) {
       return {
         type: "streak_risk",
-        title: "Streak at Risk!",
+        title: "Streak at risk!",
         message: formatMessage(randomChoice(STREAK_RISK_MESSAGES), {
           streak: streaks.daily.current,
           hours: Math.ceil(streaks.daily.hoursUntilExpiry),
         }),
-        actionText: "Send a Message",
+        actionText: "Send a message",
         actionUrl: "/messages",
       };
     }
@@ -86,11 +86,11 @@ export async function getEncouragementMessage(
     const previousStreak = streaks.daily.longest;
     return {
       type: "streak_broken",
-      title: "Streak Ended",
+      title: "Streak ended",
       message: formatMessage(randomChoice(STREAK_BROKEN_MESSAGES), {
         streak: previousStreak,
       }),
-      actionText: "Start Fresh",
+      actionText: "Start fresh",
       actionUrl: "/dashboard",
     };
   }
@@ -99,9 +99,9 @@ export async function getEncouragementMessage(
   if (daysSinceActive >= 3 && daysSinceActive < 30) {
     return {
       type: "welcome_back",
-      title: "Welcome Back!",
+      title: "Welcome back!",
       message: randomChoice(WELCOME_BACK_MESSAGES),
-      actionText: "View Matches",
+      actionText: "View matches",
       actionUrl: "/dashboard",
     };
   }
@@ -112,7 +112,7 @@ export async function getEncouragementMessage(
     if (stats.totalPoints >= milestone && stats.totalPoints < milestone + 50) {
       return {
         type: "milestone",
-        title: "Milestone Reached!",
+        title: "Milestone reached!",
         message: formatMessage(randomChoice(MILESTONE_MESSAGES), {
           points: milestone,
           streak: streaks.daily.current,
@@ -129,9 +129,9 @@ export async function getEncouragementMessage(
       const pointsNeeded = streaks.weekly.pointsRequired - streaks.weekly.pointsThisWeek;
       return {
         type: "streak_risk",
-        title: "Weekly Goal Check-in",
+        title: "Weekly goal check-in",
         message: `You need ${pointsNeeded} more points to hit your weekly goal. You've got ${streaks.weekly.daysUntilReset} days left!`,
-        actionText: "Boost Points",
+        actionText: "Boost points",
         actionUrl: "/dashboard",
       };
     }
@@ -148,7 +148,7 @@ export async function getEncouragementMessage(
 export function getBadgeEarnedMessage(badgeName: string, tier: string): EncouragementMessage {
   return {
     type: "badge_earned",
-    title: "New Badge Earned!",
+    title: "New badge earned!",
     message: formatMessage(randomChoice(BADGE_EARNED_MESSAGES), {
       badge: `${tier.charAt(0).toUpperCase() + tier.slice(1)} ${badgeName}`,
     }),

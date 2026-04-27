@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { normalizeActivityTag } from "@/lib/profile/activity-tag";
+import { MAX_PROFILE_GALLERY_PHOTOS } from "@/lib/profile-gallery";
 import type { UserPhoto } from "@/types";
 
 interface PhotoGalleryProps {
@@ -19,7 +20,6 @@ interface PhotoGalleryProps {
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const MAX_SIZE = 10 * 1024 * 1024;
-const MAX_PHOTOS = 12;
 
 export function PhotoGallery({ userId, isOwner, withContainer = false, containerClassName }: PhotoGalleryProps) {
   const [photos, setPhotos] = useState<UserPhoto[]>([]);
@@ -292,7 +292,7 @@ export function PhotoGallery({ userId, isOwner, withContainer = false, container
                 }}
                 required
                 autoComplete="off"
-                disabled={uploading || photos.length >= MAX_PHOTOS}
+                disabled={uploading || photos.length >= MAX_PROFILE_GALLERY_PHOTOS}
                 placeholder="e.g. kayaking, fishing, cooking"
                 className="w-full max-w-sm rounded-md border border-amber-500/30 bg-zinc-950/80 px-3 py-2 text-sm text-white placeholder:text-white/35 focus:outline-none focus:ring-2 focus:ring-amber-500/50 disabled:opacity-50"
               />
@@ -304,7 +304,7 @@ export function PhotoGallery({ userId, isOwner, withContainer = false, container
             </div>
             <div className="flex shrink-0 items-center gap-2">
               <span className="text-sm text-white/50 sm:mr-2">
-                {photos.length} / {MAX_PHOTOS} photos
+                {photos.length} / {MAX_PROFILE_GALLERY_PHOTOS} photos
               </span>
               {uploadError && (
                 <span className="text-xs text-red-400 max-w-[14rem] sm:max-w-xs">{uploadError}</span>
@@ -322,7 +322,7 @@ export function PhotoGallery({ userId, isOwner, withContainer = false, container
                 variant="outline"
                 disabled={
                   uploading ||
-                  photos.length >= MAX_PHOTOS ||
+                  photos.length >= MAX_PROFILE_GALLERY_PHOTOS ||
                   !normalizeActivityTag(uploadActivityTag)
                 }
                 onClick={() => {

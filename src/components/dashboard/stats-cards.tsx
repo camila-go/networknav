@@ -7,11 +7,11 @@ import { Button } from "@/components/ui/button";
 
 // Celebration messages for weekly goal completion
 const CELEBRATION_MESSAGES = [
-  { title: "Goal Crushed! 🎉", message: "You're building an amazing network. Your future self will thank you!" },
-  { title: "Networking Champion! 🏆", message: "You've unlocked this week's connections. Keep the momentum going!" },
-  { title: "You Did It! ⭐", message: "Consistency is key, and you've got it. Your network is growing stronger!" },
-  { title: "Weekly Win! 🚀", message: "Another goal achieved! You're becoming a networking superstar!" },
-  { title: "Fantastic Week! 💪", message: "You showed up for your network, and that's powerful!" },
+  { title: "Goal crushed! 🎉", message: "You're building an amazing network. Your future self will thank you!" },
+  { title: "Networking champion! 🏆", message: "You've unlocked this week's connections. Keep the momentum going!" },
+  { title: "You did it! ⭐", message: "Consistency is key, and you've got it. Your network is growing stronger!" },
+  { title: "Weekly win! 🚀", message: "Another goal achieved! You're becoming a networking superstar!" },
+  { title: "Fantastic week! 💪", message: "You showed up for your network, and that's powerful!" },
 ];
 
 const WEEKLY_GOAL_OPTIONS = [
@@ -230,7 +230,7 @@ export function StatsCards({ matchCount, matchScore }: StatsCardsProps = {}) {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-green-300">
-              Weekly Goal Achieved! 🎉
+              Weekly goal achieved! 🎉
             </p>
             <p className="text-xs text-white/60">
               You've hit {weeklyPoints} points this week. Keep connecting to build even more momentum!
@@ -262,7 +262,7 @@ export function StatsCards({ matchCount, matchScore }: StatsCardsProps = {}) {
               <p className="text-2xl sm:text-3xl font-bold text-white">
                 {isLoading ? "—" : totalPoints.toLocaleString()}
               </p>
-              <p className="text-xs sm:text-sm text-cyan-300/80">Connection Points</p>
+              <p className="text-xs sm:text-sm text-cyan-300/80">Connection points</p>
             </div>
           </div>
         </div>
@@ -284,7 +284,7 @@ export function StatsCards({ matchCount, matchScore }: StatsCardsProps = {}) {
                 </p>
                 <span className="text-xs text-white/40">days</span>
               </div>
-              <p className="text-xs sm:text-sm text-white/60">Daily Streak</p>
+              <p className="text-xs sm:text-sm text-white/60">Daily streak</p>
             </div>
           </div>
         </div>
@@ -318,7 +318,7 @@ export function StatsCards({ matchCount, matchScore }: StatsCardsProps = {}) {
                 {goalMet && <Sparkles className="h-4 w-4 text-amber-400 ml-1" />}
               </div>
               <p className={`text-xs sm:text-sm ${goalMet ? 'text-green-300/80' : 'text-white/60'}`}>
-                {goalMet ? 'Goal Achieved!' : 'Weekly Goal'}
+                {goalMet ? 'Goal achieved!' : 'Weekly goal'}
               </p>
             </div>
             {/* Settings button */}
@@ -348,7 +348,7 @@ export function StatsCards({ matchCount, matchScore }: StatsCardsProps = {}) {
           {showGoalPicker && (
             <div className="absolute left-0 right-auto top-full mt-2 z-50 w-64 max-w-[min(16rem,calc(100vw-1.5rem))] lg:left-auto lg:right-0 bg-gray-900 border border-white/20 rounded-xl shadow-xl overflow-hidden">
               <div className="px-3 py-2 border-b border-white/10">
-                <p className="text-xs font-medium text-white/50 uppercase tracking-wider">Set Weekly Goal</p>
+                <p className="text-xs font-medium text-white/50 tracking-wide">Set weekly goal</p>
               </div>
               <div className="max-h-64 overflow-y-auto">
                 {WEEKLY_GOAL_OPTIONS.map((option) => (
@@ -391,7 +391,7 @@ export function StatsCards({ matchCount, matchScore }: StatsCardsProps = {}) {
                 {isLoading ? "—" : (matchScore ? `${matchScore}%` : matchCount || 0)}
               </p>
               <p className="text-xs sm:text-sm text-white/60">
-                {matchScore ? "Avg Match" : "Total Matches"}
+                {matchScore ? "Avg match" : "Total matches"}
               </p>
             </div>
           </div>

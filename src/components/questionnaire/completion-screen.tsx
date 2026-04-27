@@ -1,6 +1,7 @@
 import { CheckCircle2, Users, Sparkles, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { MAX_PROFILE_GALLERY_PHOTOS } from "@/lib/profile-gallery";
 
 interface CompletionScreenProps {
   matchPotential?: {
@@ -75,7 +76,9 @@ export function CompletionScreen({
           <p className="text-sm">
             <span className="font-medium text-primary">Pro tip:</span> Update
             your profile photo and company info to make a great first impression
-            when connecting.
+            when connecting. On Profile, you can add up to{" "}
+            {MAX_PROFILE_GALLERY_PHOTOS} activity gallery photos so people see
+            what you are into.
           </p>
         </div>
 
