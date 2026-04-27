@@ -140,10 +140,12 @@ export function MatchCard({
     >
       <div
         className={cn(
-          "flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain",
-          isCarousel ? "touch-auto" : "touch-pan-y"
+          "flex min-h-0 flex-1 flex-col",
+          isCarousel
+            ? "touch-manipulation overflow-hidden"
+            : "touch-pan-y overflow-y-auto overscroll-contain"
         )}
-        style={{ WebkitOverflowScrolling: "touch" }}
+        style={isCarousel ? undefined : { WebkitOverflowScrolling: "touch" }}
       >
         {/* Figma: chip top-right, then avatar row (rounded pill, not full-width cap) */}
         <div className="shrink-0 px-4 pb-3 pt-[11px]">

@@ -149,19 +149,22 @@ function ThemePhotoSlideshow({
   const handleFadeEnd = useCallback(() => {
     if (fadeEndCommittedRef.current) return;
     fadeEndCommittedRef.current = true;
-    setIdx((i) => (i + 1) % n);
-    setIsFading(false);
+    // Defer index swap and fade reset so the compositor can finish the opacity
+    // transition before React swaps Image src (avoids one-frame flash / jump).
+    requestAnimationFrame(() => {
+      setIdx((i) => (i + 1) % n);
+      requestAnimationFrame(() => {
+        setIsFading(false);
+        fadeEndCommittedRef.current = false;
+      });
+    });
   }, [n]);
-
-  useEffect(() => {
-    if (!isFading) fadeEndCommittedRef.current = false;
-  }, [isFading]);
 
   if (n === 0) return null;
 
   if (n === 1) {
     return (
-      <div className="absolute inset-0 z-0 overflow-hidden">
+      <div className="absolute inset-0 z-0 overflow-hidden bg-black">
         <Image
           src={photos[0].url}
           alt=""
@@ -245,13 +248,12 @@ function ThemeCarouselCardView({
     ? "(max-width: 640px) 92vw, 380px"
     : "(max-width: 640px) 50vw, 220px";
 
-  /** Inset photo + scrim from card stroke; inner radius tracks outer rounded corners. */
-  const photoFrameClass =
-    "absolute inset-2.5 z-0 overflow-hidden rounded-[14px] sm:inset-3 sm:rounded-[16px] md:rounded-[20px]";
+  /** Full-bleed under card radius (inset frame was exposing bg as grey bars). */
+  const photoFrameClass = "absolute inset-0 z-0 overflow-hidden";
 
   return (
     <div
-      className={`relative aspect-[3/4] w-[min(92vw,380px)] overflow-hidden rounded-[1.5rem] border border-white/12 bg-zinc-900 shadow-[0_24px_55px_-12px_rgba(0,0,0,0.92)] sm:w-[min(90vw,320px)] sm:rounded-[1.75rem] md:w-[300px] md:rounded-[2rem] ${THEME_FLOW_EASE}`}
+      className={`relative aspect-[3/4] w-[min(92vw,380px)] overflow-hidden rounded-[1.5rem] bg-zinc-950 shadow-[0_24px_55px_-12px_rgba(0,0,0,0.92)] sm:w-[min(90vw,320px)] sm:rounded-[1.75rem] md:w-[300px] md:rounded-[2rem] ${THEME_FLOW_EASE}`}
     >
       <div className={photoFrameClass}>
         <ThemePhotoSlideshow

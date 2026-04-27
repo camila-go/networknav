@@ -45,9 +45,12 @@ export function AttendeeCard({
     .join("")
     .toUpperCase();
 
-  const displayedCommonalities = showAllCommonalities
-    ? topCommonalities
-    : topCommonalities.slice(0, 3);
+  const isCarousel = variant === "carousel";
+
+  const displayedCommonalities =
+    isCarousel || !showAllCommonalities
+      ? topCommonalities.slice(0, 3)
+      : topCommonalities;
 
   const displayStarters = useMemo(() => {
     if (attendee.conversationStarters?.length) {
@@ -98,8 +101,6 @@ export function AttendeeCard({
   const scorePercent = Math.min(100, Math.max(0, Math.round(matchPercentage)));
   const barWidth = `${scorePercent}%`;
 
-  const isCarousel = variant === "carousel";
-
   return (
     <div
       className={cn(
@@ -112,10 +113,12 @@ export function AttendeeCard({
     >
       <div
         className={cn(
-          "flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain",
-          isCarousel ? "touch-auto" : "touch-pan-y"
+          "flex min-h-0 flex-1 flex-col",
+          isCarousel
+            ? "touch-manipulation overflow-hidden"
+            : "touch-pan-y overflow-y-auto overscroll-contain"
         )}
-        style={{ WebkitOverflowScrolling: "touch" }}
+        style={isCarousel ? undefined : { WebkitOverflowScrolling: "touch" }}
       >
         <div className="shrink-0 px-4 pb-3 pt-[11px]">
           <div className="flex w-full flex-col items-end gap-[11px]">
@@ -185,7 +188,7 @@ export function AttendeeCard({
               ))}
             </ul>
 
-            {topCommonalities.length > 3 && (
+            {!isCarousel && topCommonalities.length > 3 && (
               <button
                 type="button"
                 onClick={() => setShowAllCommonalities(!showAllCommonalities)}
