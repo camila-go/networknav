@@ -182,10 +182,11 @@ export function NetworkPulseSection() {
       >
         <div className="mt-2 flex min-w-0 flex-col gap-1 pt-2 sm:gap-2 sm:pt-3 lg:mt-3 lg:gap-[9px] lg:pt-3">
           {/*
-            Poll carousel: full-width slides. Inner card uses touch-auto (not touch-pan-y)
-            so horizontal swipes reach this row; vote buttons use touch-manipulation.
+            Poll carousel: bleed matches section padding so edge swipes hit the track;
+            card body uses overflow-hidden + touch-manipulation (not touch-pan-y) so
+            horizontal pans reach this row.
           */}
-          <div className="relative min-w-0 w-full max-w-full">
+          <div className="relative min-w-0 w-full max-w-full -mx-4 px-4 sm:-mx-5 sm:px-5 lg:-mx-6 lg:px-6">
             <div
               ref={scrollRef}
               onScroll={handleScroll}
@@ -290,10 +291,7 @@ function PulseQuestionCard({
       aria-label={poll.question}
     >
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-[#62d0ea]/22 bg-[#0d0d0d] shadow-inner shadow-black/20">
-        <div
-          className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain touch-pan-y px-3 py-4 md:px-5 md:py-7 lg:px-[34px] lg:py-8"
-          style={{ WebkitOverflowScrolling: "touch" }}
-        >
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden touch-manipulation px-3 py-4 md:px-5 md:py-7 lg:px-[34px] lg:py-8">
           <div className="flex w-full flex-col gap-4 sm:gap-5 md:gap-[19px] lg:flex-row lg:items-center lg:justify-between lg:gap-8 xl:gap-10">
             <h3 className="shrink-0 text-center text-base font-bold leading-snug text-[#62d0ea] lg:max-w-[42%] lg:text-left xl:max-w-[40%]">
               {poll.question}

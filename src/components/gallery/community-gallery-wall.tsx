@@ -149,16 +149,20 @@ function ThemePhotoSlideshow({
   const handleFadeEnd = useCallback(() => {
     if (fadeEndCommittedRef.current) return;
     fadeEndCommittedRef.current = true;
-    // Defer index swap and fade reset so the compositor can finish the opacity
-    // transition before React swaps Image src (avoids one-frame flash / jump).
-    requestAnimationFrame(() => {
-      setIdx((i) => (i + 1) % n);
-      requestAnimationFrame(() => {
-        setIsFading(false);
-        fadeEndCommittedRef.current = false;
-      });
+    setIdx((i) => (i + 1) % n);
+    setIsFading(false);
+    queueMicrotask(() => {
+      fadeEndCommittedRef.current = false;
     });
   }, [n]);
+
+  // Drive the dissolve strictly on wall-clock time so it always matches
+  // SLIDESHOW_DISSOLVE_MS (transitionend can fire early or twice on some engines).
+  useEffect(() => {
+    if (!isFading) return;
+    const id = window.setTimeout(handleFadeEnd, SLIDESHOW_DISSOLVE_MS);
+    return () => window.clearTimeout(id);
+  }, [isFading, handleFadeEnd]);
 
   if (n === 0) return null;
 
@@ -177,24 +181,24 @@ function ThemePhotoSlideshow({
     );
   }
 
-  const dissolveStyle = {
-    transition: `opacity ${SLIDESHOW_DISSOLVE_MS}ms linear`,
-    ...(isFading ? { willChange: "opacity" as const } : {}),
+  const dissolveMs = SLIDESHOW_DISSOLVE_MS;
+  const layerStyle = {
+    transitionProperty: "opacity",
+    transitionDuration: `${dissolveMs}ms`,
+    transitionTimingFunction: "linear" as const,
+    backfaceVisibility: "hidden" as const,
+    WebkitBackfaceVisibility: "hidden" as const,
+    transform: "translateZ(0)",
   };
 
   return (
-    <div className="absolute inset-0 z-0 overflow-hidden">
+    <div className="absolute inset-0 z-0 overflow-hidden bg-black">
       <div
         className="absolute inset-0"
         style={{
-          ...dissolveStyle,
+          ...layerStyle,
           opacity: isFading ? 0 : 1,
           zIndex: isFading ? 1 : 2,
-        }}
-        onTransitionEnd={(e) => {
-          if (e.target !== e.currentTarget) return;
-          if (e.propertyName !== "opacity" || !isFading) return;
-          handleFadeEnd();
         }}
       >
         <Image
@@ -209,7 +213,7 @@ function ThemePhotoSlideshow({
       <div
         className="absolute inset-0"
         style={{
-          ...dissolveStyle,
+          ...layerStyle,
           opacity: isFading ? 1 : 0,
           zIndex: isFading ? 2 : 1,
         }}
@@ -220,7 +224,7 @@ function ThemePhotoSlideshow({
           fill
           className={SLIDESHOW_IMAGE_CLASS}
           sizes={imageSizes}
-          priority={false}
+          priority={isFocal}
         />
       </div>
     </div>

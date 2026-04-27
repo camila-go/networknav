@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import Image from "next/image";
 import { Maximize2, Minimize2, MonitorPlay, RefreshCw } from "lucide-react";
 import { galleryTagBackground } from "@/lib/gallery/tag-accent";
@@ -25,40 +32,52 @@ type Payload = {
 
 const POLL_MS = 12_000;
 const PHOTO_ROTATE_MS = 5_000;
-const TILE_COUNT = 4;
+const TILE_COUNT = 10;
 
-/** Solid gradient backgrounds for the four stat tiles. Order matches the mockup. */
+/** Solid gradient backgrounds for stat tiles (index 0–9). */
 const TILE_ACCENTS: readonly string[] = [
-  // 0 — big left (blue/indigo)
   "from-[#3b3fd6] via-[#3137b8] to-[#262a8f]",
-  // 1 — top right (teal)
   "from-[#3fa1aa] via-[#2f858d] to-[#256b72]",
-  // 2 — middle right small (lighter teal)
   "from-[#4fb8c2] via-[#3e9aa3] to-[#2d7f87]",
-  // 3 — bottom full (orange)
   "from-[#f08a3a] via-[#dc7428] to-[#b85a1a]",
+  "from-[#7c3aed] via-[#5b21b6] to-[#4c1d95]",
+  "from-[#db2777] via-[#be185d] to-[#9d174d]",
+  "from-[#0d9488] via-[#0f766e] to-[#115e59]",
+  "from-[#ca8a04] via-[#a16207] to-[#854d0e]",
+  "from-[#4f46e5] via-[#4338ca] to-[#3730a3]",
+  "from-[#0ea5e9] via-[#0284c7] to-[#0369a1]",
 ];
 
 function formatPercent(pct: number): string {
   return `${Math.round(pct)}%`;
 }
 
-function pickPhotoUrl(theme: ProjectorThemeRow): string | null {
-  for (const p of theme.samplePhotos) {
-    if (isSafeGalleryImageUrl(p.url)) return p.url;
-  }
-  return null;
-}
-
 function buildPhotoRotation(
   themes: ProjectorThemeRow[]
 ): Array<{ url: string; tag: string; percent: number }> {
+  const seen = new Set<string>();
   const out: Array<{ url: string; tag: string; percent: number }> = [];
   for (const t of themes) {
-    const url = pickPhotoUrl(t);
-    if (url) out.push({ url, tag: t.tag, percent: t.percent });
+    for (const p of t.samplePhotos) {
+      if (!isSafeGalleryImageUrl(p.url)) continue;
+      if (seen.has(p.url)) continue;
+      seen.add(p.url);
+      out.push({ url: p.url, tag: t.tag, percent: t.percent });
+    }
   }
   return out;
+}
+
+function usePrefersReducedMotion(): boolean {
+  return useSyncExternalStore(
+    (onStoreChange) => {
+      const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+      mq.addEventListener("change", onStoreChange);
+      return () => mq.removeEventListener("change", onStoreChange);
+    },
+    () => window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    () => false
+  );
 }
 
 function KenBurnsPhoto({
@@ -68,10 +87,16 @@ function KenBurnsPhoto({
   url: string;
   direction: "forward" | "reverse";
 }) {
+  const reduceMotion = usePrefersReducedMotion();
   const animClass =
-    direction === "forward" ? "animate-kenburns" : "animate-kenburns-reverse";
+    direction === "forward"
+      ? "motion-safe:animate-kenburns"
+      : "motion-safe:animate-kenburns-reverse";
   return (
-    <div key={url} className={cn("absolute inset-0 z-0 animate-fade-in", animClass)}>
+    <div
+      key={url}
+      className={cn("absolute inset-0 z-0 animate-fade-in", !reduceMotion && animClass)}
+    >
       <Image
         src={url}
         alt=""
@@ -113,16 +138,16 @@ function PhotoCard({
         aria-hidden
       />
       <span
-        className="pointer-events-none absolute right-4 top-4 z-10 rounded-lg px-3 py-1.5 text-sm font-medium lowercase text-white shadow-lg sm:text-base lg:text-lg"
+        className="pointer-events-none absolute right-2 top-2 z-10 rounded-md px-2 py-1 text-xs font-medium lowercase text-white shadow-lg sm:right-4 sm:top-4 sm:rounded-lg sm:px-3 sm:py-1.5 sm:text-sm lg:text-base"
         style={{ backgroundColor: galleryTagBackground(current.tag) }}
       >
         {current.tag}
       </span>
-      <div className="pointer-events-none absolute bottom-0 left-0 z-10 flex w-full flex-col gap-0.5 px-5 pb-5 text-left sm:px-6 sm:pb-6">
-        <p className="text-5xl font-bold tabular-nums leading-none text-white drop-shadow-lg sm:text-6xl lg:text-7xl">
+      <div className="pointer-events-none absolute bottom-0 left-0 z-10 flex w-full flex-col gap-0.5 px-3 pb-3 text-left sm:px-6 sm:pb-6">
+        <p className="text-3xl font-bold tabular-nums leading-none text-white drop-shadow-lg sm:text-5xl lg:text-7xl">
           {formatPercent(current.percent)}
         </p>
-        <p className="text-sm font-semibold text-white/90 sm:text-base lg:text-lg">
+        <p className="text-xs font-semibold text-white/90 sm:text-base lg:text-lg">
           of attendees
         </p>
       </div>
@@ -224,39 +249,29 @@ function StatTile({
 
 function StatsGrid({ themes }: { themes: ProjectorThemeRow[] }) {
   const top = useMemo(() => themes.slice(0, TILE_COUNT), [themes]);
-  const [t0, t1, t2, t3] = [
-    top[0] ?? null,
-    top[1] ?? null,
-    top[2] ?? null,
-    top[3] ?? null,
-  ];
+  const slots = useMemo(() => {
+    const row: Array<ProjectorThemeRow | null> = [];
+    for (let i = 0; i < TILE_COUNT; i++) row.push(top[i] ?? null);
+    return row;
+  }, [top]);
 
   return (
-    <div className="grid h-full min-h-0 grid-cols-2 grid-rows-3 gap-3 sm:gap-4">
-      <StatTile
-        theme={t0}
-        accent={TILE_ACCENTS[0]}
-        size="lg"
-        className="col-span-1 row-span-2"
-      />
-      <StatTile
-        theme={t1}
-        accent={TILE_ACCENTS[1]}
-        size="md"
-        className="col-span-1 row-span-1"
-      />
-      <StatTile
-        theme={t2}
-        accent={TILE_ACCENTS[2]}
-        size="sm"
-        className="col-span-1 row-span-1"
-      />
-      <StatTile
-        theme={t3}
-        accent={TILE_ACCENTS[3]}
-        size="md"
-        className="col-span-2 row-span-1"
-      />
+    <div
+      className={cn(
+        "grid h-full min-h-0 auto-rows-fr gap-2 sm:gap-2.5",
+        "grid-cols-2 grid-rows-5",
+        "md:grid-cols-5 md:grid-rows-2 md:gap-3"
+      )}
+    >
+      {slots.map((theme, i) => (
+        <StatTile
+          key={i}
+          theme={theme}
+          accent={TILE_ACCENTS[i] ?? TILE_ACCENTS[0]}
+          size="sm"
+          className="min-h-0"
+        />
+      ))}
     </div>
   );
 }
@@ -271,8 +286,8 @@ function DashboardFrame({
   return (
     <div
       className={cn(
-        "flex w-full max-w-full flex-col overflow-hidden rounded-[28px] border border-white/10 bg-black p-5 shadow-[0_0_0_1px_rgba(255,255,255,0.06)] sm:p-6 lg:p-8",
-        "min-h-[520px] sm:min-h-[580px]",
+        "flex w-full max-w-full min-h-0 flex-col overflow-hidden rounded-[28px] border border-white/10 bg-black p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.06)] sm:p-6 lg:p-8",
+        "min-h-[min(520px,72dvh)] sm:min-h-[560px]",
         "lg:aspect-video lg:min-h-0",
         presentMode
           ? "max-h-[min(calc(100dvh-6rem),min(95vw*9/16,94dvh))] flex-1"
@@ -385,7 +400,7 @@ export function AdminProjectorDashboard() {
   const dashboard = (
     <DashboardFrame presentMode={presentMode}>
       <div className="flex min-h-0 flex-1 flex-col gap-4 lg:flex-row lg:gap-6">
-        <div className="relative min-h-[240px] flex-1 lg:min-h-0 lg:basis-[42%]">
+        <div className="relative min-h-[200px] flex-1 sm:min-h-[220px] lg:min-h-0 lg:basis-[42%]">
           <PhotoCard rotation={rotation} photoIndex={photoIndex} />
         </div>
         <div className="flex min-h-0 flex-1 flex-col gap-4 lg:basis-[58%]">
@@ -416,7 +431,7 @@ export function AdminProjectorDashboard() {
       className={cn(
         "w-full min-w-0 text-white",
         presentMode
-          ? "fixed inset-0 z-50 flex flex-col bg-black p-3 sm:p-4 md:p-6"
+          ? "fixed inset-0 z-50 flex flex-col bg-black px-3 pt-[max(0.75rem,calc(0.75rem+env(safe-area-inset-top)))] pb-[max(0.75rem,calc(0.75rem+env(safe-area-inset-bottom)))] pl-[max(0.75rem,calc(0.75rem+env(safe-area-inset-left)))] pr-[max(0.75rem,calc(0.75rem+env(safe-area-inset-right)))] sm:px-4 sm:pt-4 sm:pb-4 md:px-6 md:pt-6 md:pb-6"
           : "space-y-5 sm:space-y-6"
       )}
     >
@@ -501,7 +516,8 @@ export function AdminProjectorDashboard() {
       {!presentMode && cohort ? (
         <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-white/50 sm:text-xs">
           <span>
-            Showing top {Math.min(TILE_COUNT, cohort.themeCount)} of {cohort.themeCount} activities.
+            Showing top {Math.min(TILE_COUNT, cohort.themeCount)} of{" "}
+            {cohort.themeCount} activities.
           </span>
           <span className="inline-flex items-center gap-1.5 tabular-nums text-emerald-400/90">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />

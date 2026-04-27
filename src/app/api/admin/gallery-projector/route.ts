@@ -23,6 +23,8 @@ const METHODOLOGY =
   "Full network: all registered profiles in user_profiles. Percent = share of all registered users who labeled a gallery photo with this activity.";
 
 const MAX_THEMES_RETURN = 200;
+/** Admin projector UI shows this many top-ranked themes (full network count stays in themeCount). */
+const PROJECTOR_THEME_LIMIT = 10;
 
 type RawPhotoRow = {
   user_id: string;
@@ -188,7 +190,7 @@ export async function GET() {
           totalLabeledPhotos: networkBuilt.totalLabeledPhotos,
           usersWithLabeledPhoto: distinctUsersWithLabeledPhoto(photos, allSet),
           themeCount: networkBuilt.themes.length,
-          themes: networkThemes,
+          themes: networkThemes.slice(0, PROJECTOR_THEME_LIMIT),
         },
       },
     }, { headers: PRIVATE_CACHE });
