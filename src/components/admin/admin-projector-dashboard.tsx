@@ -187,22 +187,22 @@ function StatTile({
       ? "text-7xl sm:text-8xl lg:text-9xl"
       : size === "md"
         ? "text-5xl sm:text-6xl lg:text-7xl"
-        : "text-3xl sm:text-4xl lg:text-5xl";
+        : "text-xl leading-tight max-md:tracking-tight sm:text-2xl md:text-3xl lg:text-4xl";
   const tagSize =
     size === "lg"
       ? "text-lg sm:text-xl lg:text-2xl"
       : size === "md"
         ? "text-sm sm:text-base lg:text-lg"
-        : "text-xs sm:text-sm";
+        : "text-[11px] leading-snug max-md:line-clamp-2 sm:text-xs md:text-sm";
   const pad =
-    size === "lg" ? "p-6 lg:p-8" : size === "md" ? "p-4 lg:p-6" : "p-3 lg:p-4";
+    size === "lg" ? "p-6 lg:p-8" : size === "md" ? "p-4 lg:p-6" : "p-2.5 sm:p-3 md:p-4";
 
   return (
     <div
       className={cn(
-        "relative flex flex-col justify-between overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br shadow-lg",
+        "relative flex min-h-0 flex-col justify-start gap-1 overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br shadow-lg sm:gap-1.5 md:justify-between md:gap-0",
         "transition-transform duration-300 ease-out",
-        pulse && "scale-[1.03] ring-2 ring-white/40",
+        pulse && "max-md:ring-2 max-md:ring-white/30 md:scale-[1.03] md:ring-2 md:ring-white/40",
         accent,
         pad,
         className
@@ -217,7 +217,7 @@ function StatTile({
           />
           <p
             className={cn(
-              "font-bold tabular-nums leading-none text-white drop-shadow",
+              "shrink-0 font-bold tabular-nums text-white drop-shadow max-md:leading-none md:leading-none",
               percentSize
             )}
           >
@@ -226,7 +226,7 @@ function StatTile({
           <p
             key={theme.tag}
             className={cn(
-              "animate-fade-in font-semibold lowercase text-white",
+              "min-h-0 shrink-0 animate-fade-in font-semibold lowercase text-white max-md:break-words",
               tagSize
             )}
           >
@@ -258,9 +258,9 @@ function StatsGrid({ themes }: { themes: ProjectorThemeRow[] }) {
   return (
     <div
       className={cn(
-        "grid h-full min-h-0 auto-rows-fr gap-2 sm:gap-2.5",
-        "grid-cols-2 grid-rows-5",
-        "md:grid-cols-5 md:grid-rows-2 md:gap-3"
+        "grid h-full min-h-0 gap-2 sm:gap-2.5",
+        /* minmax(0,1fr) rows collapse on short mobile viewports and text stacks overlap — use content-sized rows < md */
+        "grid-cols-2 auto-rows-min max-md:grid-rows-none md:grid-rows-2 md:auto-rows-fr md:grid-cols-5 md:gap-3"
       )}
     >
       {slots.map((theme, i) => (
