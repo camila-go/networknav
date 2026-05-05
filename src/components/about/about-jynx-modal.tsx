@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { X, MessageCircle, ExternalLink } from "lucide-react";
 import { cn, teamsChartUrl } from "@/lib/utils";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface AboutJynxModalProps {
@@ -105,6 +106,18 @@ function TeamMemberCard({
 
 export function AboutJynxModal({ open, onOpenChange }: AboutJynxModalProps) {
   const [members, setMembers] = useState<TeamMember[] | null>(null);
+
+  // The modal is opened from `DashboardNav`, which stays mounted across in-app
+  // navigation. Without this, clicking an internal Link inside the modal navigates
+  // but the open state stays true so the overlay keeps covering the new page.
+  const pathname = usePathname();
+  const lastPathRef = useRef(pathname);
+  useEffect(() => {
+    if (pathname !== lastPathRef.current) {
+      lastPathRef.current = pathname;
+      if (open) onOpenChange(false);
+    }
+  }, [pathname, open, onOpenChange]);
 
   useEffect(() => {
     if (!open) return;
