@@ -1,5 +1,10 @@
 import { supabaseAdmin } from "@/lib/supabase/client";
 import { enrichProfileRowsWithResolvedPhotoUrl } from "@/lib/profile/profile-photo-url";
+import {
+  canonicalIdForProfileLookup,
+  LISA_LUCAS_AVATAR_PUBLIC_URL,
+  LISA_LUCAS_USER_PROFILE_ID,
+} from "@/lib/team/lisa-lucas";
 
 /** Row shape from `user_profiles` (subset used by profile + team). */
 export type UserProfileLookupRow = {
@@ -25,7 +30,14 @@ async function withResolvedPhoto(
   const [enriched] = await enrichProfileRowsWithResolvedPhotoUrl(supabaseAdmin, [
     row,
   ]);
-  return (enriched as UserProfileLookupRow) ?? row;
+  let out = (enriched as UserProfileLookupRow) ?? row;
+  if (
+    out.id === LISA_LUCAS_USER_PROFILE_ID &&
+    !(out.photo_url && out.photo_url.trim())
+  ) {
+    out = { ...out, photo_url: LISA_LUCAS_AVATAR_PUBLIC_URL };
+  }
+  return out;
 }
 
 /**
@@ -36,19 +48,20 @@ export async function lookupUserProfileByIdentifier(
   identifier: string
 ): Promise<UserProfileLookupRow | null> {
   if (!supabaseAdmin) return null;
-  const raw = identifier.trim();
-  if (!raw) return null;
+  const trimmed = identifier.trim();
+  if (!trimmed) return null;
+  const lookupKey = canonicalIdForProfileLookup(trimmed);
 
   const isUuid =
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-      raw
+      lookupKey
     );
 
   if (isUuid) {
     const { data } = await supabaseAdmin
       .from("user_profiles")
       .select(SELECT)
-      .eq("id", raw)
+      .eq("id", lookupKey)
       .maybeSingle();
     if (data) return withResolvedPhoto(data as UserProfileLookupRow);
   }
@@ -56,14 +69,14 @@ export async function lookupUserProfileByIdentifier(
   const { data: byName } = await supabaseAdmin
     .from("user_profiles")
     .select(SELECT)
-    .ilike("name", raw)
+    .ilike("name", lookupKey)
     .order("updated_at", { ascending: false })
     .limit(1)
     .maybeSingle();
   if (byName) return withResolvedPhoto(byName as UserProfileLookupRow);
 
-  if (raw.includes(".")) {
-    const nameWithSpaces = raw.replace(/\./g, " ");
+  if (lookupKey.includes(".")) {
+    const nameWithSpaces = lookupKey.replace(/\./g, " ");
     const { data } = await supabaseAdmin
       .from("user_profiles")
       .select(SELECT)
@@ -77,7 +90,7 @@ export async function lookupUserProfileByIdentifier(
   const { data: byEmailPrefix } = await supabaseAdmin
     .from("user_profiles")
     .select(SELECT)
-    .ilike("email", `${raw}@%`)
+    .ilike("email", `${lookupKey}@%`)
     .order("updated_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -87,7 +100,7 @@ export async function lookupUserProfileByIdentifier(
   const { data: byEmailContains } = await supabaseAdmin
     .from("user_profiles")
     .select(SELECT)
-    .ilike("email", `%${raw}%`)
+    .ilike("email", `%${lookupKey}%`)
     .order("updated_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -95,8 +108,8 @@ export async function lookupUserProfileByIdentifier(
     return withResolvedPhoto(byEmailContains as UserProfileLookupRow);
   }
 
-  const normalized = raw.replace(/[._]/g, " ").replace(/\s+/g, " ").trim();
-  if (normalized.length >= 3 && normalized !== raw) {
+  const normalized = lookupKey.replace(/[._]/g, " ").replace(/\s+/g, " ").trim();
+  if (normalized.length >= 3 && normalized !== lookupKey) {
     const { data } = await supabaseAdmin
       .from("user_profiles")
       .select(SELECT)

@@ -6,6 +6,11 @@ import type { PublicUser, MeetingStatus } from "@/types";
 import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
 import { isLiveDatabaseMode } from "@/lib/supabase/data-mode";
 import { applyGamificationUnlockNotifications } from "@/lib/gamification/unlock-notifications";
+import {
+  canonicalIdForProfileLookup,
+  LISA_LUCAS_AVATAR_PUBLIC_URL,
+  LISA_LUCAS_USER_PROFILE_ID,
+} from "@/lib/team/lisa-lucas";
 
 // Helper to get user profile by ID
 function getUserById(userId: string): PublicUser | null {
@@ -33,10 +38,12 @@ function getUserById(userId: string): PublicUser | null {
 async function getUserFromSupabase(userId: string): Promise<PublicUser | null> {
   if (!isSupabaseConfigured || !supabaseAdmin) return null;
 
+  const effectiveId = canonicalIdForProfileLookup(userId.trim());
+
   const { data, error } = await supabaseAdmin
     .from("user_profiles")
     .select("id, name, title, company, photo_url, location, questionnaire_completed")
-    .eq("id", userId)
+    .eq("id", effectiveId)
     .single();
 
   if (error || !data) return null;
@@ -51,13 +58,19 @@ async function getUserFromSupabase(userId: string): Promise<PublicUser | null> {
     questionnaire_completed?: boolean;
   };
 
+  const photoUrl =
+    (row.photo_url && row.photo_url.trim()) ||
+    (row.id === LISA_LUCAS_USER_PROFILE_ID
+      ? LISA_LUCAS_AVATAR_PUBLIC_URL
+      : undefined);
+
   return {
     id: row.id,
     profile: {
       name: row.name,
       title: row.title || "",
       company: row.company,
-      photoUrl: row.photo_url,
+      photoUrl,
       location: row.location,
     },
     questionnaireCompleted: row.questionnaire_completed || false,
@@ -69,7 +82,16 @@ function getDemoUser(userId: string): PublicUser | null {
     "demo-sarah": { id: "demo-sarah", profile: { name: "Sarah Chen", title: "Engineering Leader", company: "TechCorp" }, questionnaireCompleted: true },
     "demo-marcus": { id: "demo-marcus", profile: { name: "Marcus Johnson", title: "HR Executive", company: "GrowthStartup" }, questionnaireCompleted: true },
     "demo-elena": { id: "demo-elena", profile: { name: "Elena Rodriguez", title: "Founder & CEO", company: "InnovateCo" }, questionnaireCompleted: true },
-    "team-lisa-lucas": { id: "team-lisa-lucas", profile: { name: "Lisa Lucas", title: "Senior Designer", company: "Strategic Education" }, questionnaireCompleted: true },
+    "team-lisa-lucas": {
+      id: "team-lisa-lucas",
+      profile: {
+        name: "Lisa Lucas",
+        title: "Senior Designer",
+        company: "Strategic Education",
+        photoUrl: LISA_LUCAS_AVATAR_PUBLIC_URL,
+      },
+      questionnaireCompleted: true,
+    },
     "demo-david": { id: "demo-david", profile: { name: "David Park", title: "Product Leader", company: "ScaleUp Inc" }, questionnaireCompleted: true },
     "demo-aisha": { id: "demo-aisha", profile: { name: "Aisha Patel", title: "Technology Executive", company: "FinanceFlow" }, questionnaireCompleted: true },
     "demo-james": { id: "demo-james", profile: { name: "James Wilson", title: "Operations Leader", company: "LogiTech Solutions" }, questionnaireCompleted: true },

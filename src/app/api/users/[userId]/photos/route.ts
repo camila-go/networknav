@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase/client";
 import type { UserPhoto, UserPhotoStatus } from "@/types";
+import { canonicalIdForProfileLookup } from "@/lib/team/lisa-lucas";
 
 function rowToUserPhoto(row: {
   id: string;
@@ -39,12 +40,13 @@ export async function GET(
     // Own profile can see all statuses (they need to see their own pending
     // photos with the "Pending approval" badge); other viewers only see approved.
     const session = await getSession();
-    const isOwner = session?.userId === params.userId;
+    const effectiveUserId = canonicalIdForProfileLookup(params.userId);
+    const isOwner = session?.userId === effectiveUserId;
 
     let query = supabaseAdmin
       .from("user_photos")
       .select("*")
-      .eq("user_id", params.userId)
+      .eq("user_id", effectiveUserId)
       .order("display_order", { ascending: true });
 
     if (!isOwner) {

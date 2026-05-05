@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
 import { lookupUserProfileByIdentifier } from "@/lib/profile/lookup-user-profile";
+import {
+  LISA_LUCAS_AVATAR_PUBLIC_URL,
+  LISA_LUCAS_PLACEHOLDER_ROUTE_ID,
+  LISA_LUCAS_USER_PROFILE_ID,
+} from "@/lib/team/lisa-lucas";
 
 export type TeamMemberPayload = {
   id: string;
@@ -58,6 +63,12 @@ export async function GET() {
       : undefined;
 
     let row = envId ? await lookupUserProfileByIdentifier(envId) : null;
+    if (
+      !row &&
+      def.placeholderId === LISA_LUCAS_PLACEHOLDER_ROUTE_ID
+    ) {
+      row = await lookupUserProfileByIdentifier(LISA_LUCAS_USER_PROFILE_ID);
+    }
     if (!row) {
       for (const key of def.lookupKeys) {
         row = await lookupUserProfileByIdentifier(key);
@@ -81,7 +92,10 @@ export async function GET() {
         id: def.placeholderId,
         name: def.name,
         title: def.title,
-        photoUrl: null,
+        photoUrl:
+          def.placeholderId === LISA_LUCAS_PLACEHOLDER_ROUTE_ID
+            ? LISA_LUCAS_AVATAR_PUBLIC_URL
+            : null,
         email: null,
         placeholder: true,
       });

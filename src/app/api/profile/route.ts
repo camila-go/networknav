@@ -7,6 +7,7 @@ import { lookupUserProfileByIdentifier } from "@/lib/profile/lookup-user-profile
 import { cookies } from "next/headers";
 import { normalizeCompany } from "@/lib/company/normalize";
 import type { UserRole } from "@/types";
+import { LISA_LUCAS_AVATAR_PUBLIC_URL } from "@/lib/team/lisa-lucas";
 
 export async function GET(request: NextRequest) {
   try {
@@ -206,7 +207,7 @@ export async function GET(request: NextRequest) {
                 title: member.title,
                 company: member.company,
                 bio: member.bio,
-                photoUrl: null,
+                photoUrl: LISA_LUCAS_AVATAR_PUBLIC_URL,
               },
             },
           },

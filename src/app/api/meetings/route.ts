@@ -8,6 +8,11 @@ import { notifyMeetingRequest } from "@/lib/notifications/notification-service";
 import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
 import { isLiveDatabaseMode } from "@/lib/supabase/data-mode";
 import { enrichProfileRowsWithResolvedPhotoUrl } from "@/lib/profile/profile-photo-url";
+import {
+  canonicalIdForProfileLookup,
+  LISA_LUCAS_AVATAR_PUBLIC_URL,
+  LISA_LUCAS_USER_PROFILE_ID,
+} from "@/lib/team/lisa-lucas";
 
 // Helper to get user profile by ID
 function getUserById(userId: string): PublicUser | null {
@@ -37,7 +42,16 @@ function getDemoUser(userId: string): PublicUser | null {
     "demo-sarah": { id: "demo-sarah", profile: { name: "Sarah Chen", title: "Engineering Leader", company: "TechCorp" }, questionnaireCompleted: true },
     "demo-marcus": { id: "demo-marcus", profile: { name: "Marcus Johnson", title: "HR Executive", company: "GrowthStartup" }, questionnaireCompleted: true },
     "demo-elena": { id: "demo-elena", profile: { name: "Elena Rodriguez", title: "Founder & CEO", company: "InnovateCo" }, questionnaireCompleted: true },
-    "team-lisa-lucas": { id: "team-lisa-lucas", profile: { name: "Lisa Lucas", title: "Senior Designer", company: "Strategic Education" }, questionnaireCompleted: true },
+    "team-lisa-lucas": {
+      id: "team-lisa-lucas",
+      profile: {
+        name: "Lisa Lucas",
+        title: "Senior Designer",
+        company: "Strategic Education",
+        photoUrl: LISA_LUCAS_AVATAR_PUBLIC_URL,
+      },
+      questionnaireCompleted: true,
+    },
     "demo-david": { id: "demo-david", profile: { name: "David Park", title: "Product Leader", company: "ScaleUp Inc" }, questionnaireCompleted: true },
     "demo-aisha": { id: "demo-aisha", profile: { name: "Aisha Patel", title: "Technology Executive", company: "FinanceFlow" }, questionnaireCompleted: true },
     "demo-james": { id: "demo-james", profile: { name: "James Wilson", title: "Operations Leader", company: "LogiTech Solutions" }, questionnaireCompleted: true },
@@ -50,16 +64,18 @@ function getDemoUser(userId: string): PublicUser | null {
 // Get user from Supabase by ID, name, or email prefix
 async function getUserFromSupabase(userId: string): Promise<PublicUser | null> {
   if (!isSupabaseConfigured || !supabaseAdmin) return null;
-  
+
+  const lookupId = canonicalIdForProfileLookup(userId.trim());
+
   let data = null;
-  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
-  
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(lookupId);
+
   // First try by ID (only if valid UUID)
   if (isUuid) {
     const result = await supabaseAdmin
       .from('user_profiles')
       .select('id, user_id, name, title, company, photo_url, location, questionnaire_completed')
-      .eq('id', userId)
+      .eq('id', lookupId)
       .maybeSingle();
     if (result.data) data = result.data;
   }
@@ -69,7 +85,7 @@ async function getUserFromSupabase(userId: string): Promise<PublicUser | null> {
     const nameResult = await supabaseAdmin
       .from('user_profiles')
       .select('id, user_id, name, title, company, photo_url, location, questionnaire_completed')
-      .ilike('name', userId)
+      .ilike('name', lookupId)
       .maybeSingle();
     
     if (!nameResult.error && nameResult.data) {
@@ -78,8 +94,8 @@ async function getUserFromSupabase(userId: string): Promise<PublicUser | null> {
   }
   
   // If not found by name, try with spaces instead of periods
-  if (!data && userId.includes('.')) {
-    const nameWithSpaces = userId.replace(/\./g, ' ');
+  if (!data && lookupId.includes('.')) {
+    const nameWithSpaces = lookupId.replace(/\./g, ' ');
     const nameResult = await supabaseAdmin
       .from('user_profiles')
       .select('id, name, title, company, photo_url, location, questionnaire_completed')
@@ -96,7 +112,7 @@ async function getUserFromSupabase(userId: string): Promise<PublicUser | null> {
     const emailResult = await supabaseAdmin
       .from('user_profiles')
       .select('id, user_id, name, title, company, photo_url, location, questionnaire_completed')
-      .ilike('email', `${userId}@%`)
+      .ilike('email', `${lookupId}@%`)
       .maybeSingle();
     
     if (!emailResult.error && emailResult.data) {
@@ -119,13 +135,19 @@ async function getUserFromSupabase(userId: string): Promise<PublicUser | null> {
 
   const [resolved] = await enrichProfileRowsWithResolvedPhotoUrl(supabaseAdmin, [row]);
 
+  const photoUrl =
+    (resolved.photo_url && resolved.photo_url.trim()) ||
+    (resolved.id === LISA_LUCAS_USER_PROFILE_ID
+      ? LISA_LUCAS_AVATAR_PUBLIC_URL
+      : undefined);
+
   return {
     id: resolved.id,
     profile: {
       name: resolved.name,
       title: resolved.title || "",
       company: resolved.company,
-      photoUrl: resolved.photo_url,
+      photoUrl,
       location: resolved.location,
     },
     questionnaireCompleted: resolved.questionnaire_completed || false,

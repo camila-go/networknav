@@ -8,6 +8,7 @@ import { isLiveDatabaseMode } from "@/lib/supabase/data-mode";
 import { updateStreaks } from "@/lib/gamification/streaks";
 import { applyGamificationUnlockNotifications } from "@/lib/gamification/unlock-notifications";
 import { normalizeCompany } from "@/lib/company/normalize";
+import { canonicalIdForProfileLookup } from "@/lib/team/lisa-lucas";
 
 type SimpleUser = { id: string; name: string; title: string; company?: string };
 
@@ -40,16 +41,18 @@ function getUserById(userId: string): SimpleUser | null {
 // Get user from Supabase - tries by ID, then by name, then by email prefix
 async function getUserFromSupabase(userId: string): Promise<SimpleUser | null> {
   if (!isSupabaseConfigured || !supabaseAdmin) return null;
-  
+
+  const lookupId = canonicalIdForProfileLookup(userId.trim());
+
   let data = null;
-  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
-  
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(lookupId);
+
   // First try by ID (only if valid UUID)
   if (isUuid) {
     const result = await supabaseAdmin
       .from('user_profiles')
       .select('id, name, title, company')
-      .eq('id', userId)
+      .eq('id', lookupId)
       .maybeSingle();
     if (result.data) data = result.data;
   }
@@ -59,7 +62,7 @@ async function getUserFromSupabase(userId: string): Promise<SimpleUser | null> {
     const nameResult = await supabaseAdmin
       .from('user_profiles')
       .select('id, name, title, company')
-      .ilike('name', userId)
+      .ilike('name', lookupId)
       .maybeSingle();
     
     if (!nameResult.error && nameResult.data) {
@@ -68,8 +71,8 @@ async function getUserFromSupabase(userId: string): Promise<SimpleUser | null> {
   }
   
   // If not found by name, try with spaces instead of periods
-  if (!data && userId.includes('.')) {
-    const nameWithSpaces = userId.replace(/\./g, ' ');
+  if (!data && lookupId.includes('.')) {
+    const nameWithSpaces = lookupId.replace(/\./g, ' ');
     const nameResult = await supabaseAdmin
       .from('user_profiles')
       .select('id, name, title, company')
@@ -86,7 +89,7 @@ async function getUserFromSupabase(userId: string): Promise<SimpleUser | null> {
     const emailResult = await supabaseAdmin
       .from('user_profiles')
       .select('id, name, title, company')
-      .ilike('email', `${userId}@%`)
+      .ilike('email', `${lookupId}@%`)
       .maybeSingle();
     
     if (!emailResult.error && emailResult.data) {
