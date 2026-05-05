@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase/client";
 import { checkRateLimit } from "@/lib/security/rateLimit";
+import {
+  PROFILE_PHOTOS_BUCKET,
+  buildVersionedAvatarKey,
+} from "@/lib/storage/profile-photos";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const MAX_SIZE = 10 * 1024 * 1024; // 10 MB
@@ -56,13 +60,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const storageKey = `${session.userId}/avatar`;
-
-    // Delete existing avatar for upsert behavior
-    await supabaseAdmin.storage.from("profile-photos").remove([storageKey]);
+    // Versioned key per upload. The previous avatar object is intentionally NOT
+    // deleted here: if this upload fails or is abandoned the old file must remain
+    // so the user's existing photo_url keeps resolving. Cleanup of stale variants
+    // happens in the confirm step (POST /api/profile/avatar) only after the new
+    // upload + DB write both succeed.
+    const storageKey = buildVersionedAvatarKey(session.userId, fileType);
 
     const { data, error } = await supabaseAdmin.storage
-      .from("profile-photos")
+      .from(PROFILE_PHOTOS_BUCKET)
       .createSignedUploadUrl(storageKey);
 
     if (error || !data) {

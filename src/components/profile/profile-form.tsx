@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2, Save, Camera, X } from "lucide-react";
+import { Loader2, Save, Camera, X, RotateCw } from "lucide-react";
 import { profileSchema, type ProfileInput } from "@/lib/validations";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,11 @@ export function ProfileForm() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [avatarError, setAvatarError] = useState<string | null>(null);
+  /**
+   * Set when the file uploaded successfully to storage but the confirm step (DB write)
+   * failed. Lets the user re-run only the confirm step instead of re-uploading the file.
+   */
+  const [pendingConfirmKey, setPendingConfirmKey] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const {
@@ -94,8 +99,40 @@ export function ProfileForm() {
     e.target.value = "";
   }
 
+  /**
+   * Calls the confirm endpoint with a known-good `storageKey`. On success clears the
+   * preview/pending state. On failure leaves the preview + pending key in place so the
+   * user can hit the "Retry save" button without re-uploading the file.
+   */
+  async function confirmUpload(storageKey: string) {
+    const confirmResponse = await fetch("/api/profile/avatar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ storageKey }),
+    });
+
+    const confirmResult = await confirmResponse.json();
+
+    if (confirmResult.success) {
+      setValue("photoUrl", confirmResult.data.photoUrl, { shouldDirty: false });
+      if (avatarPreview) URL.revokeObjectURL(avatarPreview);
+      setAvatarPreview(null);
+      setPendingConfirmKey(null);
+      setAvatarError(null);
+      toast({ variant: "success", title: "Photo updated" });
+      return true;
+    }
+
+    setPendingConfirmKey(storageKey);
+    setAvatarError(
+      confirmResult.error ?? "Photo uploaded but not saved. Tap Retry save."
+    );
+    return false;
+  }
+
   async function uploadAvatar(file: File) {
     setUploadingAvatar(true);
+    setPendingConfirmKey(null);
     try {
       // Step 1: Get signed upload URL from server
       const urlResponse = await fetch("/api/profile/avatar/upload-url", {
@@ -106,6 +143,7 @@ export function ProfileForm() {
 
       const urlResult = await urlResponse.json();
       if (!urlResult.success) {
+        // No bytes uploaded yet, safe to drop the preview.
         setAvatarError(urlResult.error ?? "Upload failed");
         setAvatarPreview(null);
         return;
@@ -120,32 +158,28 @@ export function ProfileForm() {
       });
 
       if (!uploadResponse.ok) {
+        // Upload itself failed; nothing reached storage to confirm against.
         setAvatarError("Upload failed. Please try again.");
         setAvatarPreview(null);
         return;
       }
 
-      // Step 3: Confirm upload and update DB
-      const confirmResponse = await fetch("/api/profile/avatar", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ storageKey }),
-      });
-
-      const confirmResult = await confirmResponse.json();
-
-      if (confirmResult.success) {
-        setValue("photoUrl", confirmResult.data.photoUrl, { shouldDirty: false });
-        if (avatarPreview) URL.revokeObjectURL(avatarPreview);
-        setAvatarPreview(null);
-        toast({ variant: "success", title: "Photo updated" });
-      } else {
-        setAvatarError(confirmResult.error ?? "Upload failed");
-        setAvatarPreview(null);
-      }
+      // Step 3: Confirm upload and update DB. Keep preview + storageKey on failure
+      // so the user can retry only this step (no re-upload required).
+      await confirmUpload(storageKey);
     } catch {
       setAvatarError("Upload failed. Please try again.");
       setAvatarPreview(null);
+    } finally {
+      setUploadingAvatar(false);
+    }
+  }
+
+  async function retryConfirm() {
+    if (!pendingConfirmKey) return;
+    setUploadingAvatar(true);
+    try {
+      await confirmUpload(pendingConfirmKey);
     } finally {
       setUploadingAvatar(false);
     }
@@ -246,7 +280,19 @@ export function ProfileForm() {
             <Camera className="mr-2 h-4 w-4" />
             {uploadingAvatar ? "Uploading..." : "Change Photo"}
           </Button>
-          {watch("photoUrl") && !uploadingAvatar && (
+          {pendingConfirmKey && !uploadingAvatar && (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={retryConfirm}
+              className="border-amber-500/40 text-amber-200 hover:bg-amber-500/10"
+            >
+              <RotateCw className="mr-2 h-4 w-4" />
+              Retry save
+            </Button>
+          )}
+          {watch("photoUrl") && !uploadingAvatar && !pendingConfirmKey && (
             <Button
               type="button"
               size="sm"

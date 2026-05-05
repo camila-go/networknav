@@ -274,20 +274,24 @@ export function PhotoGallery({ userId, isOwner, withContainer = false, container
         <div className="space-y-2">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <div className="min-w-0 flex-1 space-y-1">
-              <label
-                htmlFor="gallery-upload-activity"
-                className="text-[11px] font-medium uppercase tracking-wide text-amber-200/90"
-              >
-                Activity label <span className="text-red-400">*</span>{" "}
-                <span className="font-normal normal-case text-white/50">(required for each photo)</span>
-              </label>
+              <div className="flex max-w-sm items-center justify-between gap-2">
+                <label
+                  htmlFor="gallery-upload-activity"
+                  className="text-[11px] font-medium uppercase tracking-wide text-amber-200/90"
+                >
+                  Activity label <span className="text-red-400">*</span>
+                </label>
+                <span className="text-[10px] tabular-nums text-white/40">
+                  {uploadActivityTag.length}/24
+                </span>
+              </div>
               <input
                 id="gallery-upload-activity"
                 type="text"
-                maxLength={48}
+                maxLength={24}
                 value={uploadActivityTag}
                 onChange={(e) => {
-                  setUploadActivityTag(e.target.value);
+                  setUploadActivityTag(e.target.value.replace(/\s+/g, " "));
                   setUploadError(null);
                 }}
                 required
@@ -297,9 +301,7 @@ export function PhotoGallery({ userId, isOwner, withContainer = false, container
                 className="w-full max-w-sm rounded-md border border-amber-500/30 bg-zinc-950/80 px-3 py-2 text-sm text-white placeholder:text-white/35 focus:outline-none focus:ring-2 focus:ring-amber-500/50 disabled:opacity-50"
               />
               <p className="text-[11px] text-white/50">
-                Every photo must have a label so you show up in the community gallery, activity search,
-                and on your profile as a clear chip. Add the label <span className="text-amber-200/90">before</span> you
-                click Add Photo.
+                Short label, 1-3 words. Shows on your photo and in community search.
               </p>
             </div>
             <div className="flex shrink-0 items-center gap-2">
@@ -402,11 +404,11 @@ export function PhotoGallery({ userId, isOwner, withContainer = false, container
                     </Badge>
                   </span>
                 )}
-                {chipLabel ? (
+                {chipLabel && !isOwner ? (
                   <span className="pointer-events-none absolute bottom-1 left-1 right-1 z-[2] flex justify-start">
                     <Badge
                       variant="secondary"
-                      className="max-w-full justify-start rounded-md border-0 bg-black/85 px-1.5 py-0.5 text-left text-[10px] font-semibold uppercase tracking-wide text-cyan-200 shadow-md [overflow-wrap:anywhere] leading-snug"
+                      className="max-w-full justify-start truncate rounded-md border-0 bg-black/85 px-1.5 py-0.5 text-left text-[10px] font-semibold uppercase tracking-wide text-cyan-200 shadow-md"
                     >
                       {chipLabel}
                     </Badge>
@@ -414,7 +416,7 @@ export function PhotoGallery({ userId, isOwner, withContainer = false, container
                 ) : null}
               </button>
 
-              {/* Owner controls overlay */}
+              {/* Owner: hover-only delete + reorder */}
               {isOwner && (
                 <div className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto">
                   {/* Top-right: delete */}
@@ -455,25 +457,38 @@ export function PhotoGallery({ userId, isOwner, withContainer = false, container
                       </button>
                     )}
                   </div>
-
-                  {/* Bottom: caption edit */}
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setEditingCaption({
-                        id: photo.id,
-                        value: photo.caption ?? "",
-                        activityTag: photo.activityTag?.trim() ?? "",
-                      });
-                    }}
-                    className="absolute bottom-1 left-1 right-1 bg-black/70 text-white/70 hover:text-white rounded px-1.5 py-0.5 text-xs flex items-center gap-1 truncate"
-                    title="Edit caption"
-                  >
-                    <Pencil className="h-3 w-3 shrink-0" />
-                    <span className="truncate">{photo.caption || "Add caption"}</span>
-                  </button>
                 </div>
+              )}
+
+              {/* Owner: always-visible edit bar (chip + caption + pencil) */}
+              {isOwner && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setEditingCaption({
+                      id: photo.id,
+                      value: photo.caption ?? "",
+                      activityTag: photo.activityTag?.trim() ?? "",
+                    });
+                  }}
+                  className="absolute bottom-1 left-1 right-1 z-[3] flex items-center gap-1.5 rounded-md bg-black/85 px-1.5 py-1 text-left text-[10px] text-white/85 shadow-md ring-1 ring-white/10 hover:bg-black/95 hover:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/60"
+                  title="Tap to edit activity & caption"
+                >
+                  {chipLabel ? (
+                    <span className="shrink-0 truncate rounded bg-cyan-500/15 px-1 py-0.5 font-semibold uppercase tracking-wide text-cyan-200">
+                      {chipLabel}
+                    </span>
+                  ) : (
+                    <span className="shrink-0 truncate rounded bg-amber-500/20 px-1 py-0.5 font-semibold uppercase tracking-wide text-amber-200">
+                      Add activity
+                    </span>
+                  )}
+                  <span className="min-w-0 flex-1 truncate text-white/70">
+                    {photo.caption || "Add caption"}
+                  </span>
+                  <Pencil className="h-3 w-3 shrink-0 text-white/60" />
+                </button>
               )}
             </div>
             );
@@ -542,17 +557,23 @@ export function PhotoGallery({ userId, isOwner, withContainer = false, container
             </button>
           </div>
           <div className="space-y-1">
-            <label className="text-[10px] font-medium uppercase tracking-wide text-amber-200/80">
-              Activity label <span className="text-red-400">*</span>
-            </label>
+            <div className="flex max-w-sm items-center justify-between gap-2">
+              <label className="text-[10px] font-medium uppercase tracking-wide text-amber-200/80">
+                Activity label <span className="text-red-400">*</span>
+              </label>
+              <span className="text-[10px] tabular-nums text-white/40">
+                {editingCaption.activityTag.length}/24
+              </span>
+            </div>
             <input
               type="text"
-              maxLength={48}
+              maxLength={24}
               value={editingCaption.activityTag}
               onChange={(e) => {
                 setEditingTagError(null);
+                const next = e.target.value.replace(/\s+/g, " ");
                 setEditingCaption((prev) =>
-                  prev ? { ...prev, activityTag: e.target.value } : null
+                  prev ? { ...prev, activityTag: next } : null
                 );
               }}
               onKeyDown={(e) => {
@@ -566,6 +587,9 @@ export function PhotoGallery({ userId, isOwner, withContainer = false, container
               placeholder="e.g. kayaking, design, cooking"
               className="w-full max-w-sm rounded-md border border-amber-500/30 bg-zinc-950/60 px-3 py-1.5 text-xs text-white placeholder:text-white/35 outline-none focus:ring-2 focus:ring-amber-500/40"
             />
+            <p className="text-[10px] text-white/50">
+              Short label, 1-3 words. Shows on your photo and in community search.
+            </p>
             {editingTagError && (
               <p className="text-xs text-red-400" role="alert">
                 {editingTagError}

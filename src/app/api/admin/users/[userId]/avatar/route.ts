@@ -2,10 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireModerator } from "@/lib/auth/rbac";
 import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
 import { users } from "@/lib/stores";
-import {
-  avatarStorageKey,
-  deleteProfilePhotoObjects,
-} from "@/lib/storage/profile-photos";
+import { deleteUserAvatarObjects } from "@/lib/storage/profile-photos";
 
 // DELETE /api/admin/users/[userId]/avatar
 //
@@ -41,7 +38,9 @@ export async function DELETE(
       );
     }
 
-    await deleteProfilePhotoObjects([avatarStorageKey(userId)]);
+    // Removes both the legacy `${userId}/avatar` key and any versioned
+    // `${userId}/avatar-{ts}.{ext}` variants written by the upload flow.
+    await deleteUserAvatarObjects(userId);
 
     const now = new Date().toISOString();
     await supabaseAdmin

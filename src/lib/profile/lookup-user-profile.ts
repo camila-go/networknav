@@ -87,6 +87,21 @@ export async function lookupUserProfileByIdentifier(
     if (data) return withResolvedPhoto(data as UserProfileLookupRow);
   }
 
+  // Substring match on the raw key (catches "Austin Potter" -> "Austin J. Potter",
+  // "Potter, Austin", etc.). Skipped for very short keys to avoid false positives.
+  if (lookupKey.length >= 4) {
+    const { data: byNameContains } = await supabaseAdmin
+      .from("user_profiles")
+      .select(SELECT)
+      .ilike("name", `%${lookupKey}%`)
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (byNameContains) {
+      return withResolvedPhoto(byNameContains as UserProfileLookupRow);
+    }
+  }
+
   const { data: byEmailPrefix } = await supabaseAdmin
     .from("user_profiles")
     .select(SELECT)
