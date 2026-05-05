@@ -43,7 +43,7 @@ export const matchCardPassChatClasses = {
   footer:
     "flex min-h-[72px] w-full min-w-0 flex-nowrap items-center gap-2 sm:gap-3 py-2.5",
   pass: cn(
-    "press !h-10 min-h-10 flex-1 basis-0 min-w-[117px] rounded-[30px] !border !border-solid !border-[#343434] !bg-transparent px-3 text-base font-bold text-white hover:!border-[#343434] hover:!bg-white/5 hover:!text-white gap-1.5 !shadow-none transition-colors"
+    "press !h-10 min-h-10 flex-1 basis-0 min-w-[117px] rounded-[30px] !border !border-solid !border-[#343434] !bg-transparent px-3 text-sm sm:text-base font-bold text-white hover:!border-[#343434] hover:!bg-white/5 hover:!text-white gap-1.5 !shadow-none transition-colors"
   ),
   chat: cn(
     "press group !h-10 min-h-10 min-w-0 flex-1 basis-0 rounded-[30px] !border-0 !bg-[#29606f] !px-2.5 sm:!px-3 text-sm sm:text-base font-bold text-white shadow-none transition-colors",
@@ -280,7 +280,7 @@ export function MatchCard({
                 onPass(match.id);
               }}
               className={cn(
-                "press group inline-flex h-10 min-h-10 w-full min-w-[117px] flex-1 items-center justify-center gap-1.5 rounded-[30px] border border-solid border-[#343434] bg-transparent px-3 text-base font-bold text-white transition-colors hover:bg-white/5"
+                "press group inline-flex h-10 min-h-10 w-full min-w-[117px] flex-1 items-center justify-center gap-1.5 rounded-[30px] border border-solid border-[#343434] bg-transparent px-3 text-sm sm:text-base font-bold text-white transition-colors hover:bg-white/5"
               )}
             >
               <span>Not now</span>

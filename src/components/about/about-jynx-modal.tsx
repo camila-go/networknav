@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import Image from "next/image";
 import { X, MessageCircle, ExternalLink } from "lucide-react";
 import { cn, teamsChartUrl } from "@/lib/utils";
 import Link from "next/link";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface AboutJynxModalProps {
   open: boolean;
@@ -20,6 +20,13 @@ type TeamMember = {
   email: string | null;
   placeholder?: boolean;
 };
+
+function teamMemberInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
+  return (parts[0]![0]! + parts[parts.length - 1]![0]!).toUpperCase();
+}
 
 function TeamMemberCard({
   id,
@@ -36,17 +43,20 @@ function TeamMemberCard({
   return (
     <div className="bg-[#0d0d0d] border border-[#444] rounded-2xl overflow-hidden flex flex-col min-w-0">
       <div className="pt-10 pb-6 flex flex-col items-center gap-4">
-        <div className="relative w-28 h-28 md:w-36 md:h-36 rounded-full bg-[#141e21] shrink-0 overflow-hidden">
-          {photoUrl ? (
-            <Image
-              src={photoUrl}
-              alt=""
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 7rem, 9rem"
-            />
-          ) : null}
-        </div>
+        <Avatar
+          className={cn(
+            "h-28 w-28 md:h-36 md:w-36 shrink-0 border-2 border-white/15 text-2xl md:text-3xl"
+          )}
+        >
+          <AvatarImage
+            src={photoUrl?.trim() || undefined}
+            alt=""
+            className="object-cover"
+          />
+          <AvatarFallback className="rounded-full bg-gradient-to-br from-teal-500 to-cyan-600 text-black font-bold">
+            {teamMemberInitials(name)}
+          </AvatarFallback>
+        </Avatar>
         <div className="text-center px-4">
           <h3 className="text-xl md:text-2xl font-bold text-white">{name}</h3>
           <p className="text-sm md:text-base text-white/70 mt-1">{title}</p>

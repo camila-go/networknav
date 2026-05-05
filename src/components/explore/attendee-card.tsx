@@ -287,7 +287,7 @@ export function AttendeeCard({
                   onPass(user.id);
                 }}
                 className={cn(
-                  "inline-flex h-10 min-h-10 w-full min-w-[117px] flex-1 items-center justify-center gap-1.5 rounded-[30px] border border-solid border-[#343434] bg-transparent px-3 text-base font-bold text-white transition-colors hover:bg-white/5"
+                  "inline-flex h-10 min-h-10 w-full min-w-[117px] flex-1 items-center justify-center gap-1.5 rounded-[30px] border border-solid border-[#343434] bg-transparent px-3 text-sm sm:text-base font-bold text-white transition-colors hover:bg-white/5"
                 )}
               >
                 <span>Not now</span>

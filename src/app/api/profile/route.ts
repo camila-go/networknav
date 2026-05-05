@@ -206,6 +206,7 @@ export async function GET(request: NextRequest) {
                 title: member.title,
                 company: member.company,
                 bio: member.bio,
+                photoUrl: null,
               },
             },
           },
