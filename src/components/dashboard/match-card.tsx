@@ -283,7 +283,7 @@ export function MatchCard({
                 "press group inline-flex h-10 min-h-10 w-full min-w-[117px] flex-1 items-center justify-center gap-1.5 rounded-[30px] border border-solid border-[#343434] bg-transparent px-3 text-base font-bold text-white transition-colors hover:bg-white/5"
               )}
             >
-              <span>Pass</span>
+              <span>Not now</span>
               <X
                 className="h-4 w-4 shrink-0 opacity-90 transition-transform duration-200 ease-out group-hover:rotate-90 group-hover:opacity-100"
                 strokeWidth={2.5}

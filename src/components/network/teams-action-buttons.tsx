@@ -19,7 +19,7 @@ export interface TeamsActionButtonsProps {
   targetUserId: string;
   source: NetworkActionSource;
   onPass?: () => void;
-  /** When false, Pass is hidden (e.g. viewing own post). Default true when onPass provided. */
+  /** When false, Not now is hidden (e.g. viewing own post). Default true when onPass provided. */
   showPass?: boolean;
   /**
    * First line suggested for the chat; passed to Teams as the deep-link `message` param
@@ -29,12 +29,12 @@ export interface TeamsActionButtonsProps {
   className?: string;
   /** Merged onto the Chat CTA (e.g. alternate fill on match cards). */
   chatClassName?: string;
-  /** Merged onto the Pass button when shown. */
+  /** Merged onto the Not now button when shown. */
   passClassName?: string;
 }
 
 /**
- * Secondary Pass (outline) · primary Chat (default). Chat opens Teams 1:1 in a new tab.
+ * Secondary Not now (outline) · primary Chat (default). Chat opens Teams 1:1 in a new tab.
  */
 export function TeamsActionButtons({
   targetEmail,
@@ -77,7 +77,7 @@ export function TeamsActionButtons({
             passClassName
           )}
         >
-          <span>Pass</span>
+          <span>Not now</span>
           <X className="h-4 w-4 opacity-80 shrink-0" strokeWidth={2.5} aria-hidden />
         </button>
       )}

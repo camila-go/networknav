@@ -152,11 +152,11 @@ describe("MatchCard", () => {
     expect(screen.queryByText("Lifestyle match")).not.toBeInTheDocument();
   });
 
-  it("should call onPass when Pass button is clicked", async () => {
+  it("should call onPass when Not now button is clicked", async () => {
     const user = userEvent.setup();
     render(<MatchCard match={createMatch()} onPass={mockOnPass} />);
 
-    await user.click(screen.getByText("Pass"));
+    await user.click(screen.getByText("Not now"));
     expect(mockOnPass).toHaveBeenCalledWith("match-1");
   });
 
@@ -178,9 +178,9 @@ describe("MatchCard", () => {
     expect(screen.getByText("Chat")).toBeInTheDocument();
   });
 
-  it("should render Pass button when matchedUser has no email", () => {
+  it("should render Not now button when matchedUser has no email", () => {
     render(<MatchCard match={createMatch()} onPass={mockOnPass} />);
-    expect(screen.getByText("Pass")).toBeInTheDocument();
+    expect(screen.getByText("Not now")).toBeInTheDocument();
   });
 
   it("should render profile link", () => {
