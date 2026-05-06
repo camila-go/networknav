@@ -36,7 +36,7 @@ export function PhotoGallery({ userId, isOwner, withContainer = false, container
   const [uploadActivityTag, setUploadActivityTag] = useState("");
   const [editingTagError, setEditingTagError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  /** Latest activity label at confirm time (upload is async; avoids stale closure). */
+  /** Latest activity tag at confirm time (upload is async; avoids stale closure). */
   const uploadActivityTagRef = useRef("");
   useEffect(() => {
     uploadActivityTagRef.current = uploadActivityTag;
@@ -90,7 +90,7 @@ export function PhotoGallery({ userId, isOwner, withContainer = false, container
 
     if (!normalizeActivityTag(uploadActivityTag)) {
       setUploadError(
-        "Add an activity label first. It’s required so your photo can appear in the community gallery and search (e.g. kayaking, cooking)."
+        "Add an activity tag first. It’s required so your photo can appear in the community gallery and search (e.g. kayaking, cooking)."
       );
       e.target.value = "";
       return;
@@ -114,7 +114,7 @@ export function PhotoGallery({ userId, isOwner, withContainer = false, container
   async function uploadPhoto(file: File) {
     if (!normalizeActivityTag(uploadActivityTag)) {
       setUploadError(
-        "Add a valid activity label (e.g. kayaking) before adding a photo. It’s required for the community gallery and search."
+        "Add a valid activity tag (e.g. kayaking) before adding a photo. It’s required for the community gallery and search."
       );
       return;
     }
@@ -193,7 +193,7 @@ export function PhotoGallery({ userId, isOwner, withContainer = false, container
   async function saveCaption(photoId: string, caption: string, activityTag: string) {
     if (!normalizeActivityTag(activityTag)) {
       setEditingTagError(
-        "Activity label is required. Use a short label (e.g. kayaking) so this photo can appear in the community gallery and search."
+        "Activity tag is required. Use a short tag (e.g. kayaking) so this photo can appear in the community gallery and search."
       );
       return;
     }
@@ -219,7 +219,7 @@ export function PhotoGallery({ userId, isOwner, withContainer = false, container
         setEditingTagError(
           typeof result.error === "string"
             ? result.error
-            : "Could not save. Check the activity label."
+            : "Could not save. Check the activity tag."
         );
       }
     } catch (error) {
@@ -279,7 +279,7 @@ export function PhotoGallery({ userId, isOwner, withContainer = false, container
                   htmlFor="gallery-upload-activity"
                   className="text-[11px] font-medium uppercase tracking-wide text-amber-200/90"
                 >
-                  Activity label <span className="text-red-400">*</span>
+                  Activity tag <span className="text-red-400">*</span>
                 </label>
                 <span className="text-[10px] tabular-nums text-white/40">
                   {uploadActivityTag.length}/24
@@ -331,7 +331,7 @@ export function PhotoGallery({ userId, isOwner, withContainer = false, container
                   setUploadError(null);
                   if (!normalizeActivityTag(uploadActivityTag)) {
                     setUploadError(
-                      "Type an activity label first. It’s required (e.g. hiking, design)."
+                      "Type an activity tag first. It’s required (e.g. hiking, design)."
                     );
                     return;
                   }
@@ -339,7 +339,7 @@ export function PhotoGallery({ userId, isOwner, withContainer = false, container
                 }}
                 title={
                   !normalizeActivityTag(uploadActivityTag)
-                    ? "Add an activity label in the field above first"
+                    ? "Add an activity tag in the field above first"
                     : undefined
                 }
                 className="border-white/20 text-white/80 hover:bg-white/10"
@@ -501,7 +501,7 @@ export function PhotoGallery({ userId, isOwner, withContainer = false, container
       {editingCaption && (
         <div className="space-y-2 rounded-lg border border-amber-500/20 bg-white/5 p-3">
           <p className="text-[11px] text-amber-200/80">
-            Photo activity label <span className="text-red-400">*</span> — required for the gallery; caption is
+            Photo activity tag <span className="text-red-400">*</span> — required for the gallery; caption is
             optional.
           </p>
           <div className="flex items-center gap-2">
@@ -559,7 +559,7 @@ export function PhotoGallery({ userId, isOwner, withContainer = false, container
           <div className="space-y-1">
             <div className="flex max-w-sm items-center justify-between gap-2">
               <label className="text-[10px] font-medium uppercase tracking-wide text-amber-200/80">
-                Activity label <span className="text-red-400">*</span>
+                Activity tag <span className="text-red-400">*</span>
               </label>
               <span className="text-[10px] tabular-nums text-white/40">
                 {editingCaption.activityTag.length}/24

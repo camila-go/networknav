@@ -125,7 +125,7 @@ export function PersonalInterestPhotoStep({
     setError(null);
     const normalized = normalizeActivityTag(tagInputRef.current);
     if (!normalized) {
-      setError("Add a short activity label first (e.g. gardening).");
+      setError("Add a short activity tag first (e.g. gardening).");
       return;
     }
 
@@ -260,7 +260,7 @@ export function PersonalInterestPhotoStep({
 
       <div className="space-y-2">
         <Label htmlFor="activity-chip" className="text-zinc-300">
-          Activity label
+          Activity tag
         </Label>
         <Input
           id="activity-chip"

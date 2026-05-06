@@ -65,7 +65,7 @@ export async function PATCH(
           {
             success: false,
             error:
-              "Activity label is required. Use a short label (e.g. kayaking) so your photo can be shared on the community gallery.",
+              "Activity tag is required. Use a short tag (e.g. kayaking) so your photo can be shared on the community gallery.",
           },
           { status: 400 }
         );

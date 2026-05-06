@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           error:
-            "Activity label is required for each photo. Add a short label (e.g. kayaking) before saving.",
+            "Activity tag is required for each photo. Add a short tag (e.g. kayaking) before saving.",
         },
         { status: 400 }
       );

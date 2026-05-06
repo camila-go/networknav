@@ -1,5 +1,5 @@
 /**
- * Normalize activity labels for storage and aggregation (lowercase, slug-safe).
+ * Normalize activity tags for storage and aggregation (lowercase, slug-safe).
  */
 export function normalizeActivityTag(raw: string | undefined | null): string | null {
   if (raw == null) return null;

@@ -50,27 +50,32 @@ const TEAMS_CHAT_MESSAGE_MAX_LEN = 3500;
  * Deep link to a 1:1 Teams chat. Optional `composeMessage` is passed as the `message`
  * query param so Teams can pre-fill the compose box; the user still sends manually.
  * (Some Teams clients may ignore `message`; see Microsoft Teams deep-link docs.)
+ *
+ * Encoding note: the query string is built with `encodeURIComponent` (RFC 3986) rather
+ * than `URLSearchParams` (form-urlencoded). The latter encodes spaces as `+`, which
+ * Teams renders literally in the compose box (e.g. `Camila,+I+was+impressed+...`).
  */
 export function teamsChartUrl(
   email: string,
   options?: { composeMessage?: string }
 ): string {
-  const url = new URL("https://teams.microsoft.com/l/chat/0/0");
-  url.searchParams.set("users", email.trim());
+  const params: string[] = [`users=${encodeURIComponent(email.trim())}`];
   const draft = options?.composeMessage?.trim();
   if (draft) {
     const capped =
       draft.length > TEAMS_CHAT_MESSAGE_MAX_LEN
         ? `${draft.slice(0, TEAMS_CHAT_MESSAGE_MAX_LEN - 1)}…`
         : draft;
-    url.searchParams.set("message", capped);
+    params.push(`message=${encodeURIComponent(capped)}`);
   }
-  return url.toString();
+  return `https://teams.microsoft.com/l/chat/0/0?${params.join("&")}`;
 }
 
 export function teamsMeetingUrl(email: string, subject?: string): string {
-  const params = new URLSearchParams({ attendees: email });
-  if (subject) params.set("subject", subject);
-  return `https://teams.microsoft.com/l/meeting/new?${params.toString()}`;
+  // Same RFC 3986 encoding as `teamsChartUrl` so subjects with spaces don't
+  // arrive as `Catch+up` in Teams.
+  const params: string[] = [`attendees=${encodeURIComponent(email.trim())}`];
+  if (subject) params.push(`subject=${encodeURIComponent(subject)}`);
+  return `https://teams.microsoft.com/l/meeting/new?${params.join("&")}`;
 }
 
