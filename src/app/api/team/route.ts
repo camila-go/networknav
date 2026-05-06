@@ -1,5 +1,11 @@
 import { NextResponse } from "next/server";
 import { lookupUserProfileByIdentifier } from "@/lib/profile/lookup-user-profile";
+
+// Vercel statically prerenders `GET()` route handlers with no `request` arg by
+// default, which froze a stale Camila avatar URL in the response. Force dynamic
+// rendering so each call reflects the current DB state.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 import {
   LISA_LUCAS_AVATAR_PUBLIC_URL,
   LISA_LUCAS_PLACEHOLDER_ROUTE_ID,

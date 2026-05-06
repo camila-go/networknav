@@ -122,7 +122,7 @@ export function AboutJynxModal({ open, onOpenChange }: AboutJynxModalProps) {
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
-    fetch("/api/team", { credentials: "same-origin" })
+    fetch("/api/team", { credentials: "same-origin", cache: "no-store" })
       .then((r) => r.json())
       .then((body: { success?: boolean; data?: { members: TeamMember[] } }) => {
         if (cancelled) return;
