@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth";
 import { users } from "@/lib/stores";
 import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/client";
 import { normalizeCompany } from "@/lib/company/normalize";
+import { resolvedProfilePhotoUrlForRow } from "@/lib/team/canonical-avatar-fallback";
 import type { UserRole } from "@/types";
 
 export async function GET() {
@@ -47,7 +48,7 @@ export async function GET() {
             title: p.title || '',
             company: normalizeCompany(p.company) || '',
             location: p.location,
-            photoUrl: p.photo_url,
+            photoUrl: resolvedProfilePhotoUrlForRow(p.id, p.photo_url),
             bio: p.bio,
             questionnaireCompleted: p.questionnaire_completed || false,
             createdAt: new Date(),
@@ -83,7 +84,10 @@ export async function GET() {
             title: user.title,
             company: normalizeCompany(user.company),
             location: user.location ?? "",
-            photoUrl: user.photoUrl ?? "",
+            photoUrl: resolvedProfilePhotoUrlForRow(
+              user.id,
+              user.photoUrl ?? ""
+            ),
             bio: user.bio ?? "",
           },
           questionnaireCompleted: user.questionnaireCompleted,

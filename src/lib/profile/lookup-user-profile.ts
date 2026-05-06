@@ -1,10 +1,7 @@
 import { supabaseAdmin } from "@/lib/supabase/client";
 import { enrichProfileRowsWithResolvedPhotoUrl } from "@/lib/profile/profile-photo-url";
-import {
-  canonicalIdForProfileLookup,
-  LISA_LUCAS_AVATAR_PUBLIC_URL,
-  LISA_LUCAS_USER_PROFILE_ID,
-} from "@/lib/team/lisa-lucas";
+import { canonicalIdForProfileLookup } from "@/lib/team/lisa-lucas";
+import { resolvedProfilePhotoUrlForRow } from "@/lib/team/canonical-avatar-fallback";
 
 /** Row shape from `user_profiles` (subset used by profile + team). */
 export type UserProfileLookupRow = {
@@ -31,11 +28,10 @@ async function withResolvedPhoto(
     row,
   ]);
   let out = (enriched as UserProfileLookupRow) ?? row;
-  if (
-    out.id === LISA_LUCAS_USER_PROFILE_ID &&
-    !(out.photo_url && out.photo_url.trim())
-  ) {
-    out = { ...out, photo_url: LISA_LUCAS_AVATAR_PUBLIC_URL };
+  const resolved = resolvedProfilePhotoUrlForRow(out.id, out.photo_url);
+  const prev = (out.photo_url ?? "").trim();
+  if (resolved !== prev) {
+    out = { ...out, photo_url: resolved ? resolved : null };
   }
   return out;
 }

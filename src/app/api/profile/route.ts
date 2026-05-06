@@ -8,6 +8,7 @@ import { cookies } from "next/headers";
 import { normalizeCompany } from "@/lib/company/normalize";
 import type { UserRole } from "@/types";
 import { LISA_LUCAS_AVATAR_PUBLIC_URL } from "@/lib/team/lisa-lucas";
+import { resolvedProfilePhotoUrlForRow } from "@/lib/team/canonical-avatar-fallback";
 
 export async function GET(request: NextRequest) {
   try {
@@ -68,7 +69,7 @@ export async function GET(request: NextRequest) {
               title: row.title || "",
               company: normalizeCompany(row.company) || "",
               location: row.location,
-              photoUrl: row.photo_url,
+              photoUrl: resolvedProfilePhotoUrlForRow(row.id, row.photo_url),
               bio: row.bio,
               questionnaireCompleted: false,
               createdAt: new Date(),
@@ -109,7 +110,7 @@ export async function GET(request: NextRequest) {
               title: row.title || "",
               company: normalizeCompany(row.company) || "",
               location: row.location,
-              photoUrl: row.photo_url,
+              photoUrl: resolvedProfilePhotoUrlForRow(row.id, row.photo_url),
               bio: row.bio,
               questionnaireCompleted: false,
               createdAt: new Date(),
@@ -139,7 +140,10 @@ export async function GET(request: NextRequest) {
               title: currentUser.title,
               company: normalizeCompany(currentUser.company),
               location: currentUser.location,
-              photoUrl: currentUser.photoUrl,
+              photoUrl: resolvedProfilePhotoUrlForRow(
+                currentUser.id,
+                currentUser.photoUrl
+              ),
               bio: currentUser.bio,
             },
           },
@@ -232,7 +236,10 @@ export async function GET(request: NextRequest) {
             title: targetUser.title,
             company: normalizeCompany(targetUser.company),
             location: targetUser.location,
-            photoUrl: targetUser.photoUrl,
+            photoUrl: resolvedProfilePhotoUrlForRow(
+              targetUser.id,
+              targetUser.photoUrl
+            ),
             bio: targetUser.bio,
           },
         },
